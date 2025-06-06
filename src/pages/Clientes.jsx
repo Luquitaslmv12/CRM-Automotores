@@ -17,10 +17,14 @@ import {
   Download,
   Search,
   CheckCircle,
+  MessageCircle,
   AlertTriangle,
 } from 'lucide-react';
 
 export default function Clientes() {
+  const [dni, setDni] = useState('');
+const [direccion, setDireccion] = useState('');
+const [localidad, setLocalidad] = useState('');
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
@@ -30,13 +34,10 @@ export default function Clientes() {
   const [filtroEtiqueta, setFiltroEtiqueta] = useState('');
   const [modoEdicion, setModoEdicion] = useState(false);
   const [idEditar, setIdEditar] = useState(null);
-  const [confirmacion, setConfirmacion] = useState(null); // { id, tipo: 'eliminar' | 'exportar' }
+  const [confirmacion, setConfirmacion] = useState(null);
   const [errorEmail, setErrorEmail] = useState('');
-
   const [toast, setToast] = useState(null);
-
   const formRef = useRef(null);
-
   const [pagina, setPagina] = useState(1);
   const itemsPorPagina = 10;
 
@@ -55,6 +56,9 @@ export default function Clientes() {
     setEtiqueta('');
     setModoEdicion(false);
     setIdEditar(null);
+    setDni('');
+setDireccion('');
+setLocalidad('');
   };
 
   const mostrarToast = (mensaje, tipo = 'ok') => {
@@ -62,23 +66,20 @@ export default function Clientes() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const validarEmail = (email) => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+  const validarEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-const guardarCliente = async () => {
-  if (!nombre || !email || !telefono) {
-    mostrarToast('Todos los campos son obligatorios', 'error');
-    return;
-  }
+  const guardarCliente = async () => {
+    if (!nombre || !email || !telefono) {
+      mostrarToast('Todos los campos son obligatorios', 'error');
+      return;
+    }
 
-  if (!validarEmail(email)) {
-    setErrorEmail('Por favor ingresa un email válido.');
-    return;
-  }
+    if (!validarEmail(email)) {
+      setErrorEmail('Por favor ingresa un email válido.');
+      return;
+    }
 
-  setErrorEmail('');
-  
+    setErrorEmail('');
 
     try {
       if (modoEdicion) {
@@ -87,14 +88,20 @@ const guardarCliente = async () => {
           email,
           telefono,
           etiqueta,
+          dni,
+    direccion,
+    localidad,
         });
         mostrarToast('Cliente actualizado');
       } else {
         await addDoc(collection(db, 'clientes'), {
-          nombre,
-          email,
-          telefono,
-          etiqueta,
+         nombre,
+    email,
+    telefono,
+    etiqueta,
+    dni,
+    direccion,
+    localidad,
           fechaRegistro: new Date(),
         });
         mostrarToast('Cliente agregado');
@@ -121,14 +128,16 @@ const guardarCliente = async () => {
     }
   };
 
-    const cancelarEdicion = () => {
-  // lógica para cancelar edición, limpiar formulario, etc.
-  setModoEdicion(false);
-  setNombre('');
-  setEmail('');
-  setTelefono('');
-  setEtiqueta('');
-};
+  const cancelarEdicion = () => {
+    setModoEdicion(false);
+    setNombre('');
+    setEmail('');
+    setTelefono('');
+    setEtiqueta('');
+    setDni('');
+setDireccion('');
+setLocalidad('');
+  };
 
   const editarCliente = (cliente) => {
     setNombre(cliente.nombre);
@@ -137,6 +146,9 @@ const guardarCliente = async () => {
     setEtiqueta(cliente.etiqueta || '');
     setIdEditar(cliente.id);
     setModoEdicion(true);
+    setDni(cliente.dni || '');
+setDireccion(cliente.direccion || '');
+setLocalidad(cliente.localidad || '');
 
     if (formRef.current) {
       formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -149,12 +161,16 @@ const guardarCliente = async () => {
 
   const confirmarExportar = () => {
     const headers = ['Nombre', 'Email', 'Teléfono', 'Etiqueta'];
-    const rows = clientes.map((c) => [c.nombre, c.email, c.telefono, c.etiqueta || '']);
+    const rows = clientes.map((cliente) => [
+      cliente.nombre,
+      cliente.email,
+      cliente.telefono,
+      cliente.etiqueta || '',
+    ]);
     const csvContent = [headers, ...rows].map((e) => e.join(',')).join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement('a');
     a.href = url;
     a.download = 'clientes.csv';
@@ -165,9 +181,9 @@ const guardarCliente = async () => {
     setConfirmacion(null);
   };
 
-  const resultados = clientes.filter((c) => {
-    const matchBusqueda = c.nombre.toLowerCase().includes(busqueda.toLowerCase());
-    const matchEtiqueta = !filtroEtiqueta || c.etiqueta === filtroEtiqueta;
+  const resultados = clientes.filter((cliente) => {
+    const matchBusqueda = cliente.nombre.toLowerCase().includes(busqueda.toLowerCase());
+    const matchEtiqueta = !filtroEtiqueta || cliente.etiqueta === filtroEtiqueta;
     return matchBusqueda && matchEtiqueta;
   });
 
@@ -192,9 +208,18 @@ const guardarCliente = async () => {
     }
   };
 
+
+  const esMovil = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+const generarLinkWhatsApp = (numero) => {
+  const limpio = numero.replace(/\D/g, '');
+  const base = esMovil() ? 'https://api.whatsapp.com/send?phone=' : 'https://web.whatsapp.com/send?phone=';
+  return `${base}${limpio}`;
+};
+
   return (
     <div className="p-6 min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 text-white">
-      <h1 className="text-3xl font-bold mb-6 text-center">Gestión de Clientes</h1>
+      <h1 className="text-4xl font-bold mb-6 text-center">Gestión de Clientes</h1>
 
       {/* Toast notificación */}
       <AnimatePresence>
@@ -268,43 +293,70 @@ const guardarCliente = async () => {
   ref={formRef}
   initial={{ opacity: 0, y: -20 }}
   animate={{ opacity: 1, y: 0 }}
-  className="bg-slate-800 p-6 rounded-2xl shadow-xl max-w-md mx-auto mb-8 space-y-4"
+  className="bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-3xl mx-auto mb-8"
 >
-  <div className="flex items-center gap-2">
+  <div className="flex items-center gap-2 mb-4">
     <UserPlus className="text-green-400" />
     <h2 className="text-xl font-semibold">
       {modoEdicion ? 'Editar Cliente' : 'Agregar Cliente'}
     </h2>
   </div>
-  <input
-    type="text"
-    placeholder="Nombre"
-    className="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-    value={nombre}
-    onChange={(e) => setNombre(e.target.value)}
-  />
-  <input
-  type="email"
-  placeholder="Email"
-  className={`w-full p-3 rounded bg-slate-700 border ${
-    errorEmail ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 focus:ring-indigo-400'
-  } text-white`}
-  value={email}
-  onChange={(e) => {
-    setEmail(e.target.value);
-    if (errorEmail) setErrorEmail(''); // Limpia error cuando el usuario escribe
-  }}
-/>
-{errorEmail && <p className="text-red-500 text-sm mt-1">{errorEmail}</p>}
-  <input
-    type="text"
-    placeholder="Teléfono"
-    className="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-    value={telefono}
-    onChange={(e) => setTelefono(e.target.value)}
-  />
+
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <input
+      type="text"
+      placeholder="Nombre"
+      className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
+      value={nombre}
+      onChange={(e) => setNombre(e.target.value)}
+    />
+    <input
+      type="number"
+      placeholder="DNI"
+      className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
+      value={dni}
+      onChange={(e) => setDni(e.target.value)}
+    />
+    <input
+      type="text"
+      placeholder="Dirección"
+      className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
+      value={direccion}
+      onChange={(e) => setDireccion(e.target.value)}
+    />
+    <input
+      type="text"
+      placeholder="Localidad"
+      className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
+      value={localidad}
+      onChange={(e) => setLocalidad(e.target.value)}
+    />
+    <input
+      type="email"
+      placeholder="Email"
+      className={`p-3 rounded bg-slate-700 border ${
+        errorEmail ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 focus:ring-indigo-400'
+      } text-white col-span-1`}
+      value={email}
+      onChange={(e) => {
+        setEmail(e.target.value);
+        if (errorEmail) setErrorEmail('');
+      }}
+    />
+    <input
+      type="tel"
+      placeholder="Teléfono"
+      className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
+      value={telefono}
+      onChange={(e) => {
+        const soloNumeros = e.target.value.replace(/\D/g, '');
+        setTelefono(soloNumeros);
+      }}
+    />
+  </div>
+
   <select
-    className="w-full p-3 rounded bg-slate-700 border border-slate-600 text-white"
+    className="w-full p-3 rounded bg-slate-700 border border-slate-600 text-white mb-6"
     value={etiqueta}
     onChange={(e) => setEtiqueta(e.target.value)}
   >
@@ -315,14 +367,16 @@ const guardarCliente = async () => {
     <option value="Inactivo">Inactivo</option>
   </select>
 
+  {errorEmail && <p className="text-red-500 text-sm mb-4">{errorEmail}</p>}
+
   <div className="flex gap-4">
     <button
-  onClick={guardarCliente}
-  className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-lg transition flex-1
-    ${modoEdicion ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-700 hover:bg-indigo-800'}`}
->
-  <UserPlus size={18} /> {modoEdicion ? 'Actualizar' : 'Agregar Cliente'}
-</button>
+      onClick={guardarCliente}
+      className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-lg transition flex-1
+        ${modoEdicion ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-700 hover:bg-indigo-800'}`}
+    >
+      <UserPlus size={18} /> {modoEdicion ? 'Actualizar' : 'Agregar Cliente'}
+    </button>
 
     {modoEdicion && (
       <button
@@ -394,6 +448,7 @@ const guardarCliente = async () => {
 </div>
 
       {/* Lista de clientes */}
+       {/* Lista de clientes */}
       <div className="space-y-3 max-w-3xl mx-auto">
         {clientesPaginados.length === 0 ? (
           <p className="text-center text-slate-400">No hay clientes que coincidan.</p>
@@ -409,7 +464,14 @@ const guardarCliente = async () => {
               <div>
                 <p className="text-lg font-semibold">{cliente.nombre}</p>
                 <p className="text-sm text-slate-300">
-                  {cliente.email} · {cliente.telefono}
+                  {cliente.email} ·{' '}
+<a
+  href={`tel:${cliente.telefono}`}
+  className="text-blue-400 hover:underline"
+>
+  {cliente.telefono}
+</a>{' '}
+· DNI: {cliente.dni || '-'} · Localidad: {cliente.localidad || '-'} · Dirección: {cliente.direccion || '-'}
                 </p>
                 {cliente.etiqueta && (
                   <p
@@ -419,7 +481,16 @@ const guardarCliente = async () => {
                   </p>
                 )}
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 items-center">
+                <a
+                  href={generarLinkWhatsApp(cliente.telefono)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-green-400 hover:text-green-600"
+                  aria-label="Enviar WhatsApp"
+                >
+                  <MessageCircle />
+                </a>
                 <button
                   onClick={() => editarCliente(cliente)}
                   className="text-indigo-300 hover:text-indigo-500"

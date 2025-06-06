@@ -47,18 +47,18 @@ export default function Login() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-tr from-indigo-700 via-purple-700 to-pink-600 px-4">
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 min-h-screen px-4">
       <form
         onSubmit={handleLogin}
-        className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md"
+        className="bg-slate-800 p-6 rounded-2xl shadow-xl max-w-md mx-auto mb-8 space-y-4"
         noValidate
       >
-        <h2 className="text-3xl font-extrabold text-indigo-800 mb-8 text-center">Iniciar sesión</h2>
+        <h2 className="text-3xl font-extrabold text-indigo-300 mb-8 text-center">Iniciar sesión</h2>
 
         <input
           type="email"
           placeholder="Correo electrónico"
-          className="w-full mb-4 px-4 py-3 rounded-xl border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+          className="w-full p-3 rounded bg-slate-400 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
@@ -67,7 +67,7 @@ export default function Login() {
         <input
           type="password"
           placeholder="Contraseña"
-          className="w-full mb-4 px-4 py-3 rounded-xl border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+          className="w-full p-3 rounded bg-slate-400 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
