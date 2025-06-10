@@ -2,6 +2,9 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useIdleLogout } from '../hooks/useIdleLogout';
+
+
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -9,6 +12,9 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  useIdleLogout(usuario);
+
 
   useEffect(() => {
     const auth = getAuth();

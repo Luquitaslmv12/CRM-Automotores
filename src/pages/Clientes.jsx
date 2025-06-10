@@ -6,6 +6,9 @@ import {
   deleteDoc,
   doc,
   updateDoc,
+  query,
+  where,
+  getDocs,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -69,49 +72,68 @@ setLocalidad('');
   const validarEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const guardarCliente = async () => {
-    if (!nombre || !email || !telefono) {
-      mostrarToast('Todos los campos son obligatorios', 'error');
-      return;
-    }
+  if (!nombre || !email || !telefono || !dni) {
+    mostrarToast('Todos los campos son obligatorios', 'error');
+    return;
+  }
+  if (!validarEmail(email)) {
+    setErrorEmail('Por favor ingresa un email válido.');
+    return;
+  }
+ 
+  setErrorEmail('');
 
-    if (!validarEmail(email)) {
-      setErrorEmail('Por favor ingresa un email válido.');
-      return;
-    }
-
-    setErrorEmail('');
-
-    try {
-      if (modoEdicion) {
-        await updateDoc(doc(db, 'clientes', idEditar), {
-          nombre,
-          email,
-          telefono,
-          etiqueta,
-          dni,
-    direccion,
-    localidad,
-        });
-        mostrarToast('Cliente actualizado');
-      } else {
-        await addDoc(collection(db, 'clientes'), {
-         nombre,
-    email,
-    telefono,
-    etiqueta,
-    dni,
-    direccion,
-    localidad,
-          fechaRegistro: new Date(),
-        });
-        mostrarToast('Cliente agregado');
+   try {
+    // Verificar si ya existe un cliente con el mismo DNI
+    const clientesRef = collection(db, 'clientes');
+    const q = query(clientesRef, where('dni', '==', dni));
+    const querySnapshot = await getDocs(q);
+    if (!modoEdicion) {
+      if (!querySnapshot.empty) {
+        mostrarToast('Ya existe un cliente con este DNI', 'error');
+        return;
       }
-      limpiarFormulario();
-    } catch (err) {
-      console.error(err);
-      mostrarToast('Error al guardar cliente', 'error');
+    } else {
+      // Si estamos en modo edición, permitir el mismo DNI solo si es el del cliente que estamos editando
+      if (!querySnapshot.empty) {
+        const clienteConMismoDNI = querySnapshot.docs[0].data();
+        if (querySnapshot.docs[0].id !== idEditar) {
+          mostrarToast('Ya existe otro cliente con este DNI', 'error');
+          return;
+        }
+      }
     }
-  };
+
+     if (modoEdicion) {
+      await updateDoc(doc(db, 'clientes', idEditar), {
+        nombre,
+        email,
+        telefono,
+        etiqueta,
+        dni,
+        direccion,
+        localidad,
+      });
+      mostrarToast('Cliente actualizado');
+    } else {
+      await addDoc(collection(db, 'clientes'), {
+        nombre,
+        email,
+        telefono,
+        etiqueta,
+        dni,
+        direccion,
+        localidad,
+        fechaRegistro: new Date(),
+      });
+      mostrarToast('Cliente agregado');
+    }
+    limpiarFormulario();
+  } catch (err) {
+    console.error(err);
+    mostrarToast('Error al guardar cliente', 'error');
+  }
+};
 
   const eliminarCliente = async (id) => {
     setConfirmacion({ tipo: 'eliminar', id });
@@ -447,7 +469,6 @@ const generarLinkWhatsApp = (numero) => {
   </button>
 </div>
 
-      {/* Lista de clientes */}
        {/* Lista de clientes */}
       <div className="space-y-3 max-w-3xl mx-auto">
         {clientesPaginados.length === 0 ? (
@@ -473,13 +494,13 @@ const generarLinkWhatsApp = (numero) => {
 </a>{' '}
 · DNI: {cliente.dni || '-'} · Localidad: {cliente.localidad || '-'} · Dirección: {cliente.direccion || '-'}
                 </p>
-                {cliente.etiqueta && (
-                  <p
-                    className={`text-xs inline-block mt-1 px-2 py-1 rounded-full text-white ${colorEtiqueta(cliente.etiqueta)}`}
-                  >
-                    {cliente.etiqueta}
-                  </p>
-                )}
+               {cliente.etiqueta && (
+  <span
+    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorEtiqueta(cliente.etiqueta)} text-white`}
+  >
+    {cliente.etiqueta}
+  </span>
+)}
               </div>
               <div className="flex gap-3 items-center">
                 <a

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "../firebase";
 import {
   collection,
@@ -13,7 +13,6 @@ import {
   Trash,
   FileText,
   LoaderCircle,
-  FileDown,
   PlusCircle,
   XCircle,
   Download,
@@ -42,6 +41,14 @@ export default function ListaPresupuestos() {
     fecha: dayjs().toDate(),
   });
 
+  // Filtros y paginación
+  const [filtroNombre, setFiltroNombre] = useState("");
+  const [fechaInicio, setFechaInicio] = useState("");
+  const [fechaFin, setFechaFin] = useState("");
+
+  const [paginaActual, setPaginaActual] = useState(1);
+  const ITEMS_POR_PAGINA = 5;
+
   useEffect(() => {
     cargarTodo();
   }, []);
@@ -62,17 +69,20 @@ export default function ListaPresupuestos() {
       setVehiculos(listaVehiculos);
 
       const enriquecidos = listaPresupuestos.map((p) => {
-        const cliente = listaClientes.find((c) => c.id === p.clienteId);
-        const vehiculo = listaVehiculos.find((v) => v.id === p.vehiculoId);
-        return {
-          ...p,
-          clienteNombre: cliente ? `${cliente.nombre} ${cliente.apellido}` : "Cliente no encontrado",
-          vehiculoInfo: vehiculo
-            ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
-            : "Vehículo no encontrado",
-          fechaObj: p.fecha?.toDate ? p.fecha.toDate() : new Date(),
-        };
-      });
+  const cliente = listaClientes.find((c) => c.id === p.clienteId);
+  const vehiculo = listaVehiculos.find((v) => v.id === p.vehiculoId);
+  return {
+    ...p,
+    clienteNombre: cliente ? cliente.nombre : "Cliente no encontrado",
+    clienteApellido: cliente ? cliente.apellido : "",
+    dniCliente: cliente?.dni || "",
+    vehiculoInfo: vehiculo
+      ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
+      : "Vehículo no encontrado",
+    patenteVehiculo: vehiculo?.patente || "",
+    fechaObj: p.fecha?.toDate ? p.fecha.toDate() : new Date(),
+  };
+});
 
       setPresupuestos(enriquecidos);
       setLoading(false);
@@ -177,9 +187,11 @@ export default function ListaPresupuestos() {
           id: docRef.id,
           ...nuevaData,
           clienteNombre: cliente ? `${cliente.nombre} ${cliente.apellido}` : "Cliente no encontrado",
+          dniCliente: cliente?.dni || "",
           vehiculoInfo: vehiculo
             ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
             : "Vehículo no encontrado",
+          patenteVehiculo: vehiculo?.patente || "",
           fechaObj: nuevaData.fecha.toDate ? nuevaData.fecha.toDate() : nuevaData.fecha,
         },
       ]);
@@ -192,9 +204,60 @@ export default function ListaPresupuestos() {
     }
   };
 
+  // Filtrado con búsqueda por múltiples campos y filtro de fecha
+  const presupuestosFiltrados = useMemo(() => {
+    const textoFiltro = filtroNombre.toLowerCase().trim();
+
+    return presupuestos.filter((p) => {
+      // Buscar por cliente
+      const nombreCompleto = p.clienteNombre.toLowerCase();
+      const dni = p.dniCliente.toString().toLowerCase();
+      // Vehículo separado para buscar patente, marca y modelo
+      const vehiculo = p.vehiculoInfo.toLowerCase();
+      const patente = p.patenteVehiculo.toLowerCase();
+
+    const textoCoincide =
+  (p.clienteNombre?.toLowerCase() || "").includes(textoFiltro) ||
+  (p.clienteApellido?.toLowerCase() || "").includes(textoFiltro) ||
+  (p.dniCliente?.toString().toLowerCase() || "").includes(textoFiltro) ||
+  (p.vehiculoInfo?.toLowerCase() || "").includes(textoFiltro) ||
+  (p.patenteVehiculo?.toLowerCase() || "").includes(textoFiltro);
+
+      if (!textoCoincide) return false;
+
+      // Filtrar por fechas
+      if (fechaInicio) {
+        if (dayjs(p.fechaObj).isBefore(dayjs(fechaInicio), "day")) {
+          return false;
+        }
+      }
+      if (fechaFin) {
+        if (dayjs(p.fechaObj).isAfter(dayjs(fechaFin), "day")) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [presupuestos, filtroNombre, fechaInicio, fechaFin]);
+
+  // Paginación
+  const totalPaginas = Math.ceil(presupuestosFiltrados.length / ITEMS_POR_PAGINA);
+  const presupuestosPagina = presupuestosFiltrados.slice(
+    (paginaActual - 1) * ITEMS_POR_PAGINA,
+    paginaActual * ITEMS_POR_PAGINA
+  );
+
+  // Cambiar página
+  const irAPagina = (num) => {
+    if (num < 1 || num > totalPaginas) return;
+    setPaginaActual(num);
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto text-white">
       <Toaster position="top-right" />
+
       <div className="flex items-center gap-2 mb-4 justify-between">
         <div className="flex items-center gap-2">
           <FileText size={28} className="text-yellow-400" />
@@ -210,132 +273,227 @@ export default function ListaPresupuestos() {
         </button>
       </div>
 
-      {loading ? (
+      {/* Filtros */}
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <input
+          type="text"
+          placeholder="Buscar por nombre, apellido, DNI, vehículo, patente..."
+          value={filtroNombre}
+          onChange={(e) => {
+            setFiltroNombre(e.target.value);
+            setPaginaActual(1); // reiniciar página al buscar
+          }}
+          className="p-2 rounded bg-slate-800 text-white"
+        />
+        <input
+          type="date"
+          value={fechaInicio}
+          onChange={(e) => {
+            setFechaInicio(e.target.value);
+            setPaginaActual(1);
+          }}
+          className="p-2 rounded bg-slate-800 text-white"
+        />
+        <input
+          type="date"
+          value={fechaFin}
+          onChange={(e) => {
+            setFechaFin(e.target.value);
+            setPaginaActual(1);
+          }}
+          className="p-2 rounded bg-slate-800 text-white"
+        />
+      </div>
+
+        {loading ? (
         <div className="text-center text-slate-400 py-10">
           <LoaderCircle className="animate-spin mx-auto" size={32} />
           Cargando presupuestos...
         </div>
-      ) : presupuestos.length === 0 ? (
-        <p className="text-center text-slate-400">No hay presupuestos guardados.</p>
+      ) : presupuestosFiltrados.length === 0 ? (
+        <p className="text-center text-slate-400">No hay presupuestos que coincidan con el filtro.</p>
       ) : (
-        <div className="grid gap-4">
-          <AnimatePresence>
-            {presupuestos.map((p) => (
-              <motion.div
-                key={p.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                className="bg-slate-800 rounded-xl p-4 shadow-md cursor-pointer"
-                onClick={() => abrirDetalle(p.id)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-semibold">
-                      Cliente: <span className="text-blue-300">{p.clienteNombre}</span>
-                    </p>
-                    <p>
-                      Vehículo: <span className="text-blue-300">{p.vehiculoInfo}</span>
-                    </p>
-                    {p.monto && (
-                      <p>
-                        Monto estimado:{" "}
-                        <span className="text-green-400">
-                          ${p.monto.toLocaleString("es-UY", { minimumFractionDigits: 2 })}
-                        </span>
+        <>
+          <div className="grid gap-4">
+            <AnimatePresence>
+              {presupuestosPagina.map((p) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-slate-800 rounded-xl p-4 shadow-md "
+                  
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold">
+                        Cliente: <span className="text-blue-300">{p.clienteNombre}</span>
                       </p>
-                    )}
-                    {p.vigencia && (
-                      <p>Vigencia: <span className="text-yellow-300">{p.vigencia} días</span></p>
-                    )}
-                    <p className="text-slate-400 text-sm">
-                      Fecha: {dayjs(p.fechaObj).locale("es").format("DD/MM/YYYY")}
-                    </p>
-                  </div>
+                      <p>
+                        Vehículo: <span className="text-blue-300">{p.vehiculoInfo}</span>
+                      </p>
+                      {p.monto && (
+                        <p>
+                          Monto estimado:{" "}
+                          <span className="text-green-400">
+                            ${p.monto.toLocaleString("es-UY", { minimumFractionDigits: 2 })}
+                          </span>
+                        </p>
+                      )}
+                      {p.vigencia && (
+                        <p>Vigencia: <span className="text-yellow-300">{p.vigencia} días</span></p>
+                      )}
+                      <p className="text-slate-400 text-sm">
+                        Fecha: {dayjs(p.fechaObj).locale("es").format("DD/MM/YYYY")}
+                      </p>
+                    </div>
 
-                  <div className="flex flex-col items-center gap-2">
-                    {confirmarId === p.id ? (
-                      <>
+                    <div className="flex flex-col items-center gap-2">
+                      {confirmarId === p.id ? (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              eliminarPresupuesto(p.id);
+                            }}
+                            className="text-red-500 hover:text-red-700 cursor-pointer"
+                            title="Confirmar eliminar"
+                          >
+                            <Trash size={24} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmarId(null);
+                            }}
+                            className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                            title="Cancelar"
+                          >
+                            <XCircle size={24} />
+                          </button>
+                        </>
+                      ) : (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            eliminarPresupuesto(p.id);
+                            setConfirmarId(p.id);
                           }}
-                          className="text-red-500 hover:text-red-700"
-                          title="Confirmar eliminar"
+                          className="text-red-400 hover:text-red-600 cursor-pointer"
+                          title="Eliminar presupuesto"
                         >
                           <Trash size={24} />
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmarId(null);
-                          }}
-                          className="text-gray-400 hover:text-gray-600"
-                          title="Cancelar"
-                        >
-                          <XCircle size={24} />
-                        </button>
-                      </>
-                    ) : (
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setConfirmarId(p.id);
+                          exportarPDF();
                         }}
-                        className="text-red-400 hover:text-red-600"
-                        title="Eliminar presupuesto"
+                        className="text-green-400 hover:text-green-600 cursor-pointer"
+                        title="Exportar PDF"
                       >
-                        <Trash size={24} />
+                        <Download size={24} onClick={() => abrirDetalle(p.id)} />
                       </button>
-                    )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        exportarPDF();
-                      }}
-                      className="text-green-400 hover:text-green-600"
-                      title="Exportar PDF"
-                    >
-                      <Download size={24} />
-                    </button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {/* Paginación */}
+          <div className="mt-6 flex justify-center gap-2">
+            <button
+              onClick={() => irAPagina(paginaActual - 1)}
+              disabled={paginaActual === 1}
+              className="px-3 py-1 rounded bg-slate-800 disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            {[...Array(totalPaginas)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => irAPagina(i + 1)}
+                className={`px-3 py-1 rounded ${
+                  paginaActual === i + 1 ? "bg-yellow-400 text-black" : "bg-slate-800"
+                }`}
+              >
+                {i + 1}
+              </button>
             ))}
-          </AnimatePresence>
-        </div>
+            <button
+              onClick={() => irAPagina(paginaActual + 1)}
+              disabled={paginaActual === totalPaginas}
+              className="px-3 py-1 rounded bg-slate-800 disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
+        </>
       )}
 
-      {/* Modal Detalle */}
+      {/* Confirmar eliminar */}
+      <AnimatePresence>
+        {confirmarId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+          >
+            <div className="bg-slate-900 p-6 rounded max-w-sm w-full text-center">
+              <p className="mb-4">¿Seguro que quieres eliminar este presupuesto?</p>
+              <div className="flex justify-around gap-4">
+                <button
+                  onClick={() => eliminarPresupuesto(confirmarId)}
+                  className="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
+                >
+                  Sí, eliminar
+                </button>
+                <button
+                  onClick={() => setConfirmarId(null)}
+                  className="bg-slate-700 px-4 py-2 rounded hover:bg-slate-600"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Detalle presupuesto */}
       <AnimatePresence>
         {detalleId && presupuestoDetalle && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50"
-            onClick={cerrarDetalle}
+            className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
           >
-            <motion.div
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 40, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 rounded-lg p-6 max-w-lg w-full text-white shadow-lg relative"
-            >
-              <h3 className="text-xl font-semibold mb-4">Detalle del Presupuesto</h3>
-
+            <div className="bg-slate-900 p-6 rounded max-w-md w-full relative text-white">
+              <button
+                onClick={cerrarDetalle}
+                className="absolute top-2 right-2 text-red-400 hover:text-red-600"
+                title="Cerrar"
+              >
+                <XCircle size={24} />
+              </button>
+              <h3 className="text-2xl font-semibold mb-4">Detalle de Presupuesto</h3>
               <p>
                 <strong>Cliente:</strong> {presupuestoDetalle.clienteNombre}
+              </p>
+              <p>
+                <strong>DNI:</strong> {presupuestoDetalle.dniCliente}
               </p>
               <p>
                 <strong>Vehículo:</strong> {presupuestoDetalle.vehiculoInfo}
               </p>
               <p>
                 <strong>Monto estimado:</strong>{" "}
-                ${presupuestoDetalle.monto.toLocaleString("es-UY", { minimumFractionDigits: 2 })}
+                ${Number(presupuestoDetalle.monto).toLocaleString("es-UY", { minimumFractionDigits: 2 })}
               </p>
               <p>
                 <strong>Vigencia:</strong> {presupuestoDetalle.vigencia} días
@@ -347,118 +505,124 @@ export default function ListaPresupuestos() {
 
               <button
                 onClick={exportarPDF}
-                className="mt-4 flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 rounded-md"
+                className="mt-6 flex items-center gap-1 bg-yellow-400 text-black px-4 py-2 rounded hover:bg-yellow-500"
+                title="Exportar a PDF"
               >
-                <Download size={20} />
+                <Download size={18} />
                 Exportar PDF
               </button>
-
-              <button
-                onClick={cerrarDetalle}
-                className="absolute top-3 right-3 text-gray-400 hover:text-gray-200"
-                title="Cerrar"
-              >
-                <XCircle size={24} />
-              </button>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Modal Nuevo Presupuesto */}
+      {/* Modal nuevo presupuesto */}
       <AnimatePresence>
         {modalNuevo && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50"
-            onClick={cerrarModalNuevo}
+            className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
           >
             <motion.form
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 40, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 rounded-lg p-6 max-w-md w-full text-white shadow-lg"
               onSubmit={manejarSubmitNuevo}
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              className="bg-slate-900 p-6 rounded max-w-md w-full space-y-4 text-white"
             >
-              <h3 className="text-xl font-semibold mb-4">Crear nuevo presupuesto</h3>
+              <h3 className="text-2xl font-semibold">Nuevo Presupuesto</h3>
 
-              <label className="block mb-3">
-                <span>Cliente</span>
+              <label>
+                Cliente:
                 <select
                   name="clienteId"
                   value={formData.clienteId}
                   onChange={manejarCambio}
-                  className="w-full mt-1 p-2 rounded bg-slate-800"
-                  required
+                  className="w-full mt-1 p-2 bg-slate-800 rounded"
                 >
                   {clientes.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.nombre} {c.apellido}
+                      {c.nombre} {c.apellido} (DNI: {c.dni})
                     </option>
                   ))}
                 </select>
               </label>
 
-              <label className="block mb-3">
-                <span>Vehículo</span>
+              <label>
+                Vehículo:
                 <select
                   name="vehiculoId"
                   value={formData.vehiculoId}
                   onChange={manejarCambio}
-                  className="w-full mt-1 p-2 rounded bg-slate-800"
-                  required
+                  className="w-full mt-1 p-2 bg-slate-800 rounded"
                 >
                   {vehiculos.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.marca} {v.modelo} ({v.patente})
+                      {v.marca} {v.modelo} (Patente: {v.patente})
                     </option>
                   ))}
                 </select>
               </label>
 
-              <label className="block mb-3">
-                <span>Monto estimado</span>
+              <label>
+                Monto estimado:
                 <input
                   type="number"
-                  step="0.01"
                   name="monto"
+                  min="0"
+                  step="0.01"
                   value={formData.monto}
                   onChange={manejarCambio}
-                  className="w-full mt-1 p-2 rounded bg-slate-800"
-                  placeholder="Ej: 15000.50"
+                  className="w-full mt-1 p-2 bg-slate-800 rounded"
                   required
                 />
               </label>
 
-              <label className="block mb-3">
-                <span>Vigencia (días)</span>
+              <label>
+                Vigencia (días):
                 <input
                   type="number"
                   name="vigencia"
+                  min="1"
                   value={formData.vigencia}
                   onChange={manejarCambio}
-                  className="w-full mt-1 p-2 rounded bg-slate-800"
-                  placeholder="Ej: 30"
+                  className="w-full mt-1 p-2 bg-slate-800 rounded"
                   required
                 />
               </label>
 
-              <div className="flex justify-end gap-3 mt-6">
+              <label>
+                Fecha:
+                <input
+                  type="date"
+                  name="fecha"
+                  value={dayjs(formData.fecha).format("YYYY-MM-DD")}
+                  onChange={(e) =>
+                    setFormData((f) => ({
+                      ...f,
+                      fecha: new Date(e.target.value),
+                    }))
+                  }
+                  className="w-full mt-1 p-2 bg-slate-800 rounded"
+                  required
+                />
+              </label>
+
+              <div className="flex justify-between">
                 <button
                   type="button"
                   onClick={cerrarModalNuevo}
-                  className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
+                  className="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-green-500 rounded hover:bg-green-600"
+                  className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
                 >
-                  Crear
+                  Guardar
                 </button>
               </div>
             </motion.form>
