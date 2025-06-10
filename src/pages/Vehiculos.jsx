@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from 'react';
 import {
   collection,
   addDoc,
@@ -6,9 +6,9 @@ import {
   deleteDoc,
   doc,
   updateDoc,
-} from "firebase/firestore";
-import { db } from "../firebase";
-import { motion, AnimatePresence } from "framer-motion";
+} from 'firebase/firestore';
+import { db } from '../firebase';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Truck,
   Pencil,
@@ -19,18 +19,19 @@ import {
   Search,
   CheckCircle,
   AlertTriangle,
-} from "lucide-react";
+} from 'lucide-react';
 
 export default function Vehiculos() {
-  const [marca, setMarca] = useState("");
-  const [modelo, setModelo] = useState("");
-  const [patente, setPatente] = useState("");
-  const [estado, setEstado] = useState("");
-  const [tipo, setTipo] = useState("");
-  const [etiqueta, setEtiqueta] = useState("");
+  const [marca, setMarca] = useState('');
+  const [modelo, setModelo] = useState('');
+  const [patente, setPatente] = useState('');
+  const [estado, setEstado] = useState('');
+  const [tipo, setTipo] = useState('');
+  const [precioVenta, setPrecioVenta] = useState('');
+  const [etiqueta, setEtiqueta] = useState('');
   const [vehiculos, setVehiculos] = useState([]);
-  const [busqueda, setBusqueda] = useState("");
-  const [filtroEtiqueta, setFiltroEtiqueta] = useState("");
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroEtiqueta, setFiltroEtiqueta] = useState('');
   const [modoEdicion, setModoEdicion] = useState(false);
   const [idEditar, setIdEditar] = useState(null);
   const [confirmacion, setConfirmacion] = useState(null);
@@ -39,18 +40,8 @@ export default function Vehiculos() {
   const [pagina, setPagina] = useState(1);
   const itemsPorPagina = 10;
 
-  const opcionesVehiculos = {
-    Volkswagen: ["Gol", "Voyage", "Amarok", "Saveiro"],
-    Toyota: ["Corolla", "Hilux", "Yaris", "Etios"],
-    Ford: ["Fiesta", "Focus", "Ranger", "EcoSport"],
-    Chevrolet: ["Corsa", "Cruze", "S10", "Tracker"],
-    Fiat: ["Uno", "Cronos", "Strada", "Toro"],
-  };
-
-  const modelosDisponibles = marca ? opcionesVehiculos[marca] || [] : [];
-
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "vehiculos"), (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, 'vehiculos'), (snapshot) => {
       const lista = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setVehiculos(lista);
     });
@@ -58,69 +49,84 @@ export default function Vehiculos() {
   }, []);
 
   const limpiarFormulario = () => {
-    setMarca("");
-    setModelo("");
-    setPatente("");
-    setEstado("");
-    setTipo("");
-    setEtiqueta("");
+    setMarca('');
+    setModelo('');
+    setPatente('');
+    setEstado('');
+    setTipo('');
+    setPrecioVenta('');
+    setEtiqueta('');
     setModoEdicion(false);
     setIdEditar(null);
   };
 
-  const mostrarToast = (mensaje, tipo = "ok") => {
+  const mostrarToast = (mensaje, tipo = 'ok') => {
     setToast({ mensaje, tipo });
     setTimeout(() => setToast(null), 3000);
   };
 
   const guardarVehiculo = async () => {
     if (!marca || !modelo || !patente) {
-      mostrarToast("Marca, Modelo y Patente son obligatorios", "error");
+      mostrarToast('Marca, Modelo y Patente son obligatorios', 'error');
       return;
     }
 
-    try {
-      if (modoEdicion) {
-        await updateDoc(doc(db, "vehiculos", idEditar), {
-          marca,
-          modelo,
-          patente,
-          estado,
-          tipo,
-          etiqueta,
-        });
-        mostrarToast("Vehículo actualizado");
-      } else {
-        await addDoc(collection(db, "vehiculos"), {
-          marca,
-          modelo,
-          patente,
-          estado,
-          tipo,
-          etiqueta,
-          fechaRegistro: new Date(),
-        });
-        mostrarToast("Vehículo agregado");
-      }
-      limpiarFormulario();
-    } catch (err) {
-      console.error(err);
-      mostrarToast("Error al guardar vehículo", "error");
+
+    const patenteExistente = vehiculos.find(
+    (v) => v.patente.toLowerCase() === patente.toLowerCase()
+  );
+
+  if (!modoEdicion && patenteExistente) {
+    mostrarToast('Ya existe un vehículo con esa patente', 'error');
+    return;
+  }
+
+  try {
+    if (modoEdicion) {
+      await updateDoc(doc(db, 'vehiculos', idEditar), {
+        marca,
+        modelo,
+        patente,
+        estado,
+        tipo,
+        precioVenta: Number(precioVenta) || 0,
+        etiqueta,
+      });
+      mostrarToast('Vehículo actualizado');
+    } else {
+      await addDoc(collection(db, 'vehiculos'), {
+        marca,
+        modelo,
+        patente,
+        estado,
+        tipo,
+        precioVenta: Number(precioVenta) || 0,
+        etiqueta,
+        fechaRegistro: new Date(),
+      });
+      mostrarToast('Vehículo agregado');
     }
-  };
+    limpiarFormulario();
+  } catch (err) {
+    console.error(err);
+    mostrarToast('Error al guardar vehículo', 'error');
+  }
+};
+
+
 
   const eliminarVehiculo = (id) => {
-    setConfirmacion({ tipo: "eliminar", id });
+    setConfirmacion({ tipo: 'eliminar', id });
   };
 
   const confirmarEliminar = async () => {
     try {
-      await deleteDoc(doc(db, "vehiculos", confirmacion.id));
-      mostrarToast("Vehículo eliminado");
+      await deleteDoc(doc(db, 'vehiculos', confirmacion.id));
+      mostrarToast('Vehículo eliminado');
       setConfirmacion(null);
     } catch (err) {
       console.error(err);
-      mostrarToast("Error al eliminar vehículo", "error");
+      mostrarToast('Error al eliminar vehículo', 'error');
     }
   };
 
@@ -129,52 +135,47 @@ export default function Vehiculos() {
   };
 
   const editarVehiculo = (vehiculo) => {
-    setMarca(vehiculo.marca || "");
-    setModelo(vehiculo.modelo || "");
-    setPatente(vehiculo.patente || "");
-    setEstado(vehiculo.estado || "");
-    setTipo(vehiculo.tipo || "");
-    setEtiqueta(vehiculo.etiqueta || "");
+    setMarca(vehiculo.marca || '');
+    setModelo(vehiculo.modelo || '');
+    setPatente(vehiculo.patente || '');
+    setEstado(vehiculo.estado || '');
+    setTipo(vehiculo.tipo || '');
+    setPrecioVenta(vehiculo.precioVenta ? vehiculo.precioVenta.toString() : '');
+    setEtiqueta(vehiculo.etiqueta || '');
     setIdEditar(vehiculo.id);
     setModoEdicion(true);
 
     if (formRef.current) {
-      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
   const exportarCSV = () => {
-    setConfirmacion({ tipo: "exportar" });
+    setConfirmacion({ tipo: 'exportar' });
   };
 
   const confirmarExportar = () => {
-    const headers = [
-      "Marca",
-      "Modelo",
-      "Patente",
-      "Estado",
-      "Tipo",
-      "Etiqueta",
-    ];
+    const headers = ['Marca', 'Modelo', 'Patente', 'Estado', 'Tipo', 'Precio Venta', 'Etiqueta'];
     const rows = vehiculos.map((v) => [
       v.marca,
       v.modelo,
       v.patente,
-      v.estado || "",
-      v.tipo || "",
-      v.etiqueta || "",
+      v.estado || '',
+      v.tipo || '',
+      v.precioVenta || '',
+      v.etiqueta || '',
     ]);
-    const csvContent = [headers, ...rows].map((e) => e.join(",")).join("\n");
+    const csvContent = [headers, ...rows].map((e) => e.join(',')).join('\n');
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
+    const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = "vehiculos.csv";
+    a.download = 'vehiculos.csv';
     a.click();
     URL.revokeObjectURL(url);
 
-    mostrarToast("Exportación realizada");
+    mostrarToast('Exportación realizada');
     setConfirmacion(null);
   };
 
@@ -195,24 +196,22 @@ export default function Vehiculos() {
 
   const colorEtiqueta = (etiqueta) => {
     switch (etiqueta) {
-      case "Nuevo":
-        return "bg-green-600";
-      case "Usado":
-        return "bg-yellow-500";
-      case "Reparación":
-        return "bg-red-600";
-      case "Vendido":
-        return "bg-gray-500";
+      case 'Nuevo':
+        return 'bg-green-600';
+      case 'Usado':
+        return 'bg-yellow-500';
+      case 'Reparación':
+        return 'bg-red-600';
+      case 'Vendido':
+        return 'bg-gray-500';
       default:
-        return "bg-indigo-600";
+        return 'bg-indigo-600';
     }
   };
 
   return (
     <div className="p-6 min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 text-white">
-      <h1 className="text-4xl font-bold mb-6 text-center">
-        Gestión de Vehículos
-      </h1>
+      <h1 className="text-4xl font-bold mb-6 text-center">Gestión de Vehículos</h1>
 
       {/* Toast notificación */}
       <AnimatePresence>
@@ -222,7 +221,7 @@ export default function Vehiculos() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -50, opacity: 0 }}
             className={`fixed top-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg z-50 ${
-              toast.tipo === "error" ? "bg-red-600" : "bg-green-600"
+              toast.tipo === 'error' ? 'bg-red-600' : 'bg-green-600'
             }`}
           >
             {toast.mensaje}
@@ -248,15 +247,15 @@ export default function Vehiculos() {
               <div className="flex items-center gap-3">
                 <AlertTriangle className="text-yellow-400" />
                 <h2 className="text-xl font-semibold">
-                  {confirmacion.tipo === "eliminar"
-                    ? "¿Eliminar vehículo?"
-                    : "¿Exportar vehículos?"}
+                  {confirmacion.tipo === 'eliminar'
+                    ? '¿Eliminar vehículo?'
+                    : '¿Exportar vehículos?'}
                 </h2>
               </div>
               <p>
-                {confirmacion.tipo === "eliminar"
-                  ? "Esta acción no se puede deshacer."
-                  : "Se descargará un archivo CSV."}
+                {confirmacion.tipo === 'eliminar'
+                  ? 'Esta acción no se puede deshacer.'
+                  : 'Se descargará un archivo CSV.'}
               </p>
               <div className="flex justify-end gap-3">
                 <button
@@ -267,7 +266,7 @@ export default function Vehiculos() {
                 </button>
                 <button
                   onClick={
-                    confirmacion.tipo === "eliminar"
+                    confirmacion.tipo === 'eliminar'
                       ? confirmarEliminar
                       : confirmarExportar
                   }
@@ -294,42 +293,29 @@ export default function Vehiculos() {
         className="bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-3xl mx-auto mb-8"
       >
         <div className="flex items-center gap-2 mb-4">
-          <PlusCircle className="text-green-400" />
-          <h2 className="text-xl font-semibold">
-            {modoEdicion ? "Editar Vehiculo" : "Agregar Vehiculo"}
-          </h2>
-        </div>
+    <PlusCircle className="text-green-400" />
+    <h2 className="text-xl font-semibold">
+      {modoEdicion ? 'Editar Vehiculo' : 'Agregar Vehiculo'}
+    </h2>
+  </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <select
+          <input
+            type="text"
+            placeholder="Marca *"
             value={marca}
-            onChange={(e) => {
-              setMarca(e.target.value);
-              setModelo(""); // Reiniciamos el modelo al cambiar la marca
-            }}
+            onChange={(e) => setMarca(e.target.value)}
             className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
-          >
-            <option value="">Seleccionar marca</option>
-            {Object.keys(opcionesVehiculos).map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-
-          <select
+            required
+          />
+          <input
+            type="text"
+            placeholder="Modelo *"
             value={modelo}
             onChange={(e) => setModelo(e.target.value)}
             className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
-            disabled={!marca}
-          >
-            <option value="">Seleccionar modelo</option>
-            {modelosDisponibles.map((mod) => (
-              <option key={mod} value={mod}>
-                {mod}
-              </option>
-            ))}
-          </select>
+            required
+          />
           <input
             type="text"
             placeholder="Patente *"
@@ -352,7 +338,7 @@ export default function Vehiculos() {
             onChange={(e) => setTipo(e.target.value)}
             className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
           />
-          {/* <input
+          <input
             type="number"
             placeholder="Precio de Venta"
             value={precioVenta}
@@ -360,43 +346,39 @@ export default function Vehiculos() {
             className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
             min="0"
             step="any"
-          /> */}
-        </div>
-        <select
-          value={etiqueta}
-          onChange={(e) => setEtiqueta(e.target.value)}
-          className="w-full p-3 rounded bg-slate-700 border border-slate-600 text-white mb-6 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
-        >
-          <option value="">Seleccionar Etiqueta</option>
-          <option value="Nuevo">0KM</option>
-          <option value="Usado">Usado</option>
-          <option value="Reparación">Reparación</option>
-          <option value="Vendido">Vendido</option>
-        </select>
+          />
+          </div>
+          <select
+            value={etiqueta}
+            onChange={(e) => setEtiqueta(e.target.value)}
+            className="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none text-white mb-6 focus:ring-2 focus:ring-indigo-400 col-span-1"
+          >
+            <option value="">Etiqueta</option>
+            <option value="Nuevo">Nuevo</option>
+            <option value="Usado">Usado</option>
+            <option value="Reparación">Reparación</option>
+            <option value="Vendido">Vendido</option>
+          </select>
+        
 
         <div className="flex gap-4">
-          <button
-            onClick={guardarVehiculo}
-            className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-lg transition flex-1
-        ${
-          modoEdicion
-            ? "bg-green-600 hover:bg-green-700"
-            : "bg-indigo-700 hover:bg-indigo-800"
-        }`}
-          >
-            <PlusCircle size={18} />{" "}
-            {modoEdicion ? "Actualizar" : "Agregar Cliente"}
-          </button>
+    <button
+    type="submit"
+      className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-lg transition flex-1
+        ${modoEdicion ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-700 hover:bg-indigo-800'}`}
+    >
+      <PlusCircle size={18} /> {modoEdicion ? 'Actualizar' : 'Agregar Cliente'}
+    </button>
 
-          {modoEdicion && (
-            <button
-              onClick={cancelarEdicion}
-              className="flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition flex-1"
-            >
-              Cancelar
-            </button>
-          )}
-        </div>
+    {modoEdicion && (
+      <button
+        onClick={cancelarEdicion}
+        className="flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition flex-1"
+      >
+        Cancelar
+      </button>
+    )}
+  </div>
       </motion.form>
 
       {/* Filtros y exportar */}
@@ -412,7 +394,7 @@ export default function Vehiculos() {
           />
           {busqueda && (
             <button
-              onClick={() => setBusqueda("")}
+              onClick={() => setBusqueda('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-600 transition"
               aria-label="Limpiar búsqueda"
             >
@@ -427,7 +409,7 @@ export default function Vehiculos() {
           onChange={(e) => setFiltroEtiqueta(e.target.value)}
         >
           <option value="">Todas las etiquetas</option>
-          <option value="Nuevo">0KM</option>
+          <option value="Nuevo">Nuevo</option>
           <option value="Usado">Usado</option>
           <option value="Reparación">Reparación</option>
           <option value="Vendido">Vendido</option>
@@ -444,60 +426,57 @@ export default function Vehiculos() {
       </div>
 
       {/* Listado paginado */}
-
-      <div className="space-y-3 max-w-3xl mx-auto">
-        {vehiculosPaginados.length === 0 ? (
-          <p className="text-center text-slate-400">
-            No hay vehículos para mostrar.
+      
+      
+            <div className="space-y-3 max-w-3xl mx-auto">
+  {vehiculos.length === 0 ? (
+    <p className="text-center text-slate-400">No hay vehículos que coincidan.</p>
+  ) : (
+    vehiculos.map((vehiculo) => (
+      <motion.div
+        key={vehiculo.id}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className="bg-slate-700 p-4 rounded-xl shadow-md flex justify-between items-center"
+      >
+        <div>
+          <p className="text-lg font-semibold">
+            {vehiculo.marca} {vehiculo.modelo}
           </p>
-        ) : (
-          vehiculosPaginados.map((v) => (
-            <motion.div
-              key={v.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="bg-slate-700 p-4 rounded-xl shadow-md flex justify-between items-center"
+          <p className="text-sm text-slate-300">
+            Patente: {vehiculo.patente || '-'} · Estado: {vehiculo.estado || '-'} · Tipo: {vehiculo.tipo || '-'}
+          </p>
+          {vehiculo.etiqueta && (
+            <p
+              className={`text-xs inline-block mt-1 px-2 py-1 rounded-full text-white ${colorEtiqueta(vehiculo.etiqueta)}`}
             >
-              <div>
-                <p className="text-lg font-semibold">
-                  {v.marca} {v.modelo}
-                </p>
-                <p className="text-sm text-slate-300">
-                  Patente: <span className="uppercase">{v.patente}</span> ·
-                  Estado: {v.estado || "-"} · Tipo: {v.tipo || "-"} · Precio: $
-                  {v.precioVenta?.toLocaleString() || "-"}
-                </p>
-                {v.etiqueta && (
-                  <p
-                    className={`text-xs inline-block mt-1 px-2 py-1 rounded-full text-white ${colorEtiqueta(
-                      v.etiqueta
-                    )}`}
-                  >
-                    {v.etiqueta}
-                  </p>
-                )}
-              </div>
-              <div className="flex gap-3 items-center">
-                <button
-                  onClick={() => editarVehiculo(v)}
-                  className="text-indigo-300 hover:text-indigo-500"
-                  aria-label="Editar vehículo"
-                >
-                  <Pencil />
-                </button>
-                <button
-                  onClick={() => eliminarVehiculo(v.id)}
-                  className="text-red-400 hover:text-red-600"
-                  aria-label="Eliminar vehículo"
-                >
-                  <Trash2 />
-                </button>
-              </div>
-            </motion.div>
-          ))
-        )}
-      </div>
+              {vehiculo.etiqueta}
+            </p>
+          )}
+        </div>
+
+        {/* Botones de acción */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => editarVehiculo(vehiculo)}
+            className="text-indigo-300 hover:text-indigo-500"
+            aria-label="Editar vehículo"
+          >
+            <Pencil />
+          </button>
+          <button
+            onClick={() => eliminarVehiculo(vehiculo.id)}
+            className="text-red-400 hover:text-red-600"
+            aria-label="Eliminar vehículo"
+          >
+            <Trash2 />
+          </button>
+        </div>
+      </motion.div>
+    ))
+  )}
+</div>
 
       {/* Paginación */}
       <div className="max-w-3xl mx-auto flex justify-between items-center mt-4 text-indigo-300 select-none">

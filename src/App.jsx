@@ -7,6 +7,9 @@ import Vehiculos from './pages/Vehiculos';
 import Ventas from './pages/Ventas';
 import Admin from './pages/AgregarUsuario';
 import Navbar from './components/Navbar';
+import Perfil from './pages/Perfil';
+import { Toaster } from 'react-hot-toast';
+import NuevoPresupuesto from './pages/Presupuestos';
 
 function PrivateRoute({ children, role }) {
   const { usuario, loading } = useAuth();
@@ -23,6 +26,7 @@ function PrivateRoute({ children, role }) {
 
 export default function App() {
   return (
+    <>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -40,6 +44,8 @@ export default function App() {
                   <Route path="clientes" element={<Clientes />} />
                   <Route path="vehiculos" element={<Vehiculos />} />
                   <Route path="ventas" element={<Ventas />} />
+                  <Route path="perfil" element={<Perfil />} />
+                  <Route path="presupuestos" element={<NuevoPresupuesto />} />
                   <Route
                     path="admin"
                     element={
@@ -60,6 +66,8 @@ export default function App() {
         
       </BrowserRouter>
     </AuthProvider>
+    <Toaster position="top-center" />
+    </>
     
   );
 }

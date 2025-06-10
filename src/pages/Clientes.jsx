@@ -334,7 +334,7 @@ const generarLinkWhatsApp = (numero) => {
     <input
       type="email"
       placeholder="Email"
-      className={`p-3 rounded bg-slate-700 border ${
+      className={`p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1 ${
         errorEmail ? 'border-red-500 focus:ring-red-500' : 'border-slate-600 focus:ring-indigo-400'
       } text-white col-span-1`}
       value={email}
@@ -356,7 +356,7 @@ const generarLinkWhatsApp = (numero) => {
   </div>
 
   <select
-    className="w-full p-3 rounded bg-slate-700 border border-slate-600 text-white mb-6"
+    className="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none text-white mb-6 focus:ring-2 focus:ring-indigo-400 col-span-1"
     value={etiqueta}
     onChange={(e) => setEtiqueta(e.target.value)}
   >
