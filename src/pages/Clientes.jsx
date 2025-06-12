@@ -22,6 +22,9 @@ import {
   CheckCircle,
   MessageCircle,
   AlertTriangle,
+   Truck,
+   Car,
+   Plus,
 } from 'lucide-react';
 
 export default function Clientes() {
@@ -29,6 +32,7 @@ export default function Clientes() {
 const [direccion, setDireccion] = useState('');
 const [localidad, setLocalidad] = useState('');
   const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
   const [etiqueta, setEtiqueta] = useState('');
@@ -44,6 +48,39 @@ const [localidad, setLocalidad] = useState('');
   const [pagina, setPagina] = useState(1);
   const itemsPorPagina = 10;
 
+
+const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+const [vehiculosDisponibles, setVehiculosDisponibles] = useState([]);
+const [vehiculosSeleccionados, setVehiculosSeleccionados] = useState([]);
+
+const abrirAsignarVehiculo = async (cliente) => {
+  setClienteSeleccionado(cliente);
+
+  const q = query(collection(db, 'vehiculos'), where('clienteId', '==', null));
+  const snapshot = await getDocs(q);
+  const disponibles = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  setVehiculosDisponibles(disponibles);
+  setVehiculosSeleccionados([]);
+};
+
+const asignarVehiculos = async () => {
+  try {
+    const updates = vehiculosSeleccionados.map((vehiculoId) =>
+      updateDoc(doc(db, 'vehiculos', vehiculoId), {
+        clienteId: clienteSeleccionado.id,
+      })
+    );
+
+    await Promise.all(updates);
+    mostrarToast('Vehículos asignados con éxito');
+    setClienteSeleccionado(null);
+    setVehiculosSeleccionados([]);
+  } catch (error) {
+    console.error(error);
+    mostrarToast('Error al asignar vehículos', 'error');
+  }
+};
+
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'clientes'), (snapshot) => {
       const lista = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -54,6 +91,7 @@ const [localidad, setLocalidad] = useState('');
 
   const limpiarFormulario = () => {
     setNombre('');
+    setApellido('');
     setEmail('');
     setTelefono('');
     setEtiqueta('');
@@ -72,7 +110,7 @@ setLocalidad('');
   const validarEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const guardarCliente = async () => {
-  if (!nombre || !email || !telefono || !dni) {
+  if (!nombre || !apellido || !email || !telefono || !dni) {
     mostrarToast('Todos los campos son obligatorios', 'error');
     return;
   }
@@ -107,6 +145,7 @@ setLocalidad('');
      if (modoEdicion) {
       await updateDoc(doc(db, 'clientes', idEditar), {
         nombre,
+        apellido,
         email,
         telefono,
         etiqueta,
@@ -118,6 +157,7 @@ setLocalidad('');
     } else {
       await addDoc(collection(db, 'clientes'), {
         nombre,
+        apellido,
         email,
         telefono,
         etiqueta,
@@ -153,6 +193,7 @@ setLocalidad('');
   const cancelarEdicion = () => {
     setModoEdicion(false);
     setNombre('');
+    setApellido('');
     setEmail('');
     setTelefono('');
     setEtiqueta('');
@@ -163,6 +204,7 @@ setLocalidad('');
 
   const editarCliente = (cliente) => {
     setNombre(cliente.nombre);
+    setApellido(cliente.apellido);
     setEmail(cliente.email);
     setTelefono(cliente.telefono);
     setEtiqueta(cliente.etiqueta || '');
@@ -182,9 +224,10 @@ setLocalidad(cliente.localidad || '');
   };
 
   const confirmarExportar = () => {
-    const headers = ['Nombre', 'Email', 'Teléfono', 'Etiqueta'];
+    const headers = ['Nombre', 'Apellido', 'Email', 'Teléfono', 'Etiqueta'];
     const rows = clientes.map((cliente) => [
       cliente.nombre,
+      cliente.apellido,
       cliente.email,
       cliente.telefono,
       cliente.etiqueta || '',
@@ -333,6 +376,13 @@ const generarLinkWhatsApp = (numero) => {
       onChange={(e) => setNombre(e.target.value)}
     />
     <input
+      type="text"
+      placeholder="Apellido"
+      className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
+      value={apellido}
+      onChange={(e) => setApellido(e.target.value)}
+    />
+    <input
       type="number"
       placeholder="DNI"
       className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
@@ -421,7 +471,7 @@ const generarLinkWhatsApp = (numero) => {
     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 " />
     <input
       type="text"
-      placeholder="Buscar por nombre..."
+      placeholder="Buscar por Apellido/Nombre..."
       className="bg-slate-700 text-white py-3 pl-10 pr-10 w-full rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
       value={busqueda}
       onChange={(e) => {
@@ -483,7 +533,7 @@ const generarLinkWhatsApp = (numero) => {
               className="bg-slate-700 p-4 rounded-xl shadow-md flex justify-between items-center"
             >
               <div>
-                <p className="text-lg font-semibold">{cliente.nombre}</p>
+                <p className="text-lg font-semibold">{cliente.nombre} {cliente.apellido}</p>
                 <p className="text-sm text-slate-300">
                   {cliente.email} ·{' '}
 <a
@@ -512,6 +562,13 @@ const generarLinkWhatsApp = (numero) => {
                 >
                   <MessageCircle />
                 </a>
+                <button
+  onClick={() => abrirAsignarVehiculo(cliente)}
+  className="text-cyan-400 hover:text-cyan-600"
+  aria-label="Asignar vehículo"
+>
+  <Car />
+</button>
                 <button
                   onClick={() => editarCliente(cliente)}
                   className="text-indigo-300 hover:text-indigo-500"
@@ -552,6 +609,74 @@ const generarLinkWhatsApp = (numero) => {
           </button>
         </div>
       )}
+
+      <AnimatePresence>
+  {clienteSeleccionado && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50"
+    >
+      <motion.div
+        initial={{ scale: 0.9 }}
+        animate={{ scale: 1 }}
+        exit={{ scale: 0.9 }}
+        className="bg-slate-800 text-white rounded-xl p-6 w-full max-w-lg shadow-2xl"
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">
+            Asignar vehículos a {clienteSeleccionado.nombre}
+          </h2>
+          <button
+            onClick={() => setClienteSeleccionado(null)}
+            className="text-red-400 hover:text-red-600"
+          >
+            <XCircle />
+          </button>
+        </div>
+
+        <ul className="space-y-2 max-h-48 overflow-y-auto mb-4">
+          {vehiculosDisponibles.length === 0 ? (
+            <li className="text-slate-400 text-sm">No hay vehículos disponibles</li>
+          ) : (
+            vehiculosDisponibles.map((v) => (
+              <li
+                key={v.id}
+                className="flex items-center gap-2 bg-slate-700 rounded p-3 text-sm cursor-pointer hover:bg-slate-600"
+              >
+                <input
+                  type="checkbox"
+                  checked={vehiculosSeleccionados.includes(v.id)}
+                  onChange={(e) => {
+                    const seleccionados = [...vehiculosSeleccionados];
+                    if (e.target.checked) {
+                      seleccionados.push(v.id);
+                    } else {
+                      const i = seleccionados.indexOf(v.id);
+                      if (i > -1) seleccionados.splice(i, 1);
+                    }
+                    setVehiculosSeleccionados(seleccionados);
+                  }}
+                />
+                <span>{v.marca} {v.modelo} · {v.patente}</span>
+              </li>
+            ))
+          )}
+        </ul>
+
+        <button
+          onClick={asignarVehiculos}
+          disabled={vehiculosSeleccionados.length === 0}
+          className="bg-indigo-700 hover:bg-indigo-800 w-full py-2 rounded text-white disabled:opacity-50"
+        >
+          Asignar seleccionados
+        </button>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
     </div>
   );
 }

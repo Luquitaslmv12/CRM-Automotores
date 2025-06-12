@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
+import BuscadorCliente from '../components/BuscadorCliente';
 import {
   Truck,
   Pencil,
@@ -20,6 +21,7 @@ import {
   CheckCircle,
   AlertTriangle,
 } from 'lucide-react';
+
 
 export default function Vehiculos() {
   const [marca, setMarca] = useState('');
@@ -40,13 +42,31 @@ export default function Vehiculos() {
   const [pagina, setPagina] = useState(1);
   const itemsPorPagina = 10;
 
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'vehiculos'), (snapshot) => {
-      const lista = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setVehiculos(lista);
-    });
-    return () => unsubscribe();
-  }, []);
+  const [clientes, setClientes] = useState([]);
+const [clienteId, setClienteId] = useState('');
+const [queryCliente, setQueryCliente] = useState('');
+
+
+
+useEffect(() => {
+  const unsubscribe = onSnapshot(collection(db, 'vehiculos'), (snapshot) => {
+    const lista = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    setVehiculos(lista);
+  });
+
+  const unsubClientes = onSnapshot(collection(db, 'clientes'), (snapshot) => {
+    const lista = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    setClientes(lista);
+  });
+
+  return () => {
+    unsubscribe();
+    unsubClientes();
+  };
+}, []);
+
+
+
 
   const limpiarFormulario = () => {
     setMarca('');
@@ -55,9 +75,11 @@ export default function Vehiculos() {
     setEstado('');
     setTipo('');
     setPrecioVenta('');
+    setClienteId('');
     setEtiqueta('');
     setModoEdicion(false);
     setIdEditar(null);
+    setQueryCliente('');
   };
 
   const mostrarToast = (mensaje, tipo = 'ok') => {
@@ -84,27 +106,29 @@ export default function Vehiculos() {
   try {
     if (modoEdicion) {
       await updateDoc(doc(db, 'vehiculos', idEditar), {
-        marca,
-        modelo,
-        patente,
-        estado,
-        tipo,
-        precioVenta: Number(precioVenta) || 0,
-        etiqueta,
-      });
-      mostrarToast('Vehículo actualizado');
-    } else {
-      await addDoc(collection(db, 'vehiculos'), {
-        marca,
-        modelo,
-        patente,
-        estado,
-        tipo,
-        precioVenta: Number(precioVenta) || 0,
-        etiqueta,
-        fechaRegistro: new Date(),
-      });
-      mostrarToast('Vehículo agregado');
+    marca,
+    modelo,
+    patente,
+    estado,
+    tipo,
+    precioVenta: Number(precioVenta) || 0,
+    etiqueta,
+    clienteId: clienteId || null,
+  });
+  mostrarToast('Vehículo actualizado');
+} else {
+  await addDoc(collection(db, 'vehiculos'), {
+    marca,
+    modelo,
+    patente,
+    estado,
+    tipo,
+    precioVenta: Number(precioVenta) || 0,
+    etiqueta,
+    fechaRegistro: new Date(),
+    clienteId: clienteId || null,
+  });
+  mostrarToast('Vehículo agregado');
     }
     limpiarFormulario();
   } catch (err) {
@@ -141,6 +165,7 @@ export default function Vehiculos() {
     setEstado(vehiculo.estado || '');
     setTipo(vehiculo.tipo || '');
     setPrecioVenta(vehiculo.precioVenta ? vehiculo.precioVenta.toString() : '');
+    setClienteId(vehiculo.clienteId || '');
     setEtiqueta(vehiculo.etiqueta || '');
     setIdEditar(vehiculo.id);
     setModoEdicion(true);
@@ -347,6 +372,8 @@ export default function Vehiculos() {
             min="0"
             step="any"
           />
+       <BuscadorCliente value={clienteId} onChange={setClienteId} />
+   
           </div>
           <select
             value={etiqueta}
@@ -447,6 +474,14 @@ export default function Vehiculos() {
           <p className="text-sm text-slate-300">
             Patente: {vehiculo.patente || '-'} · Estado: {vehiculo.estado || '-'} · Tipo: {vehiculo.tipo || '-'}
           </p>
+          {vehiculo.clienteId && (
+  <p className="text-xs text-indigo-300 mt-1">
+    Cliente:{' '}
+{clientes.find((c) => c.id === vehiculo.clienteId)
+  ? `${clientes.find((c) => c.id === vehiculo.clienteId).nombre} ${clientes.find((c) => c.id === vehiculo.clienteId).apellido}`
+  : 'Sin asignar'}
+  </p>
+)}
           {vehiculo.etiqueta && (
             <p
               className={`text-xs inline-block mt-1 px-2 py-1 rounded-full text-white ${colorEtiqueta(vehiculo.etiqueta)}`}

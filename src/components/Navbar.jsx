@@ -201,6 +201,13 @@ export default function Navbar() {
               >
                 Ventas
               </Link>
+              <Link
+                to="/presupuestos"
+                className={linkClase('/presupuestos')}
+                onClick={handleLinkClick}
+              >
+                Ventas
+              </Link>
               {usuario?.rol === 'admin' && (
                 <Link
                   to="/admin"
