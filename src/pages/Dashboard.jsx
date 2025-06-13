@@ -11,6 +11,10 @@ import {
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import CardClientesMorosos from "../components/Cards/CardClientesMorosos";
+import CardVehiculosNuevos from "../components/Cards/CardVehiculosNuevos";
+import CardVehiculosUsados from "../components/Cards/CardVehiculosUsados";
+import CardVehiculosReparacion from "../components/Cards/CardVehiculosReparacion";
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -121,6 +125,9 @@ export default function Dashboard() {
               value: formatCurrency(stats.ventas),
               icon: <DollarSign className="text-indigo-600 w-8 h-8" />,
             },
+            
+              
+            
           ].map((card, i) => (
             <motion.div
               key={i}
@@ -135,9 +142,15 @@ export default function Dashboard() {
               </div>
               <p className="text-gray-700 dark:text-gray-300 text-lg pl-12">{card.value}</p>
             </motion.div>
+            
           ))}
         </main>
+        <CardClientesMorosos />
+        <CardVehiculosNuevos />
+        <CardVehiculosUsados />
+        <CardVehiculosReparacion />
       </div>
+      
     </div>
   );
 }

@@ -181,7 +181,7 @@ useEffect(() => {
 
   const confirmarExportar = () => {
     const headers = ['Marca', 'Modelo', 'Patente', 'Estado', 'Tipo', 'Precio Venta', 'Etiqueta'];
-    const rows = vehiculos.map((v) => [
+    const rows = vehiculosPaginados.map((v) => [
       v.marca,
       v.modelo,
       v.patente,
@@ -459,7 +459,7 @@ useEffect(() => {
   {vehiculos.length === 0 ? (
     <p className="text-center text-slate-400">No hay vehículos que coincidan.</p>
   ) : (
-    vehiculos.map((vehiculo) => (
+    vehiculosPaginados.map((vehiculo) => (
       <motion.div
         key={vehiculo.id}
         initial={{ opacity: 0, scale: 0.95 }}

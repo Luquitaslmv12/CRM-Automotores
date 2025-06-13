@@ -20,6 +20,7 @@ export function AuthProvider({ children }) {
     const auth = getAuth();
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('Auth state changed:', user?.email);
       if (user) {
         // Traer info extra de Firestore
         const docRef = doc(db, 'usuarios', user.uid);

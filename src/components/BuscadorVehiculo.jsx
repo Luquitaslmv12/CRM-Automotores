@@ -26,7 +26,7 @@ export default function BuscadorVehiculo({ value, onChange }) {
   const vehiculoSeleccionado = vehiculos.find((v) => v.id === value);
 
   return (
-    <Combobox value={value} onChange={onChange}>
+    <Combobox value={value} onChange={onChange} >
       <div className="relative mb-6">
         <Car className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 w-5 h-5" />
         <ComboboxInput

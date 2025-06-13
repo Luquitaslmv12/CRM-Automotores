@@ -23,6 +23,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { NumericFormat } from "react-number-format";
+import Listaventas from "../components/ListaVentas";
 
 export default function NuevaVenta() {
   const [clienteId, setClienteId] = useState("");
@@ -34,6 +35,12 @@ export default function NuevaVenta() {
   const [pagosMultiples, setPagosMultiples] = useState(false);
   const [pagos, setPagos] = useState([{ metodo: "", monto: "" }]);
   const [errores, setErrores] = useState({});
+
+  const [fechaVenta, setFechaVenta] = useState(() => {
+  const hoy = new Date();
+  return hoy.toISOString().split("T")[0]; // formato YYYY-MM-DD
+});
+
 
   // Obtener info del cliente seleccionado
   useEffect(() => {
@@ -95,12 +102,12 @@ export default function NuevaVenta() {
 
     try {
       await addDoc(collection(db, "ventas"), {
-        clienteId,
-        vehiculoId,
-        monto: parseFloat(monto),
-        pagos: pagosMultiples ? pagosProcesados : [],
-        fecha: Timestamp.now(),
-      });
+  clienteId,
+  vehiculoId,
+  monto: parseFloat(monto),
+  pagos: pagosMultiples ? pagosProcesados : [],
+  fecha: Timestamp.fromDate(new Date(fechaVenta)),
+});
 
       await updateDoc(doc(db, "vehiculos", vehiculoId), {
         estado: "Vendido",
@@ -142,7 +149,6 @@ export default function NuevaVenta() {
       <h1 className="text-4xl font-bold mb-6 text-center">Ventas</h1>
 
 
-      <Toaster position="top-right" />
       <motion.form
         onSubmit={handleSubmit}
         initial={{ opacity: 0, y: 20 }}
@@ -150,10 +156,22 @@ export default function NuevaVenta() {
         transition={{ duration: 0.4 }}
         className="bg-slate-800 p-6 rounded-2xl shadow-xl w-xl max-w-3xl mx-auto mb-8"
       >
+        
         <div className="flex items-center gap-2 mb-4">
           <ShoppingCart size={28} className="text-green-400" />
           <h2 className="text-xl font-semibold">Registrar Nueva Venta</h2>
         </div>
+
+        <div className="mb-4">
+  <label className="block mb-1 text-sm font-medium text-white">
+  </label>
+  <input
+    type="date"
+    value={fechaVenta}
+    onChange={(e) => setFechaVenta(e.target.value)}
+    className="w-full p-3 rounded bg-slate-700 text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+  />
+</div>
 
         {/* Cliente */}
         <div className="relative">
@@ -161,8 +179,11 @@ export default function NuevaVenta() {
         </div>
 
         {/* Vehículo */}
-        <div className="relative">
-          <BuscadorVehiculo value={vehiculoId} onChange={setVehiculoId} />
+        <div className="relative ">
+          <BuscadorVehiculo value={vehiculoId} onChange={setVehiculoId} className={`relative rounded ${
+    errores.vehiculoId ? "border-2 border-red-500" : "border border-transparent"
+  }`} />
+            
         </div>
 
         {/* Monto total */}
@@ -254,6 +275,7 @@ export default function NuevaVenta() {
           <BadgeDollarSign size={28} /> Registrar venta
         </button>
       </motion.form>
+      <Listaventas />
       </div>
     </>
     

@@ -53,7 +53,7 @@ export default function BuscadorCliente({ value, onChange }) {
                   `cursor-pointer px-4 py-2 ${active ? 'bg-indigo-600 text-white' : 'text-white'}`
                 }
               >
-                {c.nombre} {c.apellido}
+                {c.nombre} {c.apellido} - DNI {c.dni}
               </ComboboxOption>
             ))
           )}
