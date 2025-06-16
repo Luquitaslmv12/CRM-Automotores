@@ -33,17 +33,20 @@ export default function Navbar() {
     };
   }, [menuUsuarioAbierto]);
 
+  // Para cerrar menú al navegar
   const handleLinkClick = () => {
     setMenuAbierto(false);
     setMenuUsuarioAbierto(false);
   };
 
+  // Función logout Firebase
   const logout = async () => {
     const auth = getAuth();
     await signOut(auth);
     setMenuUsuarioAbierto(false);
   };
 
+  // Clases para link activo
   const linkClase = (ruta) =>
     `block px-3 py-2 rounded-md font-medium ${
       location.pathname === ruta
@@ -53,10 +56,10 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-indigo-800/60 fixed top-0 left-0 right-0 z-50 shadow-md overflow-x-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-hidden">
+      <nav className="bg-indigo-800/60 fixed top-0 left-0 right-0 z-50 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-14 items-center">
-            {/* Logo / Branding */}
+            {/* Logo */}
             <div className="flex-shrink-0">
               <Link
                 to="/dashboard"
@@ -67,7 +70,7 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Menu Desktop */}
+            {/* Menú Desktop */}
             <div className="hidden md:flex space-x-4 items-center">
               <Link to="/dashboard" className={linkClase('/dashboard')}>
                 Dashboard
@@ -91,17 +94,17 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Sección usuario con dropdown */}
+            {/* Usuario Desktop */}
             {usuario && (
-              <div className="relative max-w-[150px]" ref={userMenuRef}>
+              <div className="relative max-w-[150px] hidden md:block" ref={userMenuRef}>
                 <button
                   onClick={() => setMenuUsuarioAbierto((v) => !v)}
-                  className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded text-indigo-200 hover:text-white truncate"
+                  className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded text-indigo-200 hover:text-white"
                   aria-haspopup="true"
                   aria-expanded={menuUsuarioAbierto}
                 >
                   <Avatar usuario={usuario} size={32} />
-                  <span className="max-w-[100px] truncate">{usuario.nombre || usuario.email}</span>
+                  <span className="max-w-xs truncate">{usuario.nombre || usuario.email}</span>
                   <svg
                     className={`w-4 h-4 text-indigo-300 transform transition-transform duration-200 ${
                       menuUsuarioAbierto ? 'rotate-180' : ''
@@ -148,8 +151,65 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* Botón menú hamburguesa móvil */}
-            <div className="md:hidden">
+            {/* Usuario + Botón hamburguesa móvil */}
+            <div className="flex md:hidden items-center space-x-4">
+              {usuario && (
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setMenuUsuarioAbierto((v) => !v)}
+                    className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded text-indigo-200 hover:text-white truncate max-w-[120px]"
+                    aria-haspopup="true"
+                    aria-expanded={menuUsuarioAbierto}
+                  >
+                    <Avatar usuario={usuario} size={32} />
+                    <span className="truncate">{usuario.nombre || usuario.email}</span>
+                    <svg
+                      className={`w-4 h-4 text-indigo-300 transform transition-transform duration-200 ${
+                        menuUsuarioAbierto ? 'rotate-180' : ''
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  <AnimatePresence>
+                    {menuUsuarioAbierto && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                        role="menu"
+                        aria-orientation="vertical"
+                        aria-labelledby="user-menu"
+                      >
+                        <Link
+                          to="/perfil"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-600 hover:text-white"
+                          role="menuitem"
+                          onClick={() => setMenuUsuarioAbierto(false)}
+                        >
+                          <User className="w-4 h-4 mr-2" /> Perfil
+                        </Link>
+                        <button
+                          onClick={logout}
+                          className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-600 hover:text-white"
+                          role="menuitem"
+                        >
+                          <LogOut className="w-4 h-4 mr-2" /> Cerrar sesión
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {/* Botón menú hamburguesa móvil */}
               <button
                 onClick={() => setMenuAbierto((v) => !v)}
                 className="text-indigo-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white rounded-md"
@@ -164,7 +224,7 @@ export default function Navbar() {
 
         {/* Menú móvil desplegable */}
         {menuAbierto && (
-          <div className="md:hidden border-t border-indigo-700 overflow-x-hidden">
+          <div className="md:hidden border-t border-indigo-700">
             <div className="px-2 pt-2 pb-3 space-y-1">
               <Link
                 to="/dashboard"
