@@ -71,10 +71,11 @@ export default function ListaPresupuestos() {
       const enriquecidos = listaPresupuestos.map((p) => {
   const cliente = listaClientes.find((c) => c.id === p.clienteId);
   const vehiculo = listaVehiculos.find((v) => v.id === p.vehiculoId);
+
   return {
     ...p,
     clienteNombre: cliente ? cliente.nombre : "Cliente no encontrado",
-    clienteApellido: cliente ? cliente.apellido : "",
+    clienteApellido: cliente?.apellido || "",
     dniCliente: cliente?.dni || "",
     vehiculoInfo: vehiculo
       ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
@@ -83,6 +84,8 @@ export default function ListaPresupuestos() {
     fechaObj: p.fecha?.toDate ? p.fecha.toDate() : new Date(),
   };
 });
+
+
 
       setPresupuestos(enriquecidos);
       setLoading(false);

@@ -27,6 +27,7 @@ export default function Vehiculos() {
   const [marca, setMarca] = useState('');
   const [modelo, setModelo] = useState('');
   const [patente, setPatente] = useState('');
+  const [año, setAño] = useState('');
   const [estado, setEstado] = useState('');
   const [tipo, setTipo] = useState('');
   const [precioVenta, setPrecioVenta] = useState('');
@@ -72,6 +73,7 @@ useEffect(() => {
     setMarca('');
     setModelo('');
     setPatente('');
+    setAño('');
     setEstado('');
     setTipo('');
     setPrecioVenta('');
@@ -109,6 +111,7 @@ useEffect(() => {
     marca,
     modelo,
     patente,
+    año,
     estado,
     tipo,
     precioVenta: Number(precioVenta) || 0,
@@ -121,6 +124,7 @@ useEffect(() => {
     marca,
     modelo,
     patente,
+    año,
     estado,
     tipo,
     precioVenta: Number(precioVenta) || 0,
@@ -162,6 +166,7 @@ useEffect(() => {
     setMarca(vehiculo.marca || '');
     setModelo(vehiculo.modelo || '');
     setPatente(vehiculo.patente || '');
+    setAño(vehiculo.año || '');
     setEstado(vehiculo.estado || '');
     setTipo(vehiculo.tipo || '');
     setPrecioVenta(vehiculo.precioVenta ? vehiculo.precioVenta.toString() : '');
@@ -185,6 +190,7 @@ useEffect(() => {
       v.marca,
       v.modelo,
       v.patente,
+      v.anio,
       v.estado || '',
       v.tipo || '',
       v.precioVenta || '',
@@ -351,6 +357,14 @@ useEffect(() => {
           />
           <input
             type="text"
+            placeholder="año *"
+            value={año}
+            onChange={(e) => setAño(e.target.value)}
+            className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
+            required
+          />
+          <input
+            type="text"
             placeholder="Estado"
             value={estado}
             onChange={(e) => setEstado(e.target.value)}
@@ -372,9 +386,8 @@ useEffect(() => {
             min="0"
             step="any"
           />
-       <BuscadorCliente value={clienteId} onChange={setClienteId} />
    
-          </div>
+          
           <select
             value={etiqueta}
             onChange={(e) => setEtiqueta(e.target.value)}
@@ -386,7 +399,10 @@ useEffect(() => {
             <option value="Reparación">Reparación</option>
             <option value="Vendido">Vendido</option>
           </select>
-        
+
+          <BuscadorCliente value={clienteId} onChange={setClienteId} />
+
+        </div>
 
         <div className="flex gap-4">
     <button

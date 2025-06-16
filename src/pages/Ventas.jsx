@@ -180,9 +180,7 @@ export default function NuevaVenta() {
 
         {/* Vehículo */}
         <div className="relative ">
-          <BuscadorVehiculo value={vehiculoId} onChange={setVehiculoId} className={`relative rounded ${
-    errores.vehiculoId ? "border-2 border-red-500" : "border border-transparent"
-  }`} />
+          <BuscadorVehiculo value={vehiculoId} onChange={setVehiculoId}  />
             
         </div>
 
@@ -191,8 +189,8 @@ export default function NuevaVenta() {
           <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500" size={20} />
           <NumericFormat
             value={monto}
-            onValueChange={({ formattedValue }) => {
-              setMonto(formattedValue);
+            onValueChange={({ floatValue }) => {
+              setMonto(floatValue);
               setErrores((prev) => ({ ...prev, monto: false }));
             }}
             thousandSeparator="."
