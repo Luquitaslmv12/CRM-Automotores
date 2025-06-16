@@ -206,7 +206,7 @@ export default function Navbar() {
                 className={linkClase('/presupuestos')}
                 onClick={handleLinkClick}
               >
-                Ventas
+                Presupuestos
               </Link>
               {usuario?.rol === 'admin' && (
                 <Link
