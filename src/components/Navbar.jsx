@@ -15,38 +15,35 @@ export default function Navbar() {
   const userMenuRef = useRef(null);
 
   useEffect(() => {
-  function handleClickOutside(event) {
-    if (
-      userMenuRef.current &&
-      !userMenuRef.current.contains(event.target)
-    ) {
-      setMenuUsuarioAbierto(false);
+    function handleClickOutside(event) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target)
+      ) {
+        setMenuUsuarioAbierto(false);
+      }
     }
-  }
 
-  if (menuUsuarioAbierto) {
-    document.addEventListener('mousedown', handleClickOutside);
-  }
+    if (menuUsuarioAbierto) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
 
-  return () => {
-    document.removeEventListener('mousedown', handleClickOutside);
-  };
-}, [menuUsuarioAbierto]);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuUsuarioAbierto]);
 
-  // Para cerrar menú al navegar
   const handleLinkClick = () => {
     setMenuAbierto(false);
     setMenuUsuarioAbierto(false);
   };
 
-  // Función logout Firebase
   const logout = async () => {
     const auth = getAuth();
     await signOut(auth);
     setMenuUsuarioAbierto(false);
   };
 
-  // Clases para link activo
   const linkClase = (ruta) =>
     `block px-3 py-2 rounded-md font-medium ${
       location.pathname === ruta
@@ -56,8 +53,8 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="bg-indigo-800/60 fixed top-0 left-0 right-0 z-50 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="bg-indigo-800/60 fixed top-0 left-0 right-0 z-50 shadow-md overflow-x-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-hidden">
           <div className="flex justify-between h-14 items-center">
             {/* Logo / Branding */}
             <div className="flex-shrink-0">
@@ -92,68 +89,64 @@ export default function Navbar() {
                   Admin
                 </Link>
               )}
-
-
             </div>
 
-
-              {/* Sección usuario con dropdown */}
-              {usuario && (
-                <div className="relative" ref={userMenuRef}>
-                  <button
-                    onClick={() => setMenuUsuarioAbierto((v) => !v)}
-                    className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded text-indigo-200 hover:text-white"
-                    aria-haspopup="true"
-                    aria-expanded={menuUsuarioAbierto}
+            {/* Sección usuario con dropdown */}
+            {usuario && (
+              <div className="relative max-w-[150px]" ref={userMenuRef}>
+                <button
+                  onClick={() => setMenuUsuarioAbierto((v) => !v)}
+                  className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded text-indigo-200 hover:text-white truncate"
+                  aria-haspopup="true"
+                  aria-expanded={menuUsuarioAbierto}
+                >
+                  <Avatar usuario={usuario} size={32} />
+                  <span className="max-w-[100px] truncate">{usuario.nombre || usuario.email}</span>
+                  <svg
+                    className={`w-4 h-4 text-indigo-300 transform transition-transform duration-200 ${
+                      menuUsuarioAbierto ? 'rotate-180' : ''
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
                   >
-                    <Avatar usuario={usuario} size={32} />
-                    <span className="max-w-xs truncate">{usuario.nombre || usuario.email}</span>
-                    <svg
-                      className={`w-4 h-4 text-indigo-300 transform transition-transform duration-200 ${
-                        menuUsuarioAbierto ? 'rotate-180' : ''
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-                  <AnimatePresence>
-                    {menuUsuarioAbierto && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
-                        role="menu"
-                        aria-orientation="vertical"
-                        aria-labelledby="user-menu"
+                <AnimatePresence>
+                  {menuUsuarioAbierto && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                      role="menu"
+                      aria-orientation="vertical"
+                      aria-labelledby="user-menu"
+                    >
+                      <Link
+                        to="/perfil"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-600 hover:text-white"
+                        role="menuitem"
+                        onClick={() => setMenuUsuarioAbierto(false)}
                       >
-                        <Link
-                          to="/perfil"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-600 hover:text-white"
-                          role="menuitem"
-                          onClick={() => setMenuUsuarioAbierto(false)}
-                        >
-                          <User className="w-4 h-4 mr-2" /> Perfil
-                        </Link>
-                        <button
-                          onClick={logout}
-                          className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-600 hover:text-white"
-                          role="menuitem"
-                        >
-                          <LogOut className="w-4 h-4 mr-2" /> Cerrar sesión
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
-            
+                        <User className="w-4 h-4 mr-2" /> Perfil
+                      </Link>
+                      <button
+                        onClick={logout}
+                        className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-600 hover:text-white"
+                        role="menuitem"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" /> Cerrar sesión
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
 
             {/* Botón menú hamburguesa móvil */}
             <div className="md:hidden">
@@ -171,7 +164,7 @@ export default function Navbar() {
 
         {/* Menú móvil desplegable */}
         {menuAbierto && (
-          <div className="md:hidden border-t border-indigo-700">
+          <div className="md:hidden border-t border-indigo-700 overflow-x-hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">
               <Link
                 to="/dashboard"
