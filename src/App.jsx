@@ -1,16 +1,17 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Clientes from './pages/Clientes';
-import Vehiculos from './pages/Vehiculos';
-import Ventas from './pages/Ventas';
-import Admin from './pages/AgregarUsuario';
-import Navbar from './components/Navbar';
-import Perfil from './pages/Perfil';
-import { Toaster } from 'react-hot-toast';
-import NuevoPresupuesto from './pages/Presupuestos';
-import ProveedorDetalle from './pages/ProveedorDetalle';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Clientes from "./pages/Clientes";
+import Vehiculos from "./pages/Vehiculos";
+import Ventas from "./pages/Ventas";
+import Admin from "./pages/AgregarUsuario";
+import Navbar from "./components/Navbar";
+import Perfil from "./pages/Perfil";
+import { Toaster } from "react-hot-toast";
+import NuevoPresupuesto from "./pages/Presupuestos";
+import ProveedorDetalle from "./pages/ProveedorDetalle";
+import Proveedores from "./pages/Proveedores";
 
 function PrivateRoute({ children, role }) {
   const { usuario, loading } = useAuth();
@@ -28,48 +29,49 @@ function PrivateRoute({ children, role }) {
 export default function App() {
   return (
     <>
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/*"
-            element={
-              <PrivateRoute>
-                <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 min-h-screen">
-
-
-                <Navbar />
-                <Routes >
-                  <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="clientes" element={<Clientes />} />
-                  <Route path="vehiculos" element={<Vehiculos />} />
-                  <Route path="ventas" element={<Ventas />} />
-                  <Route path="perfil" element={<Perfil />} />
-                  <Route path="presupuestos" element={<NuevoPresupuesto />} />
-                  <Route path="proveedores/:id" element={<ProveedorDetalle />} />
-                  <Route
-                    path="admin"
-                    element={
-                      <PrivateRoute role="admin">
-                        <Admin />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route path="*" element={<Navigate to="/dashboard" />} />
-                </Routes>
-                </div>
-              </PrivateRoute>
-            }
-            
-          />
-          
-        </Routes>
-        
-      </BrowserRouter>
-    </AuthProvider>
-    <Toaster position="top-center" />
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/*"
+              element={
+                <PrivateRoute>
+                  <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 min-h-screen">
+                    <Navbar />
+                    <Routes>
+                      <Route path="dashboard" element={<Dashboard />} />
+                      <Route path="clientes" element={<Clientes />} />
+                      <Route path="vehiculos" element={<Vehiculos />} />
+                      <Route path="ventas" element={<Ventas />} />
+                      <Route path="perfil" element={<Perfil />} />
+                      <Route
+                        path="presupuestos"
+                        element={<NuevoPresupuesto />}
+                      />
+                      <Route
+                        path="proveedores/:id"
+                        element={<ProveedorDetalle />}
+                      />
+                      <Route path="proveedores" element={<Proveedores />} />
+                      <Route
+                        path="admin"
+                        element={
+                          <PrivateRoute role="admin">
+                            <Admin />
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route path="*" element={<Navigate to="/dashboard" />} />
+                    </Routes>
+                  </div>
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+      <Toaster position="top-center" />
     </>
-    
   );
 }

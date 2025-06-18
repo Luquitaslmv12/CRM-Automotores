@@ -138,9 +138,7 @@ export default function CardInteligenciaVentas() {
 
   const color = estado.arriba ? "text-green-600" : "text-red-600";
   const Icon = estado.arriba ? ArrowUpCircle : ArrowDownCircle;
-  const mensaje = estado.arriba
-    ? `📈 ¡Buen trabajo! Estás `
-    : `📉 Estás `;
+  const mensaje = estado.arriba ? `📈 ¡Buen trabajo! Estás ` : `📉 Estás `;
 
   const maxValor = Math.max(...dataGrafico.map((d) => d.original), 1);
   const dataNormalizada = dataGrafico.map((d) => ({
@@ -195,15 +193,24 @@ export default function CardInteligenciaVentas() {
           data={dataNormalizada}
           margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
         >
-         
           <XAxis dataKey="nombre" />
           <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
           <Tooltip
+            contentStyle={{
+              backgroundColor: "#1f293790",
+              border: "none",
+              borderRadius: 6,
+            }}
             formatter={(value, name, props) =>
               `$${props.payload.original.toLocaleString("es-AR")}`
             }
           />
           <Bar
+            contentStyle={{
+              backgroundColor: "#1f293724",
+              border: "none",
+              borderRadius: 6,
+            }}
             dataKey="porcentaje"
             fill={estado.arriba ? "#22c55e" : "#ef4444"}
             animationDuration={800}

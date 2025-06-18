@@ -1,9 +1,23 @@
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { db } from "../../firebase";
-import { collection, getDocs, where, query, Timestamp } from "firebase/firestore";
-import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, YAxis } from "recharts";
+import { motion } from "framer-motion";
 import { DollarSign } from "lucide-react";
+import {
+  collection,
+  getDocs,
+  where,
+  query,
+  Timestamp,
+} from "firebase/firestore";
+import { db } from "../../firebase";
 
 const getMonthRange = (offset = 0) => {
   const now = new Date();
@@ -33,14 +47,28 @@ export default function CardVentasDelMes() {
 
       const ventasRef = collection(db, "ventas");
 
-      const qActual = query(ventasRef, where("fecha", ">=", thisFrom), where("fecha", "<", thisTo));
-      const qAnterior = query(ventasRef, where("fecha", ">=", lastFrom), where("fecha", "<", lastTo));
+      const qActual = query(
+        ventasRef,
+        where("fecha", ">=", thisFrom),
+        where("fecha", "<", thisTo)
+      );
+      const qAnterior = query(
+        ventasRef,
+        where("fecha", ">=", lastFrom),
+        where("fecha", "<", lastTo)
+      );
 
       const snapActual = await getDocs(qActual);
       const snapAnterior = await getDocs(qAnterior);
 
-      const totalActual = snapActual.docs.reduce((sum, doc) => sum + (doc.data().monto || 0), 0);
-      const totalAnterior = snapAnterior.docs.reduce((sum, doc) => sum + (doc.data().monto || 0), 0);
+      const totalActual = snapActual.docs.reduce(
+        (sum, doc) => sum + (doc.data().monto || 0),
+        0
+      );
+      const totalAnterior = snapAnterior.docs.reduce(
+        (sum, doc) => sum + (doc.data().monto || 0),
+        0
+      );
 
       setVentas({ actual: totalActual, anterior: totalAnterior });
       setMounted(true);
@@ -50,13 +78,16 @@ export default function CardVentasDelMes() {
   }, []);
 
   const diferencia = ventas.actual - ventas.anterior;
-  const variacion = ventas.anterior > 0 ? (diferencia / ventas.anterior) * 100 : 100;
-  const variacionColor = variacion >= 0 ? "text-green-500" : "text-red-500";
+  const variacion =
+    ventas.anterior > 0 ? (diferencia / ventas.anterior) * 100 : 100;
+  const isPositive = variacion >= 0;
 
   const chartData = [
     { name: "Mes anterior", monto: ventas.anterior },
     { name: "Mes actual", monto: ventas.actual },
   ];
+
+  const barColors = ["#b6b83f", isPositive ? "#10b981" : "#ef4444"]; // gray-400 y verde o rojo
 
   return (
     <motion.div
@@ -77,26 +108,43 @@ export default function CardVentasDelMes() {
           >
             {mounted ? formatCurrency(ventas.actual) : "Cargando..."}
           </motion.p>
-          <p className={`text-sm ${variacionColor}`}>
-            {variacion >= 0 ? "▲" : "▼"} {Math.abs(variacion).toFixed(1)}% respecto al mes anterior
+          <p
+            className={`text-sm ${
+              isPositive ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {isPositive ? "▲" : "▼"} {Math.abs(variacion).toFixed(1)}% respecto
+            al mes anterior
           </p>
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={120}>
-        <LineChart data={chartData}>
-          <XAxis dataKey="name" tick={{ fill: "#6b7280", fontSize: 12 }} />
-          <YAxis hide />
-          <Tooltip formatter={(value) => formatCurrency(value)} />
-          <Line
-            type="monotone"
-            dataKey="monto"
-            stroke="#10b981"
-            strokeWidth={3}
-            dot={{ r: 5 }}
-            activeDot={{ r: 8 }}
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} barCategoryGap={30}>
+          <XAxis
+            dataKey="name"
+            tick={{ fill: "#dddfd4", fontSize: 16 }}
+            axisLine={false}
+            tickLine={false}
           />
-        </LineChart>
+          <YAxis hide />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "#000000c7", // fondo oscuro
+              border: "none",
+              borderRadius: 6,
+              color: "#e9edf1", // texto del tooltip en blanco
+            }}
+            labelStyle={{ color: "#e9edf1" }} // texto de la etiqueta también blanco
+            itemStyle={{ color: "#1be425" }} // color de los valores individuales
+            formatter={(value) => formatCurrency(value)}
+          />
+          <Bar dataKey="monto" radius={[6, 6, 0, 0]}>
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={barColors[index]} />
+            ))}
+          </Bar>
+        </BarChart>
       </ResponsiveContainer>
     </motion.div>
   );

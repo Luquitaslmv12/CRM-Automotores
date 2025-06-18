@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, LogOut, User } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { getAuth, signOut } from 'firebase/auth';
-import Avatar from '../components/Avatar';
+import { useState, useRef, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { Menu, X, LogOut, User } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { getAuth, signOut } from "firebase/auth";
+import Avatar from "../components/Avatar";
 
 export default function Navbar() {
   const { usuario } = useAuth();
@@ -16,20 +16,17 @@ export default function Navbar() {
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target)
-      ) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setMenuUsuarioAbierto(false);
       }
     }
 
     if (menuUsuarioAbierto) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [menuUsuarioAbierto]);
 
@@ -50,8 +47,8 @@ export default function Navbar() {
   const linkClase = (ruta) =>
     `block px-3 py-2 rounded-md font-medium ${
       location.pathname === ruta
-        ? 'bg-indigo-600 text-white'
-        : 'text-indigo-200 hover:bg-indigo-500 hover:text-white'
+        ? "bg-indigo-600 text-white"
+        : "text-indigo-200 hover:bg-indigo-500 hover:text-white"
     }`;
 
   return (
@@ -72,23 +69,26 @@ export default function Navbar() {
 
             {/* Menú Desktop */}
             <div className="hidden md:flex space-x-4 items-center">
-              <Link to="/dashboard" className={linkClase('/dashboard')}>
+              <Link to="/dashboard" className={linkClase("/dashboard")}>
                 Dashboard
               </Link>
-              <Link to="/clientes" className={linkClase('/clientes')}>
+              <Link to="/clientes" className={linkClase("/clientes")}>
                 Clientes
               </Link>
-              <Link to="/vehiculos" className={linkClase('/vehiculos')}>
+              <Link to="/vehiculos" className={linkClase("/vehiculos")}>
                 Vehículos
               </Link>
-              <Link to="/ventas" className={linkClase('/ventas')}>
+              <Link to="/ventas" className={linkClase("/ventas")}>
                 Ventas
               </Link>
-              <Link to="/presupuestos" className={linkClase('/presupuestos')}>
+              <Link to="/presupuestos" className={linkClase("/presupuestos")}>
                 Presupuestos
               </Link>
-              {usuario?.rol === 'admin' && (
-                <Link to="/admin" className={linkClase('/admin')}>
+              <Link to="/proveedores" className={linkClase("/proveedores")}>
+                proveedores
+              </Link>
+              {usuario?.rol === "admin" && (
+                <Link to="/admin" className={linkClase("/admin")}>
                   Admin
                 </Link>
               )}
@@ -96,7 +96,10 @@ export default function Navbar() {
 
             {/* Usuario Desktop */}
             {usuario && (
-              <div className="relative max-w-[150px] hidden md:block" ref={userMenuRef}>
+              <div
+                className="relative max-w-[150px] hidden md:block"
+                ref={userMenuRef}
+              >
                 <button
                   onClick={() => setMenuUsuarioAbierto((v) => !v)}
                   className="flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded text-indigo-200 hover:text-white"
@@ -104,17 +107,23 @@ export default function Navbar() {
                   aria-expanded={menuUsuarioAbierto}
                 >
                   <Avatar usuario={usuario} size={32} />
-                  <span className="max-w-xs truncate">{usuario.nombre || usuario.email}</span>
+                  <span className="max-w-xs truncate">
+                    {usuario.nombre || usuario.email}
+                  </span>
                   <svg
                     className={`w-4 h-4 text-indigo-300 transform transition-transform duration-200 ${
-                      menuUsuarioAbierto ? 'rotate-180' : ''
+                      menuUsuarioAbierto ? "rotate-180" : ""
                     }`}
                     fill="none"
                     stroke="currentColor"
                     strokeWidth={2}
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
 
@@ -162,17 +171,23 @@ export default function Navbar() {
                     aria-expanded={menuUsuarioAbierto}
                   >
                     <Avatar usuario={usuario} size={32} />
-                    <span className="truncate">{usuario.nombre || usuario.email}</span>
+                    <span className="truncate">
+                      {usuario.nombre || usuario.email}
+                    </span>
                     <svg
                       className={`w-4 h-4 text-indigo-300 transform transition-transform duration-200 ${
-                        menuUsuarioAbierto ? 'rotate-180' : ''
+                        menuUsuarioAbierto ? "rotate-180" : ""
                       }`}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth={2}
                       viewBox="0 0 24 24"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </button>
 
@@ -228,43 +243,50 @@ export default function Navbar() {
             <div className="px-2 pt-2 pb-3 space-y-1">
               <Link
                 to="/dashboard"
-                className={linkClase('/dashboard')}
+                className={linkClase("/dashboard")}
                 onClick={handleLinkClick}
               >
                 Dashboard
               </Link>
               <Link
                 to="/clientes"
-                className={linkClase('/clientes')}
+                className={linkClase("/clientes")}
                 onClick={handleLinkClick}
               >
                 Clientes
               </Link>
               <Link
                 to="/vehiculos"
-                className={linkClase('/vehiculos')}
+                className={linkClase("/vehiculos")}
                 onClick={handleLinkClick}
               >
                 Vehículos
               </Link>
               <Link
                 to="/ventas"
-                className={linkClase('/ventas')}
+                className={linkClase("/ventas")}
                 onClick={handleLinkClick}
               >
                 Ventas
               </Link>
               <Link
                 to="/presupuestos"
-                className={linkClase('/presupuestos')}
+                className={linkClase("/presupuestos")}
                 onClick={handleLinkClick}
               >
                 Presupuestos
               </Link>
-              {usuario?.rol === 'admin' && (
+              <Link
+                to="/proveedores"
+                className={linkClase("/proveedores")}
+                onClick={handleLinkClick}
+              >
+                Presupuestos
+              </Link>
+              {usuario?.rol === "admin" && (
                 <Link
                   to="/admin"
-                  className={linkClase('/admin')}
+                  className={linkClase("/admin")}
                   onClick={handleLinkClick}
                 >
                   Admin

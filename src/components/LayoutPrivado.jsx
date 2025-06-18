@@ -9,6 +9,7 @@ import NuevoPresupuesto from "../pages/Presupuestos";
 import Navbar from "./Navbar";
 import ProveedorDetalle from "../pages/ProveedorDetalle";
 import { useAuth } from "../contexts/AuthContext";
+import Proveedores from "../pages/Proveedores";
 
 export default function LayoutPrivado() {
   const { usuario, loading } = useAuth();
@@ -26,6 +27,7 @@ export default function LayoutPrivado() {
         <Route path="ventas" element={<Ventas />} />
         <Route path="perfil" element={<Perfil />} />
         <Route path="presupuestos" element={<NuevoPresupuesto />} />
+        <Route path="proveedores" element={<Proveedores />} />
         <Route path="proveedores/:id" element={<ProveedorDetalle />} />
         <Route
           path="admin"

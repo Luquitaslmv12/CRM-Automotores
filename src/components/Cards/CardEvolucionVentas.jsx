@@ -20,8 +20,18 @@ import { TrendingUp, FileDown } from "lucide-react";
 import * as XLSX from "xlsx";
 
 const meses = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
 ];
 
 function formatCurrency(n) {
@@ -45,18 +55,34 @@ export default function CardEvolucionVentas() {
       const labels = Array.from({ length: diasDelMes }, (_, i) => i + 1);
 
       // Fechas actuales
-      const desde = Timestamp.fromDate(new Date(selectedYear, selectedMonth, 1));
-      const hasta = Timestamp.fromDate(new Date(selectedYear, selectedMonth + 1, 1));
+      const desde = Timestamp.fromDate(
+        new Date(selectedYear, selectedMonth, 1)
+      );
+      const hasta = Timestamp.fromDate(
+        new Date(selectedYear, selectedMonth + 1, 1)
+      );
 
       // Fechas mismo mes año anterior
-      const desdeAnt = Timestamp.fromDate(new Date(selectedYear - 1, selectedMonth, 1));
-      const hastaAnt = Timestamp.fromDate(new Date(selectedYear - 1, selectedMonth + 1, 1));
+      const desdeAnt = Timestamp.fromDate(
+        new Date(selectedYear - 1, selectedMonth, 1)
+      );
+      const hastaAnt = Timestamp.fromDate(
+        new Date(selectedYear - 1, selectedMonth + 1, 1)
+      );
 
       const ventasRef = collection(db, "ventas");
 
       // Query actual y año anterior
-      const qActual = query(ventasRef, where("fecha", ">=", desde), where("fecha", "<", hasta));
-      const qAnterior = query(ventasRef, where("fecha", ">=", desdeAnt), where("fecha", "<", hastaAnt));
+      const qActual = query(
+        ventasRef,
+        where("fecha", ">=", desde),
+        where("fecha", "<", hasta)
+      );
+      const qAnterior = query(
+        ventasRef,
+        where("fecha", ">=", desdeAnt),
+        where("fecha", "<", hastaAnt)
+      );
 
       const snapActual = await getDocs(qActual);
       const snapAnterior = await getDocs(qAnterior);
@@ -98,7 +124,11 @@ export default function CardEvolucionVentas() {
       }
 
       // Calcular promedio diario de últimos 3 meses
-      const proms = await calcularPromedioDiario(selectedMonth, selectedYear, diasDelMes);
+      const proms = await calcularPromedioDiario(
+        selectedMonth,
+        selectedYear,
+        diasDelMes
+      );
       for (let i = 0; i < diasDelMes; i++) {
         totales[i].promedio = proms[i];
       }
@@ -124,7 +154,11 @@ export default function CardEvolucionVentas() {
     const conteo = Array(dias).fill(0);
 
     for (const f of fechas) {
-      const q = query(ventasRef, where("fecha", ">=", f.from), where("fecha", "<", f.to));
+      const q = query(
+        ventasRef,
+        where("fecha", ">=", f.from),
+        where("fecha", "<", f.to)
+      );
       const snap = await getDocs(q);
       snap.forEach((doc) => {
         const { fecha, monto } = doc.data();
@@ -138,7 +172,7 @@ export default function CardEvolucionVentas() {
       });
     }
 
-    return montos.map((total, i) => conteo[i] > 0 ? total / conteo[i] : 0);
+    return montos.map((total, i) => (conteo[i] > 0 ? total / conteo[i] : 0));
   };
 
   const exportarExcel = () => {
@@ -161,7 +195,7 @@ export default function CardEvolucionVentas() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow flex flex-col gap-4 border-l-4 border-blue-500"
+      className="bg-gray-800 p-6 rounded-xl shadow flex flex-col gap-4 border-l-4 border-blue-500"
     >
       <div className="flex justify-between items-center">
         <div className="flex gap-3 items-center">
@@ -172,19 +206,23 @@ export default function CardEvolucionVentas() {
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="px-2 py-1 rounded border bg-white dark:bg-gray-700"
+            className="px-2 py-1 rounded border bg-gray-700"
           >
             {meses.map((mes, i) => (
-              <option key={i} value={i}>{mes}</option>
+              <option key={i} value={i}>
+                {mes}
+              </option>
             ))}
           </select>
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="px-2 py-1 rounded border bg-white dark:bg-gray-700"
+            className="px-2 py-1 rounded border bg-gray-700"
           >
             {[2023, 2024, 2025].map((a) => (
-              <option key={a} value={a}>{a}</option>
+              <option key={a} value={a}>
+                {a}
+              </option>
             ))}
           </select>
           <button
@@ -197,14 +235,46 @@ export default function CardEvolucionVentas() {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
           <XAxis dataKey="dia" />
           <YAxis hide />
-          <Tooltip formatter={(v, name) => [formatCurrency(v), name]} />
-          <Line type="monotone" dataKey="monto" stroke="#3b82f6" strokeWidth={2} dot={false} name="Actual" />
-          <Line type="monotone" dataKey="anterior" stroke="#f59e0b" strokeDasharray="5 5" strokeWidth={2} dot={false} name="Año anterior" />
-          <Line type="monotone" dataKey="promedio" stroke="#10b981" strokeDasharray="3 3" strokeWidth={2} dot={false} name="Promedio" />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "#1f293724",
+              border: "none",
+              borderRadius: 6,
+            }}
+            labelStyle={{ color: "#b6eb54" }}
+            itemStyle={{ color: "#f3f4f6", fontSize: 13 }}
+            formatter={(v, name) => [formatCurrency(v), name]}
+          />
+          <Line
+            type="monotone"
+            dataKey="monto"
+            stroke="#3b82f6"
+            strokeWidth={2}
+            dot={false}
+            name="Actual"
+          />
+          <Line
+            type="monotone"
+            dataKey="anterior"
+            stroke="#f59e0b"
+            strokeDasharray="5 5"
+            strokeWidth={2}
+            dot={false}
+            name="Año anterior"
+          />
+          <Line
+            type="monotone"
+            dataKey="promedio"
+            stroke="#10b981"
+            strokeDasharray="3 3"
+            strokeWidth={2}
+            dot={false}
+            name="Promedio"
+          />
         </LineChart>
       </ResponsiveContainer>
     </motion.div>
