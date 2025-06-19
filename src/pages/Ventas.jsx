@@ -24,10 +24,12 @@ import {
 } from "lucide-react";
 import { NumericFormat } from "react-number-format";
 import Listaventas from "../components/ListaVentas";
+import ModalVehiculoPartePago from "../components/ModalVehiculoPartePago";
 
 export default function NuevaVenta() {
   const [clienteId, setClienteId] = useState("");
-  const [vehiculoId, setVehiculoId] = useState("");
+const [vehiculoId, setVehiculoId] = useState("");
+
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
 
@@ -40,6 +42,42 @@ export default function NuevaVenta() {
   const hoy = new Date();
   return hoy.toISOString().split("T")[0]; // formato YYYY-MM-DD
 });
+
+const [parteDePago, setParteDePago] = useState(false);
+const [modalOpen, setModalOpen] = useState(false);
+
+const [vehiculoPartePagoId, setVehiculoPartePagoId] = useState(null);
+const [vehiculoPartePago, setVehiculoPartePago] = useState(null);
+
+
+const agregarVehiculoAlStock = async (vehiculo) => {
+  try {
+    const nuevoVehiculo = {
+      marca: vehiculo.marca?.trim() || "",
+      modelo: vehiculo.modelo?.trim() || "",
+      año: parseInt(vehiculo.año) || null,
+      precioCompra: Number(vehiculo.precioCompra) || 0,
+      patente: vehiculo.patente?.trim().toUpperCase() || "",
+      estado: vehiculo.estado || "Disponible",
+      clienteNombre: vehiculo.clienteNombre || "",
+      clienteApellido: vehiculo.clienteApellido || "",
+      fechaIngreso: new Date(),
+      // ...otros campos que tengas en vehiculoPartePago
+    };
+
+    const docRef = await addDoc(collection(db, "vehiculos"), nuevoVehiculo);
+    console.log("Vehículo agregado con ID:", docRef.id);
+  } catch (error) {
+    console.error("Error al agregar el vehículo al stock:", error);
+  }
+};
+
+
+useEffect(() => {
+  if (parteDePago) setModalOpen(true);
+  else setModalOpen(false);
+}, [parteDePago]);
+
 
 
   // Obtener info del cliente seleccionado
@@ -85,49 +123,98 @@ export default function NuevaVenta() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const pagosProcesados = convertirPagosAFloat(pagos);
-    const nuevosErrores = {};
-    if (!clienteId) nuevosErrores.clienteId = true;
-    if (!vehiculoId) nuevosErrores.vehiculoId = true;
-    if (!monto) nuevosErrores.monto = true;
-    setErrores(nuevosErrores);
+  const pagosProcesados = convertirPagosAFloat(pagos);
+  const nuevosErrores = {};
 
-    if (Object.keys(nuevosErrores).length > 0) {
-      toast.error("Por favor completa todos los campos.");
-      return;
-    }
+  // Validaciones
+  if (!clienteSeleccionado) {
+    toast.error("Selecciona un cliente");
+    return;
+  }
+  if (!vehiculoId) nuevosErrores.vehiculoId = true;
+  if (!monto) nuevosErrores.monto = true;
+  if (parteDePago && !vehiculoPartePago) {
+    toast.error("Debes completar los datos del vehículo entregado en parte de pago.");
+    return;
+  }
 
-    try {
-      await addDoc(collection(db, "ventas"), {
-  clienteId,
-  vehiculoId,
-  monto: parseFloat(monto),
-  pagos: pagosMultiples ? pagosProcesados : [],
-  fecha: Timestamp.fromDate(new Date(fechaVenta)),
-});
+  setErrores(nuevosErrores);
 
-      await updateDoc(doc(db, "vehiculos", vehiculoId), {
-        estado: "Vendido",
-        clienteId: clienteId,
+  if (Object.keys(nuevosErrores).length > 0) {
+    toast.error("Por favor completa todos los campos.");
+    return;
+  }
+
+  try {
+    // 1. Crear la venta (inicialmente sin vehiculoPartePagoId)
+    const ventaRef = await addDoc(collection(db, "ventas"), {
+      clienteId: clienteSeleccionado.id,
+      vehiculoId,
+      monto: parseFloat(monto),
+      pagos: pagosMultiples ? pagosProcesados : [],
+      fecha: Timestamp.fromDate(new Date(fechaVenta)),
+    });
+
+    // 2. Si hay vehículo en parte de pago, guardarlo por separado
+    if (parteDePago && vehiculoPartePago) {
+      const vehiculoRef = await addDoc(collection(db, "vehiculosPartePago"), {
+        ...vehiculoPartePago,
+        clienteId: clienteSeleccionado.id,
+        ventaId: ventaRef.id,
+        fechaEntrega: new Date(),
       });
 
-      toast.success("¡Venta registrada con éxito!");
-      setClienteId("");
-      setVehiculoId("");
-      setMonto("");
-      setClienteSeleccionado(null);
-      setVehiculoSeleccionado(null);
-      setPagos([{ metodo: "", monto: "" }]);
-      setPagosMultiples(false);
-      setErrores({});
-    } catch (error) {
-      console.error(error);
-      toast.error("Error al registrar la venta.");
+      const vehiculoParaGuardar = {
+  marca: vehiculoPartePago.marca?.trim() || "No especificado",
+  modelo: vehiculoPartePago.modelo?.trim() || "No especificado",
+  modelo: vehiculoPartePago.tipo?.trim() || "No especificado",
+  año: parseInt(vehiculoPartePago.año) || null,
+  color: vehiculoPartePago.color || "",
+  monto: parseFloat(vehiculoPartePago.monto) || 0,
+  clienteNombre: clienteSeleccionado?.nombre || "",
+  clienteApellido: clienteSeleccionado?.apellido || "",
+  precioCompra: parseFloat(monto) || 0,
+};
+
+await agregarVehiculoAlStock(vehiculoParaGuardar);
+  
+      console.log("Vehículo parte de pago creado con ID:", vehiculoRef.id);
+
+      // 3. Actualizar la venta con el ID del vehículo entregado
+      await updateDoc(doc(db, "ventas", ventaRef.id), {
+        vehiculoPartePagoId: vehiculoRef.id,
+      });
     }
-  };
+
+    // 4. Marcar el vehículo vendido
+    await updateDoc(doc(db, "vehiculos", vehiculoId), {
+      estado: "Vendido",
+      clienteId: clienteSeleccionado.id,
+    });
+
+    toast.success("¡Venta registrada con éxito!");
+
+    // 5. Resetear formulario
+    setClienteId("");
+    setVehiculoId("");
+    setMonto("");
+    setClienteSeleccionado(null);
+    setVehiculoSeleccionado(null);
+    setPagos([{ metodo: "", monto: "" }]);
+    setPagosMultiples(false);
+    setErrores({});
+    setParteDePago(false);
+    setVehiculoPartePago(null);
+
+  } catch (error) {
+    console.error("Error al registrar la venta:", error);
+    toast.error("Error al registrar la venta.");
+  }
+};
+
 
   const handlePagoChange = (index, campo, valor) => {
     const nuevosPagos = [...pagos];
@@ -175,7 +262,12 @@ export default function NuevaVenta() {
 
         {/* Cliente */}
         <div className="relative">
-          <BuscadorCliente value={clienteId} onChange={setClienteId} />
+          <div className="relative">
+  <BuscadorCliente
+    value={clienteSeleccionado}
+    onChange={setClienteSeleccionado}
+  />
+</div>
         </div>
 
         {/* Vehículo */}
@@ -183,6 +275,16 @@ export default function NuevaVenta() {
           <BuscadorVehiculo value={vehiculoId} onChange={setVehiculoId}  />
             
         </div>
+
+        {/* Vehículo parte de pago */}
+        <label className="flex items-center gap-2 p-4 text-white">
+  <input
+    type="checkbox"
+    checked={parteDePago}
+    onChange={() => setParteDePago(!parteDePago)}
+  />
+  Cliente entrega vehículo en parte de pago
+</label>
 
         {/* Monto total */}
         <div className="relative">
@@ -268,11 +370,22 @@ export default function NuevaVenta() {
 
         <button
           type="submit"
+          onClick={agregarVehiculoAlStock}
           className="w-full flex items-center justify-center gap-2 text-white px-4 py-3 rounded-lg transition flex-1 bg-indigo-700 hover:bg-indigo-800"
         >
           <BadgeDollarSign size={28} /> Registrar venta
         </button>
       </motion.form>
+
+      {modalOpen && clienteSeleccionado && (
+  <ModalVehiculoPartePago
+  onClose={() => setModalOpen(false)}
+  onSave={(datosVehiculo) => {
+    setVehiculoPartePago(datosVehiculo); // ahora está en memoria
+    setModalOpen(false);
+  }}
+/>
+)}
       <Listaventas />
       </div>
     </>

@@ -1,4 +1,3 @@
-// src/components/ModalReparacion.jsx
 import { useState, useEffect } from "react";
 import {
   addDoc,
@@ -10,13 +9,18 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebase";
 import { getAuth } from "firebase/auth";
+import BuscadorVehiculos from "../BuscadorVehiculos";
+import BuscadorTalleres from "../BuscadorTalleres";
 
 export default function ModalReparacion({
-  vehiculo,
+  vehiculo: vehiculoProp,
+  reparacion = null,
   visible,
   onClose,
   onSuccess,
 }) {
+  const [vehiculo, setVehiculo] = useState(vehiculoProp || null);
+
   const [talleres, setTalleres] = useState([]);
   const [tallerId, setTallerId] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -24,28 +28,47 @@ export default function ModalReparacion({
   const [fechaSalida, setFechaSalida] = useState("");
   const [precio, setPrecio] = useState("");
 
+  // Precargar datos si se está editando
   useEffect(() => {
     if (visible) {
+      setVehiculo(vehiculoProp || null);
+      setTallerId(reparacion?.tallerId || "");
+      setDescripcion(reparacion?.descripcionReparacion || "");
+      setFechaIngreso(
+        reparacion?.fechaIngreso?.toDate?.().toISOString().slice(0, 10) || ""
+      );
+      setFechaSalida(
+        reparacion?.fechaSalida?.toDate?.().toISOString().slice(0, 10) || ""
+      );
+      setPrecio(reparacion?.precioServicio?.toString() || "");
+
       const fetchTalleres = async () => {
         const snapshot = await getDocs(collection(db, "proveedores"));
-        setTalleres(
-          snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-        );
+        setTalleres(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
       };
       fetchTalleres();
     }
-  }, [visible]);
+  }, [visible, vehiculoProp, reparacion]);
 
   const guardar = async () => {
-    if (!tallerId || !descripcion || !fechaIngreso || !fechaSalida || !precio)
+    if (
+      !vehiculo ||
+      !tallerId ||
+      !descripcion ||
+      !fechaIngreso ||
+      !fechaSalida ||
+      !precio
+    ) {
+      alert("Por favor, complete todos los campos y seleccione un vehículo.");
       return;
+    }
 
     try {
       const auth = getAuth();
       const user = auth.currentUser;
       const userName = user?.displayName || user?.email || "Desconocido";
 
-      await addDoc(collection(db, "reparaciones"), {
+      const datosReparacion = {
         vehiculoId: vehiculo.id,
         tallerId,
         descripcionReparacion: descripcion,
@@ -53,21 +76,29 @@ export default function ModalReparacion({
         fechaIngreso: Timestamp.fromDate(new Date(fechaIngreso)),
         fechaSalida: Timestamp.fromDate(new Date(fechaSalida)),
         precioServicio: Number(precio),
-
         modificadoPor: userName,
-      });
+      };
 
-      await updateDoc(doc(db, "vehiculos", vehiculo.id), {
-        etiqueta: "Reparación",
-        tallerId,
-        modificadoPor: userName,
-        modificadoEn: Timestamp.now(),
-      });
+      if (reparacion?.id) {
+        // Modo edición
+        await updateDoc(doc(db, "reparaciones", reparacion.id), datosReparacion);
+      } else {
+        // Modo nuevo
+        await addDoc(collection(db, "reparaciones"), datosReparacion);
+
+        await updateDoc(doc(db, "vehiculos", vehiculo.id), {
+          etiqueta: "Reparación",
+          tallerId,
+          modificadoPor: userName,
+          modificadoEn: Timestamp.now(),
+        });
+      }
 
       onSuccess?.();
-      onClose();
+      onClose?.();
     } catch (error) {
       console.error("Error al guardar reparación", error);
+      alert("Ocurrió un error al guardar la reparación.");
     }
   };
 
@@ -76,20 +107,45 @@ export default function ModalReparacion({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-md space-y-4">
-        <h2 className="text-xl font-bold text-center">Registrar Reparación</h2>
+        <h2 className="text-xl font-bold text-center">
+          {reparacion ? "Editar Reparación" : "Registrar Reparación"}
+        </h2>
 
-        <select
-          value={tallerId}
-          onChange={(e) => setTallerId(e.target.value)}
-          className="w-full p-2 border rounded bg-slate-700 text-white"
-        >
-          <option value="">Seleccionar Taller</option>
-          {talleres.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.nombre}
-            </option>
-          ))}
-        </select>
+        {!vehiculo ? (
+          <BuscadorVehiculos onSelect={(v) => setVehiculo(v)} />
+        ) : (
+          <div className="mb-2 p-2 bg-slate-600 rounded text-white flex justify-between items-center">
+            <div>
+              Vehículo seleccionado: {vehiculo.patente} - {vehiculo.modelo}
+            </div>
+            {!vehiculoProp && (
+              <button
+                onClick={() => setVehiculo(null)}
+                className="ml-4 text-red-400 underline"
+                type="button"
+              >
+                Cambiar
+              </button>
+            )}
+          </div>
+        )}
+
+        {!tallerId ? (
+  <BuscadorTalleres onSelect={(t) => setTallerId(t.id)} />
+) : (
+  <div className="mb-2 p-2 bg-slate-600 rounded text-white flex justify-between items-center">
+    <div>
+      Taller seleccionado: {talleres.find(t => t.id === tallerId)?.nombre || "Desconocido"}
+    </div>
+    <button
+      onClick={() => setTallerId("")}
+      className="ml-4 text-red-400 underline"
+      type="button"
+    >
+      Cambiar
+    </button>
+  </div>
+)}
 
         <input
           type="text"
@@ -125,12 +181,14 @@ export default function ModalReparacion({
           <button
             onClick={onClose}
             className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+            type="button"
           >
             Cancelar
           </button>
           <button
             onClick={guardar}
             className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
+            type="button"
           >
             Guardar
           </button>

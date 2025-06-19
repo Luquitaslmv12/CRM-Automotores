@@ -23,6 +23,9 @@ import {
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { jsPDF } from "jspdf";
+import exportarBoletoDOCX from "./boletos/exportarBoletoDOCX";
+
+
 
 export default function Listaventas() {
   const [ventas, setventas] = useState([]);
@@ -51,6 +54,9 @@ export default function Listaventas() {
 
   const [paginaActual, setPaginaActual] = useState(1);
   const ITEMS_POR_PAGINA = 5;
+
+  const [modalBoleto, setModalBoleto] = useState(null);
+
 
   useEffect(() => {
     cargarTodo();
@@ -307,14 +313,17 @@ export default function Listaventas() {
                         >
                           <Trash size={24} />
                         </button>
+                        
                       )}
+                  
+
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           exportarPDF();
                         }}
                         className="text-green-400 hover:text-green-600 cursor-pointer"
-                        title="Exportar PDF"
+                        title="Descargar"
                       >
                         <Download size={24} onClick={() => abrirDetalle(p.id)} />
                       </button>
@@ -387,53 +396,63 @@ export default function Listaventas() {
       </AnimatePresence>
 
       {/* Detalle venta */}
-      <AnimatePresence>
-        {detalleId && ventaDetalle && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
-          >
-            <div className="bg-slate-900 p-6 rounded max-w-md w-full relative text-white">
-              <button
-                onClick={cerrarDetalle}
-                className="absolute top-2 right-2 text-red-400 hover:text-red-600"
-                title="Cerrar"
-              >
-                <XCircle size={24} />
-              </button>
-              <h3 className="text-2xl font-semibold mb-4">Detalle de venta</h3>
-              <p>
-                <strong>Cliente:</strong> {ventaDetalle.clienteNombre}
-              </p>
-              <p>
-                <strong>DNI:</strong> {ventaDetalle.dniCliente}
-              </p>
-              <p>
-                <strong>Vehículo:</strong> {ventaDetalle.vehiculoInfo}
-              </p>
-              <p>
-                <strong>Monto</strong>{" "}
-                ${Number(ventaDetalle.monto).toLocaleString("es-UY", { minimumFractionDigits: 2 })}
-              </p>
-              <p>
-                <strong>Fecha:</strong>{" "}
-                {dayjs(ventaDetalle.fechaObj).locale("es").format("DD/MM/YYYY")}
-              </p>
+     <AnimatePresence>
+  {detalleId && ventaDetalle && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
+    >
+      <div className="bg-slate-900 p-6 rounded max-w-md w-full relative text-white">
+        <button
+          onClick={cerrarDetalle}
+          className="absolute top-2 right-2 text-red-400 hover:text-red-600"
+          title="Cerrar"
+        >
+          <XCircle size={24} />
+        </button>
 
-              <button
-                onClick={exportarPDF}
-                className="mt-6 flex items-center gap-1 bg-yellow-400 text-black px-4 py-2 rounded hover:bg-yellow-500"
-                title="Exportar a PDF"
-              >
-                <Download size={18} />
-                Exportar PDF
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <h3 className="text-2xl font-semibold mb-4">Detalle de venta</h3>
+        <p>
+          <strong>Cliente:</strong> {ventaDetalle.clienteNombre}
+        </p>
+        <p>
+          <strong>DNI:</strong> {ventaDetalle.dniCliente}
+        </p>
+        <p>
+          <strong>Vehículo:</strong> {ventaDetalle.vehiculoInfo}
+        </p>
+        <p>
+          <strong>Monto:</strong>{" "}
+          ${Number(ventaDetalle.monto).toLocaleString("es-UY", { minimumFractionDigits: 2 })}
+        </p>
+        <p>
+          <strong>Fecha:</strong>{" "}
+          {dayjs(ventaDetalle.fechaObj).locale("es").format("DD/MM/YYYY")}
+        </p>
+
+        <div className="mt-6 flex flex-wrap gap-3 justify-center">
+      
+
+          <button
+            onClick={() =>{
+               exportarBoletoDOCX(ventaDetalle);
+               cerrarDetalle();
+            }}
+            className="flex items-center gap-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            title="Descargar BOLETO"
+            
+          >
+            <Download size={18} />
+            Descargar BOLETO
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
 
       {/* Modal nuevo venta */}
       <AnimatePresence>

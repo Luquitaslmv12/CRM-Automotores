@@ -77,6 +77,27 @@ export default function Vehiculos() {
       }
     );
 
+
+    const agregarVehiculoAlStock = async (venta) => {
+  try {
+    const nuevoVehiculo = {
+      marca: venta.autoMarca,
+      modelo: venta.autoModelo,
+      año: venta.autoAnio,
+      precioCompra: venta.precioCompra,
+      clienteNombre: venta.clienteNombre,
+      clienteApellido: venta.clienteApellido,
+      fechaIngreso: new Date(),
+      // agrega otros campos relevantes
+    };
+
+    const docRef = await addDoc(collection(db, "vehiculos"), nuevoVehiculo);
+    console.log("Vehículo agregado con ID:", docRef.id);
+  } catch (error) {
+    console.error("Error al agregar el vehículo al stock:", error);
+  }
+};
+
     const unsubscribe = onSnapshot(collection(db, "vehiculos"), (snapshot) => {
       const lista = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setVehiculos(lista);

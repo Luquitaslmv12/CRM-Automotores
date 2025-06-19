@@ -87,6 +87,15 @@ export default function Navbar() {
               <Link to="/proveedores" className={linkClase("/proveedores")}>
                 proveedores
               </Link>
+              <Link to="/reparaciones" className={linkClase("/reparaciones")}>
+                reparaciones
+              </Link>
+              <Link to="/caja" className={linkClase("/caja")}>
+                Caja
+              </Link>
+              <Link to="/proveedores" className={linkClase("/proveedores")}>
+                proveedores
+              </Link>
               {usuario?.rol === "admin" && (
                 <Link to="/admin" className={linkClase("/admin")}>
                   Admin
@@ -282,6 +291,20 @@ export default function Navbar() {
                 onClick={handleLinkClick}
               >
                 Presupuestos
+              </Link>
+              <Link
+                to="/reparaciones"
+                className={linkClase("/reparaciones")}
+                onClick={handleLinkClick}
+              >
+                reparaciones
+              </Link>
+              <Link
+                to="/caja"
+                className={linkClase("/caja")}
+                onClick={handleLinkClick}
+              >
+                Caja
               </Link>
               {usuario?.rol === "admin" && (
                 <Link

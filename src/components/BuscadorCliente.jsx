@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Combobox, ComboboxOption, ComboboxOptions, ComboboxInput } from '@headlessui/react';
+import {
+  Combobox,
+  ComboboxOption,
+  ComboboxOptions,
+  ComboboxInput,
+} from '@headlessui/react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Search } from 'lucide-react';
@@ -10,7 +15,10 @@ export default function BuscadorCliente({ value, onChange }) {
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'clientes'), (snapshot) => {
-      const datos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const datos = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
       setClientes(datos);
     });
     return () => unsub();
@@ -23,17 +31,21 @@ export default function BuscadorCliente({ value, onChange }) {
           `${c.nombre} ${c.apellido}`.toLowerCase().includes(query.toLowerCase())
         );
 
-  const clienteSeleccionado = clientes.find((c) => c.id === value);
+  const clienteSeleccionado =
+    typeof value === 'object'
+      ? clientes.find((c) => c.id === value?.id)
+      : clientes.find((c) => c.id === value);
 
   return (
-    
     <Combobox value={value} onChange={onChange}>
       <div className="relative mb-6">
-         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 w-5 h-5" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 w-5 h-5" />
         <ComboboxInput
           className="w-full p-3 px-10 rounded bg-slate-700 border border-slate-600 focus:outline-none text-white focus:ring-2 focus:ring-indigo-400"
           displayValue={() =>
-            clienteSeleccionado ? `${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}` : ''
+            clienteSeleccionado
+              ? `${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}`
+              : ''
           }
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar cliente..."
@@ -48,7 +60,7 @@ export default function BuscadorCliente({ value, onChange }) {
             clientesFiltrados.map((c) => (
               <ComboboxOption
                 key={c.id}
-                value={c.id}
+                value={c} // 👉 pasa el objeto cliente completo
                 className={({ active }) =>
                   `cursor-pointer px-4 py-2 ${active ? 'bg-indigo-600 text-white' : 'text-white'}`
                 }
