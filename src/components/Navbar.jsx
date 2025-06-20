@@ -93,9 +93,7 @@ export default function Navbar() {
               <Link to="/caja" className={linkClase("/caja")}>
                 Caja
               </Link>
-              <Link to="/proveedores" className={linkClase("/proveedores")}>
-                proveedores
-              </Link>
+            
               {usuario?.rol === "admin" && (
                 <Link to="/admin" className={linkClase("/admin")}>
                   Admin

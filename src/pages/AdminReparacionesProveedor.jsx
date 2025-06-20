@@ -20,7 +20,7 @@ export default function Reparaciones() {
 const [talleres, setTalleres] = useState([]);
  const [toast, setToast] = useState(null);
 
- const clienteNombre = clienteSeleccionado ? `${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}` : '';
+
 
 
 const obtenerVehiculo = (id) => vehiculos.find((v) => v.id === id);

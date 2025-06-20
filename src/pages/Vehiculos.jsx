@@ -77,27 +77,6 @@ export default function Vehiculos() {
       }
     );
 
-
-    const agregarVehiculoAlStock = async (venta) => {
-  try {
-    const nuevoVehiculo = {
-      marca: venta.autoMarca,
-      modelo: venta.autoModelo,
-      año: venta.autoAnio,
-      precioCompra: venta.precioCompra,
-      clienteNombre: venta.clienteNombre,
-      clienteApellido: venta.clienteApellido,
-      fechaIngreso: new Date(),
-      // agrega otros campos relevantes
-    };
-
-    const docRef = await addDoc(collection(db, "vehiculos"), nuevoVehiculo);
-    console.log("Vehículo agregado con ID:", docRef.id);
-  } catch (error) {
-    console.error("Error al agregar el vehículo al stock:", error);
-  }
-};
-
     const unsubscribe = onSnapshot(collection(db, "vehiculos"), (snapshot) => {
       const lista = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setVehiculos(lista);
@@ -371,119 +350,98 @@ export default function Vehiculos() {
 
       {/* Formulario */}
       <motion.form
-        ref={formRef}
-        onSubmit={(e) => {
-          e.preventDefault();
-          guardarVehiculo();
-        }}
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-3xl mx-auto mb-8"
+  ref={formRef}
+  onSubmit={(e) => {
+    e.preventDefault();
+    guardarVehiculo();
+  }}
+  initial={{ opacity: 0, y: -20 }}
+  animate={{ opacity: 1, y: 0 }}
+  className="bg-slate-900 p-8 rounded-3xl shadow-2xl w-full max-w-4xl mx-auto mb-10 border border-slate-700"
+>
+  <div className="flex items-center gap-2 mb-6">
+    <PlusCircle className="text-green-400" />
+    <h2 className="text-2xl font-bold text-white tracking-wide">
+      {modoEdicion ? 'Editar Vehículo' : 'Agregar Vehículo'}
+    </h2>
+  </div>
+
+  {/* --- Información básica --- */}
+  <h3 className="text-slate-200 text-sm font-semibold mb-2 mt-6">Información básica</h3>
+  <div className="bg-slate-800 rounded-xl p-5 mb-6 border border-slate-700 grid grid-cols-1 md:grid-cols-3 gap-4">
+    {[
+      { id: 'marca', label: 'Marca', value: marca, setValue: setMarca },
+      { id: 'modelo', label: 'Modelo', value: modelo, setValue: setModelo },
+      { id: 'patente', label: 'Patente', value: patente, setValue: setPatente },
+      { id: 'año', label: 'Año', value: año, setValue: setAño, type: 'number' },
+      { id: 'estado', label: 'Estado', value: estado, setValue: setEstado },
+      { id: 'tipo', label: 'Tipo', value: tipo, setValue: setTipo },
+      { id: 'precioVenta', label: 'Precio de Venta', value: precioVenta, setValue: setPrecioVenta, type: 'number' },
+    ].map(({ id, label, value, setValue, type = 'text' }) => (
+      <div key={id} className="relative focus-within:ring-2 focus-within:ring-indigo-500/50 rounded-xl transition">
+        <input
+          id={id}
+          type={type}
+          placeholder=" "
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="peer p-3 pt-5 w-full rounded-xl bg-slate-900 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 placeholder-transparent text-white transition"
+          autoComplete="off"
+          min={type === 'number' ? 0 : undefined}
+          step={type === 'number' ? 'any' : undefined}
+          required={['marca', 'modelo', 'patente', 'año'].includes(id)}
+        />
+        <label
+          htmlFor={id}
+          className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+        >
+          {label}{['marca', 'modelo', 'patente', 'año'].includes(id) ? ' *' : ''}
+        </label>
+      </div>
+    ))}
+
+    {/* Selector etiqueta */}
+    <select
+      value={etiqueta}
+      onChange={(e) => setEtiqueta(e.target.value)}
+      className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
+    >
+      <option value="">Etiqueta</option>
+      <option value="Nuevo">Nuevo</option>
+      <option value="Usado">Usado</option>
+      <option value="Reparación">Reparación</option>
+      <option value="Vendido">Vendido</option>
+    </select>
+
+    {/* Buscador Cliente */}
+    <div className="md:col-span-3">
+      <BuscadorCliente value={clienteId} onChange={setClienteId} placeholder="Asignar cliente/Cliente Asignado" />
+    </div>
+  </div>
+
+  {/* Botones */}
+  <div className="flex flex-col md:flex-row gap-4">
+    <button
+      type="submit"
+      className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-xl transition-all duration-200 shadow-md flex-1
+        ${modoEdicion ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+    >
+      <PlusCircle size={18} />
+      {modoEdicion ? 'Actualizar' : 'Agregar Vehículo'}
+    </button>
+
+    {modoEdicion && (
+      <button
+        type="button"
+        onClick={cancelarEdicion}
+        className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-xl shadow-md transition-all duration-200 flex-1"
       >
-        <div className="flex items-center gap-2 mb-4">
-          <PlusCircle className="text-green-400" />
-          <h2 className="text-xl font-semibold">
-            {modoEdicion ? "Editar Vehiculo" : "Agregar Vehiculo"}
-          </h2>
-        </div>
+        Cancelar
+      </button>
+    )}
+  </div>
+</motion.form>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <input
-            type="text"
-            placeholder="Marca *"
-            value={marca}
-            onChange={(e) => setMarca(e.target.value)}
-            className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Modelo *"
-            value={modelo}
-            onChange={(e) => setModelo(e.target.value)}
-            className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Patente *"
-            value={patente}
-            onChange={(e) => setPatente(e.target.value)}
-            className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
-            required
-          />
-          <input
-            type="text"
-            placeholder="año *"
-            value={año}
-            onChange={(e) => setAño(e.target.value)}
-            className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Estado"
-            value={estado}
-            onChange={(e) => setEstado(e.target.value)}
-            className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
-          />
-          <input
-            type="text"
-            placeholder="Tipo"
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value)}
-            className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
-          />
-          <input
-            type="number"
-            placeholder="Precio de Venta"
-            value={precioVenta}
-            onChange={(e) => setPrecioVenta(e.target.value)}
-            className="p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 col-span-1"
-            min="0"
-            step="any"
-          />
-
-          <select
-            value={etiqueta}
-            onChange={(e) => setEtiqueta(e.target.value)}
-            className="w-full p-3 rounded bg-slate-700 border border-slate-600 focus:outline-none text-white mb-6 focus:ring-2 focus:ring-indigo-400 col-span-1"
-          >
-            <option value="">Etiqueta</option>
-            <option value="Nuevo">Nuevo</option>
-            <option value="Usado">Usado</option>
-            <option value="Reparación">Reparación</option>
-            <option value="Vendido">Vendido</option>
-          </select>
-
-          <BuscadorCliente value={clienteId} onChange={setClienteId} />
-        </div>
-
-        <div className="flex gap-4">
-          <button
-            type="submit"
-            className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-lg transition flex-1
-        ${
-          modoEdicion
-            ? "bg-green-600 hover:bg-green-700"
-            : "bg-indigo-700 hover:bg-indigo-800"
-        }`}
-          >
-            <PlusCircle size={18} />{" "}
-            {modoEdicion ? "Actualizar" : "Agregar Cliente"}
-          </button>
-
-          {modoEdicion && (
-            <button
-              onClick={cancelarEdicion}
-              className="flex items-center justify-center gap-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition flex-1"
-            >
-              Cancelar
-            </button>
-          )}
-        </div>
-      </motion.form>
 
       {/* Filtros y exportar */}
       <div className="max-w-3xl mx-auto flex flex-col md:flex-row items-stretch md:items-center gap-4 mb-6">

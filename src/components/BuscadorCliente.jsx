@@ -9,7 +9,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Search } from 'lucide-react';
 
-export default function BuscadorCliente({ value, onChange }) {
+export default function BuscadorCliente({ value, onChange, placeholder, }) {
   const [clientes, setClientes] = useState([]);
   const [query, setQuery] = useState('');
 
@@ -41,14 +41,15 @@ export default function BuscadorCliente({ value, onChange }) {
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500 w-5 h-5" />
         <ComboboxInput
-          className="w-full p-3 px-10 rounded bg-slate-700 border border-slate-600 focus:outline-none text-white focus:ring-2 focus:ring-indigo-400"
+          className="w-full p-3 px-10 rounded bg-slate-900 border border-slate-600 focus:outline-none text-white focus:ring-2 focus:ring-indigo-400"        
+          
           displayValue={() =>
             clienteSeleccionado
               ? `${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}`
               : ''
           }
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar cliente..."
+          placeholder={placeholder}
         />
         <ComboboxOptions className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded bg-slate-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none text-white">
           <ComboboxOption value="">

@@ -39,7 +39,7 @@ export default function App() {
               path="/*"
               element={
                 <PrivateRoute>
-                  <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 min-h-screen">
+                  <div className="bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 min-h-screen overflow-x-hidden">
                     <Navbar />
                     <Routes>
                       <Route path="dashboard" element={<Dashboard />} />
