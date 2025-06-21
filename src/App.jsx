@@ -14,6 +14,7 @@ import ProveedorDetalle from "./pages/ProveedorDetalle";
 import Proveedores from "./pages/Proveedores";
 import AdminReparacionesProveedor from "./pages/AdminReparacionesProveedor";
 import Caja from "./pages/Caja";
+import ForgotPassword from "./pages/ForgotPassword";
 
 function PrivateRoute({ children, role }) {
   const { usuario, loading } = useAuth();
@@ -35,6 +36,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/forgotpassword" element={<ForgotPassword />} />
             <Route
               path="/*"
               element={
@@ -66,7 +68,10 @@ export default function App() {
                         }
                       />
                       <Route path="*" element={<Navigate to="/dashboard" />} />
-                      <Route path="/reparaciones" element={<AdminReparacionesProveedor />} />
+                      <Route
+                        path="/reparaciones"
+                        element={<AdminReparacionesProveedor />}
+                      />
                     </Routes>
                   </div>
                 </PrivateRoute>

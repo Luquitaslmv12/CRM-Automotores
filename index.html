@@ -2,18 +2,21 @@
 <html lang="es">
   <head>
     <script
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAkSkwwfAy5UT1JVnXQg5LSNElIxlZ6wU8&libraries=places"
-  async
-  defer
-></script>
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAkSkwwfAy5UT1JVnXQg5LSNElIxlZ6wU8&libraries=places"
+      async
+      defer
+    ></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CRM Agencias</title>
   </head>
   <body>
-    <gmpx-api-loader key="AIzaSyAkSkwwfAy5UT1JVnXQg5LSNElIxlZ6wU8" solution-channel="GMP_GE_placepicker_v2">
+    <gmpx-api-loader
+      key="AIzaSyAkSkwwfAy5UT1JVnXQg5LSNElIxlZ6wU8"
+      solution-channel="GMP_GE_placepicker_v2"
+    >
     </gmpx-api-loader>
-    <div id="place-picker-box">
+    <div id="place-picker-box bg-gray-900">
       <div id="place-picker-container">
         <gmpx-place-picker placeholder="Enter an address"></gmpx-place-picker>
       </div>
