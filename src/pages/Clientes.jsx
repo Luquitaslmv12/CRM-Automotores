@@ -27,9 +27,15 @@ import {
    LoaderCircle,
    Car,
    Plus,
+   Mail,
+   Phone,
+   IdCard,
+   MapPin,
+   Home,
 } from 'lucide-react';
 import AsignarVehiculosModal from '../components/AsignarVehiculosModal';
 import LocalidadAutocomplete from '../components/LocalidadAutocomplete';
+import TooltipWrapper from '../components/Tooltip/TooltipWrapper';
 
 
 
@@ -69,12 +75,18 @@ const [vehiculoEnConfirmacion, setVehiculoEnConfirmacion] = useState(null);
 
 
  const nombreRef = useRef();
+ 
 
-  useEffect(() => {
-    if (!modoEdicion && nombreRef.current) {
-      nombreRef.current.focus();
-    }
-  }, [modoEdicion]);
+ useEffect(() => {
+  if (modoEdicion) {
+    setTimeout(() => {
+      nombreRef.current?.focus();
+    }, 350);
+  }
+}, [modoEdicion]);
+
+
+
 
   // Función para validar solo letras
   const soloLetras = (value) =>
@@ -293,11 +305,17 @@ setLocalidad('');
 setDireccion(cliente.direccion || '');
 setLocalidad(cliente.localidad || '');
 
-    if (formRef.current) {
-      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
 
+
+  if (formRef.current) {
+    formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Dale un pequeño delay para esperar que termine el scroll y el render
+    setTimeout(() => {
+      nombreRef.current?.focus();
+    }, 800);
+  }
+};
   const exportarCSV = () => {
     setConfirmacion({ tipo: 'exportar' });
   };
@@ -448,10 +466,11 @@ const generarLinkWhatsApp = (numero) => {
         )}
       </AnimatePresence>
 
-      <motion.div
+<motion.div
   initial={{ opacity: 0, y: -20 }}
   animate={{ opacity: 1, y: 0 }}
-  className="bg-slate-900 p-8 rounded-3xl shadow-2xl w-full max-w-4xl mx-auto mb-10 border border-slate-700"
+  className="bg-slate-900/70 backdrop-blur-md p-8 rounded-3xl shadow-xl w-full max-w-4xl mx-auto mb-10 border border-slate-700/50"
+  ref={formRef}
 >
   <div className="flex items-center gap-2 mb-6">
     <UserPlus className="text-green-400" />
@@ -461,17 +480,21 @@ const generarLinkWhatsApp = (numero) => {
   </div>
 
   {/* --- Datos personales --- */}
-  <h3 className="text-slate-200 text-sm font-semibold mb-2 mt-6">Datos personales</h3>
-  <div className="bg-slate-800 rounded-xl p-5 mb-6 border border-slate-700 grid grid-cols-1 md:grid-cols-3 gap-4">
-    {/* Campo genérico */}
+  <h3 className="text-slate-200 text-sm font-semibold mb-4 mt-6">Datos personales</h3>
+  
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
     {[{
-      id: 'nombre', value: nombre, setValue: setNombre, label: 'Nombre', handler: soloLetras
+      id: 'nombre', value: nombre, setValue: setNombre, label: 'Nombre', handler: soloLetras, ref: nombreRef
     }, {
-      id: 'apellido', value: apellido, setValue: setApellido, label: 'Apellido', handler: soloLetras, ref: nombreRef
+      id: 'apellido', value: apellido, setValue: setApellido, label: 'Apellido', handler: soloLetras
     }, {
       id: 'dni', value: dni, setValue: setDni, label: 'DNI', type: 'number'
-    }].map(({ id, value, setValue, label, type = 'text', handler, ref }, i) => (
-      <div key={id} className="relative focus-within:ring-2 focus-within:ring-indigo-500/50 rounded-xl transition">
+    }].map(({ id, value, setValue, label, type = 'text', handler, ref }) => (
+      <div
+        key={id}
+        className="relative rounded-xl transition-shadow duration-300
+          shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70"
+      >
         <input
           {...(ref ? { ref } : {})}
           id={id}
@@ -479,12 +502,14 @@ const generarLinkWhatsApp = (numero) => {
           placeholder=" "
           value={value}
           onChange={(e) => setValue(handler ? handler(e.target.value) : e.target.value)}
-          className="peer p-3 pt-5 w-full rounded-xl bg-slate-900 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 placeholder-transparent text-white transition"
+          className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none placeholder-transparent text-white transition duration-300"
           autoComplete="off"
         />
         <label
           htmlFor={id}
-          className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+          className="absolute left-3 top-1 text-slate-400 text-sm transition-all
+            peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500
+            peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
         >
           {label}
         </label>
@@ -492,54 +517,66 @@ const generarLinkWhatsApp = (numero) => {
     ))}
   </div>
 
- <h3 className="text-slate-200 text-sm font-semibold mb-2 mt-6">Dirección</h3>
-<div className="bg-slate-800 rounded-xl p-5 mb-6 border border-slate-700 grid grid-cols-1 md:grid-cols-3 gap-4">
-  
-  {/* Localidad: columna 1 (1/3 ancho) */}
-  <div className="relative md:col-span-2">
-    <LocalidadAutocomplete localidad={localidad} setLocalidad={setLocalidad} />
-  </div>
-
-  {/* Dirección: columnas 2 y 3 (2/3 ancho) */}
-  <div className="relative md:col-span-1 focus-within:ring-2 focus-within:ring-indigo-500/50 rounded-xl transition">
-    <input
-      id="direccion"
-      type="text"
-      placeholder=" "
-      value={direccion}
-      onChange={(e) => setDireccion(e.target.value)}
-      className="peer p-3 pt-5 w-full rounded-xl bg-slate-900 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 placeholder-transparent text-white transition"
-      autoComplete="off"
-    />
-    <label
-      htmlFor="direccion"
-          className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+  {/* Dirección */}
+  <h3 className="text-slate-200 text-sm font-semibold mb-4 mt-6">Dirección</h3>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div
+      className="relative md:col-span-2 rounded-xl transition-shadow duration-300
+        shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70"
     >
-      Dirección
-    </label>
-  </div>
+      <LocalidadAutocomplete localidad={localidad} setLocalidad={setLocalidad} />
+    </div>
 
-</div>
+    <div
+      className="relative rounded-xl transition-shadow duration-300
+        shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70"
+    >
+      <input
+        id="direccion"
+        type="text"
+        placeholder=" "
+        value={direccion}
+        onChange={(e) => setDireccion(e.target.value)}
+        className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none placeholder-transparent text-white transition duration-300"
+        autoComplete="off"
+      />
+      <label
+        htmlFor="direccion"
+        className="absolute left-3 top-1 text-slate-400 text-sm transition-all
+          peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500
+          peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+      >
+        Dirección
+      </label>
+    </div>
+  </div>
 
   {/* Contacto */}
-  <h3 className="text-slate-200 text-sm font-semibold mb-2 mt-6">Contacto</h3>
-  <div className="bg-slate-800 rounded-xl p-5 mb-6 border border-slate-700 grid grid-cols-1 md:grid-cols-3 gap-4">
+  <h3 className="text-slate-200 text-sm font-semibold mb-4 mt-6">Contacto</h3>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
     {/* Email */}
-    <div className="relative focus-within:ring-2 focus-within:ring-indigo-500/50 rounded-xl transition">
+    <div
+      className={`relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg
+        focus-within:ring-2 ${
+          errorEmail ? 'ring-red-500 shadow-red-400' : 'ring-indigo-500/70'
+        }`}
+    >
       <input
         id="email"
         type="email"
         placeholder=" "
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        className={`peer p-3 pt-5 w-full rounded-xl bg-slate-900 border ${
-          errorEmail ? 'border-red-500 focus:ring-red-500/50' : 'border-slate-700 focus:ring-indigo-500/50'
-        } focus:outline-none focus:ring-2 placeholder-transparent text-white transition`}
+        className={`peer p-3 pt-5 w-full rounded-xl bg-slate-800 border ${
+          errorEmail ? 'border-red-500' : 'border-slate-700'
+        } focus:outline-none placeholder-transparent text-white transition duration-300`}
         autoComplete="off"
       />
       <label
         htmlFor="email"
-        className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+        className="absolute left-3 top-1 text-slate-400 text-sm transition-all
+          peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500
+          peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
       >
         Email
       </label>
@@ -547,19 +584,23 @@ const generarLinkWhatsApp = (numero) => {
     </div>
 
     {/* Teléfono */}
-    <div className="relative focus-within:ring-2 focus-within:ring-indigo-500/50 rounded-xl transition">
+    <div
+      className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70"
+    >
       <input
         id="telefono"
         type="tel"
         placeholder=" "
         value={telefono}
         onChange={(e) => setTelefono(soloNumeros(e.target.value))}
-        className="peer p-3 pt-5 w-full rounded-xl bg-slate-900 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 placeholder-transparent text-white transition"
+        className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none placeholder-transparent text-white transition duration-300"
         autoComplete="off"
       />
       <label
         htmlFor="telefono"
-        className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+        className="absolute left-3 top-1 text-slate-400 text-sm transition-all
+          peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500
+          peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
       >
         Teléfono
       </label>
@@ -567,7 +608,7 @@ const generarLinkWhatsApp = (numero) => {
 
     {/* Etiqueta */}
     <select
-      className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
+      className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/70 transition duration-300"
       value={etiqueta}
       onChange={(e) => setEtiqueta(e.target.value)}
     >
@@ -580,14 +621,13 @@ const generarLinkWhatsApp = (numero) => {
   </div>
 
   {/* Botones */}
-  <div className="flex flex-col md:flex-row gap-4">
+  <div className="flex flex-col md:flex-row gap-4 mt-6">
     <button
       onClick={guardarCliente}
       disabled={loading}
-      className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-xl transition-all duration-200 shadow-md flex-1
+      className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-xl transition-transform duration-200 shadow-md flex-1
         ${modoEdicion ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'}
-        ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02]'}
-      `}
+        ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.03]'}`}
     >
       {loading ? (
         <>
@@ -605,13 +645,16 @@ const generarLinkWhatsApp = (numero) => {
     {modoEdicion && (
       <button
         onClick={cancelarEdicion}
-        className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-xl shadow-md transition-all duration-200 flex-1 hover:scale-[1.02]"
+        className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-xl shadow-md transition-transform duration-200 flex-1 hover:scale-[1.03]"
       >
         Cancelar
       </button>
     )}
   </div>
 </motion.div>
+
+
+
 
 
 
@@ -673,74 +716,104 @@ const generarLinkWhatsApp = (numero) => {
 </div>
 
        {/* Lista de clientes */}
-      <div className="space-y-3 max-w-3xl mx-auto">
-        {clientesPaginados.length === 0 ? (
-          <p className="text-center text-slate-400">No hay clientes que coincidan.</p>
-        ) : (
-          clientesPaginados.map((cliente) => (
-            <motion.div
-              key={cliente.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="bg-slate-700 p-4 rounded-xl shadow-md flex justify-between items-center"
-            >
-              <div>
-                <p className="text-lg font-semibold">{cliente.nombre} {cliente.apellido}</p>
-                <p className="text-sm text-slate-300">
-                  {cliente.email} ·{' '}
-<a
-  href={`tel:${cliente.telefono}`}
-  className="text-blue-400 hover:underline"
->
-  {cliente.telefono}
-</a>{' '}
-· DNI: {cliente.dni || '-'} · Localidad: {cliente.localidad || '-'} · Dirección: {cliente.direccion || '-'}
-                </p>
-               {cliente.etiqueta && (
-  <span
-    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorEtiqueta(cliente.etiqueta)} text-white`}
-  >
-    {cliente.etiqueta}
-  </span>
-)}
-              </div>
-              <div className="flex gap-3 items-center">
-                <a
-                  href={generarLinkWhatsApp(cliente.telefono)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-green-400 hover:text-green-600"
-                  aria-label="Enviar WhatsApp"
-                >
-                  <MessageCircle />
-                </a>
-                <button
-  onClick={() => abrirAsignarVehiculo(cliente)}
-  className="text-cyan-400 hover:text-cyan-600"
-  aria-label="Asignar vehículo"
->
-  <Car />
-</button>
-                <button
-                  onClick={() => editarCliente(cliente)}
-                  className="text-indigo-300 hover:text-indigo-500"
-                  aria-label="Editar cliente"
-                >
-                  <Pencil />
-                </button>
-                <button
-                  onClick={() => eliminarCliente(cliente.id)}
-                  className="text-red-400 hover:text-red-600"
-                  aria-label="Eliminar cliente"
-                >
-                  <Trash2 />
-                </button>
-              </div>
-            </motion.div>
-          ))
-        )}
-      </div>
+     <div className="grid gap-4 md:grid-cols-2 max-w-5xl mx-auto">
+  {clientesPaginados.length === 0 ? (
+    <p className="text-center col-span-full text-slate-400">
+      No hay clientes que coincidan.
+    </p>
+  ) : (
+    clientesPaginados.map((cliente) => (
+      <motion.div
+        key={cliente.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ scale: 1.02 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="bg-gradient-to-br from-slate-800 to-slate-700/70 backdrop-blur-sm border border-slate-600 p-4 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
+      >
+       <div className="mb-2 flex justify-between items-center">
+  <h3 className="text-lg font-bold text-white">
+    {cliente.nombre} {cliente.apellido}
+  </h3>
+  {cliente.etiqueta && (
+    <span
+      className={`ml-2 px-3 py-0.5 rounded-full text-xs font-semibold ${colorEtiqueta(cliente.etiqueta)} text-white`}
+    >
+      {cliente.etiqueta}
+    </span>
+  )}
+</div>
+
+       <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-slate-300">
+  <div className="flex items-center gap-2">
+    <Mail className="w-4 h-4 text-red-500" />
+    <span>{cliente.email}</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <Phone className="w-4 h-4 text-gray-500" />
+    <a href={`tel:${cliente.telefono}`} className="text-blue-400 hover:underline">
+      {cliente.telefono}
+    </a>
+  </div>
+  <div className="flex items-center gap-2">
+    <IdCard className="w-4 h-4 text-indigo-400" />
+    <span>DNI: {cliente.dni || '-'}</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <MapPin className="w-4 h-4 text-red-500" />
+    <span>{cliente.localidad || '-'}</span>
+  </div>
+  <div className="flex items-center gap-2 col-span-2">
+    <Home className="w-4 h-4 text-yellow-400" />
+    <span>{cliente.direccion || '-'}</span>
+  </div>
+</div>
+
+        <div className="flex justify-center gap-4 mt-4 text-lg">
+  <TooltipWrapper label="Enviar WhatsApp">
+    <a
+      href={generarLinkWhatsApp(cliente.telefono)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-green-400 hover:text-green-600"
+      aria-label="Enviar WhatsApp"
+    >
+      <MessageCircle />
+    </a>
+  </TooltipWrapper>
+
+  <TooltipWrapper label="Asignar / Ver vehículos">
+    <button
+      onClick={() => abrirAsignarVehiculo(cliente)}
+      className="text-cyan-400 hover:text-cyan-600"
+    >
+      <Car />
+    </button>
+  </TooltipWrapper>
+
+  <TooltipWrapper label="Editar cliente">
+    <button
+      onClick={() => editarCliente(cliente) }
+      className="text-indigo-300 hover:text-indigo-500"
+      
+    >
+      <Pencil />
+    </button>
+  </TooltipWrapper>
+
+  <TooltipWrapper label="Eliminar cliente">
+    <button
+      onClick={() => eliminarCliente(cliente.id)}
+      className="text-red-400 hover:text-red-600"
+    >
+      <Trash2 />
+    </button>
+  </TooltipWrapper>
+</div>
+      </motion.div>
+    ))
+  )}
+</div>
 
       {/* Paginación */}
       {totalPaginas > 1 && (

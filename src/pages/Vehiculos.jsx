@@ -18,14 +18,19 @@ import {
   XCircle,
   Download,
   Search,
-  CheckCircle,
+  DollarSign,
   AlertTriangle,
   UserPlus,
   UserCheck,
-  Clock,
+  Calendar,
   KeyRound,
+  IdCard,
+  Car,
+  User,
+  Factory,
 } from "lucide-react";
 import ModalReparacion from "../components/reparaciones/ModalReparacion";
+import TooltipWrapper from "../components/Tooltip/TooltipWrapper";
 
 export default function Vehiculos() {
   const [marca, setMarca] = useState("");
@@ -357,7 +362,7 @@ export default function Vehiculos() {
   }}
   initial={{ opacity: 0, y: -20 }}
   animate={{ opacity: 1, y: 0 }}
-  className="bg-slate-900 p-8 rounded-3xl shadow-2xl w-full max-w-4xl mx-auto mb-10 border border-slate-700"
+  className="bg-slate-900/70 backdrop-blur-md p-8 rounded-3xl shadow-xl w-full max-w-4xl mx-auto mb-10 border border-slate-700/50"
 >
   <div className="flex items-center gap-2 mb-6">
     <PlusCircle className="text-green-400" />
@@ -366,9 +371,9 @@ export default function Vehiculos() {
     </h2>
   </div>
 
-  {/* --- Información básica --- */}
+  {/* Información básica */}
   <h3 className="text-slate-200 text-sm font-semibold mb-2 mt-6">Información básica</h3>
-  <div className="bg-slate-800 rounded-xl p-5 mb-6 border border-slate-700 grid grid-cols-1 md:grid-cols-3 gap-4">
+   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
     {[
       { id: 'marca', label: 'Marca', value: marca, setValue: setMarca },
       { id: 'modelo', label: 'Modelo', value: modelo, setValue: setModelo },
@@ -378,14 +383,15 @@ export default function Vehiculos() {
       { id: 'tipo', label: 'Tipo', value: tipo, setValue: setTipo },
       { id: 'precioVenta', label: 'Precio de Venta', value: precioVenta, setValue: setPrecioVenta, type: 'number' },
     ].map(({ id, label, value, setValue, type = 'text' }) => (
-      <div key={id} className="relative focus-within:ring-2 focus-within:ring-indigo-500/50 rounded-xl transition">
+      <div key={id} className="relative rounded-xl transition-shadow duration-300
+          shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
         <input
           id={id}
           type={type}
           placeholder=" "
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="peer p-3 pt-5 w-full rounded-xl bg-slate-900 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 placeholder-transparent text-white transition"
+          className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none placeholder-transparent text-white transition duration-300"
           autoComplete="off"
           min={type === 'number' ? 0 : undefined}
           step={type === 'number' ? 'any' : undefined}
@@ -404,7 +410,7 @@ export default function Vehiculos() {
     <select
       value={etiqueta}
       onChange={(e) => setEtiqueta(e.target.value)}
-      className="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
+      className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
     >
       <option value="">Etiqueta</option>
       <option value="Nuevo">Nuevo</option>
@@ -424,7 +430,9 @@ export default function Vehiculos() {
     <button
       type="submit"
       className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-xl transition-all duration-200 shadow-md flex-1
-        ${modoEdicion ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+        ${modoEdicion ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'}
+        hover:scale-[1.02]
+      `}
     >
       <PlusCircle size={18} />
       {modoEdicion ? 'Actualizar' : 'Agregar Vehículo'}
@@ -434,7 +442,7 @@ export default function Vehiculos() {
       <button
         type="button"
         onClick={cancelarEdicion}
-        className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-xl shadow-md transition-all duration-200 flex-1"
+        className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-xl shadow-md transition-all duration-200 flex-1 hover:scale-[1.02]"
       >
         Cancelar
       </button>
@@ -497,103 +505,135 @@ export default function Vehiculos() {
         ) : (
           vehiculosPaginados.map((vehiculo) => (
             <motion.div
-              key={vehiculo.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="bg-slate-700 p-4 rounded-xl shadow-md flex justify-between items-center"
-            >
-              <div>
-                <p className="text-lg font-semibold">
-                  {vehiculo.marca} {vehiculo.modelo}
-                </p>
-                <p className="text-sm text-slate-300">
-                  Patente: {vehiculo.patente || "-"} · Estado:{" "}
-                  {vehiculo.estado || "-"} · Tipo: {vehiculo.tipo || "-"}
-                </p>
-                {vehiculo.clienteId && (
-                  <p className="text-sm text-indigo-300 mt-1">
-                    Cliente:{" "}
-                    {clientes.find((c) => c.id === vehiculo.clienteId)
-                      ? `${
-                          clientes.find((c) => c.id === vehiculo.clienteId)
-                            .nombre
-                        } ${
-                          clientes.find((c) => c.id === vehiculo.clienteId)
-                            .apellido
-                        }`
-                      : "Sin asignar"}
-                  </p>
-                )}
-                {vehiculo.tallerId && (
-                  <p className="text-sm text-cyan-400">
-                    🏭 Taller:{" "}
-                    {talleres.find((t) => t.id === vehiculo.tallerId)?.nombre ||
-                      "Taller desconocido"}
-                  </p>
-                )}
-                <div className="mt-2 space-y-1 text-sm">
-                  <div className="flex items-center gap-2 text-green-400">
-                    <UserPlus size={14} />
-                    <span>
-                      {vehiculo.creadoPor || "Desconocido"} ·{" "}
-                      {vehiculo.creadoEn
-                        ? new Date(
-                            vehiculo.creadoEn.seconds * 1000
-                          ).toLocaleString()
-                        : "-"}
-                    </span>
-                  </div>
-                  {vehiculo.modificadoPor && (
-                    <div className="flex items-center gap-2 text-yellow-300">
-                      <UserCheck size={14} />
-                      <span>
-                        {vehiculo.modificadoPor} ·{" "}
-                        {vehiculo.modificadoEn
-                          ? new Date(
-                              vehiculo.modificadoEn.seconds * 1000
-                            ).toLocaleString()
-                          : "-"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                {vehiculo.etiqueta && (
-                  <p
-                    className={`text-xs inline-block mt-1 px-2 py-1 rounded-full text-white ${colorEtiqueta(
-                      vehiculo.etiqueta
-                    )}`}
-                  >
-                    {vehiculo.etiqueta}
-                  </p>
-                )}
-              </div>
+  key={vehiculo.id}
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  whileHover={{ scale: 1.02 }}
+  transition={{ duration: 0.3, ease: "easeOut" }}
+  className="bg-gradient-to-br from-slate-800 to-slate-700/70 backdrop-blur-sm border border-slate-600 p-4 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
+>
+  {/* Encabezado */}
+  <div className="mb-2 flex justify-between items-center">
+    <h3 className="text-lg font-bold text-white">
+      {vehiculo.marca} {vehiculo.modelo} * {vehiculo.patente || '-'}
+    </h3>
+    {vehiculo.etiqueta && (
+      <span
+        className={`ml-2 px-3 py-0.5 rounded-full text-xs font-semibold ${colorEtiqueta(vehiculo.etiqueta)} text-white`}
+      >
+        {vehiculo.etiqueta}
+      </span>
+    )}
+  </div>
 
-              {/* Botones de acción */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => editarVehiculo(vehiculo)}
-                  className="text-indigo-300 hover:text-indigo-500"
-                  aria-label="Editar vehículo"
-                >
-                  <Pencil />
-                </button>
-                <button
-                  onClick={() => eliminarVehiculo(vehiculo.id)}
-                  className="text-red-400 hover:text-red-600"
-                  aria-label="Eliminar vehículo"
-                >
-                  <Trash2 />
-                </button>
-                <button
-                  title="Registrar reparación"
-                  onClick={() => abrirModalReparacion(vehiculo)}
-                  className="text-yellow-400 hover:text-yellow-500 ml-2"
-                >
-                  <KeyRound size={18} />
-                </button>
-              </div>
-            </motion.div>
+  {/* Datos principales */}
+  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-slate-300">
+    <div className="flex items-center gap-2">
+      <KeyRound className="w-4 h-4 text-yellow-400" />
+      <span>Patente: {vehiculo.patente || '-'}</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <IdCard className="w-4 h-4 text-indigo-400" />
+      <span>Estado: {vehiculo.estado || '-'}</span>
+    </div>
+    <div className="flex items-center gap-2">
+      <Car className="w-4 h-4 text-cyan-400" />
+      <span>Tipo: {vehiculo.tipo || '-'}</span>
+    </div>
+    {vehiculo.precioVenta && (
+      <div className="flex items-center gap-2">
+        <DollarSign className="w-4 h-4 text-green-400" />
+        <span>${vehiculo.precioVenta}</span>
+      </div>
+    )}
+    <div className="col-span-2 flex items-center gap-2">
+      <Calendar className="w-4 h-4 text-gray-400" />
+      <span>Año: {vehiculo.año || '-'}</span>
+    </div>
+  </div>
+
+  {/* Cliente y Taller */}
+  <div className="mt-2 text-sm text-slate-300 space-y-1">
+    {vehiculo.clienteId && (
+      <div className="flex items-center gap-2 text-indigo-300">
+        <User className="w-4 h-4" />
+        <span>
+        Cliente Dueño: {vehiculo.clienteNombre} {vehiculo.clienteApellido}
+        </span>
+      </div>
+    )}
+    {vehiculo.tallerId && (
+      <div className="flex items-center gap-2 text-cyan-400">
+        <Factory className="w-4 h-4" />
+        <span>Taller: {talleres.find((t) => t.id === vehiculo.tallerId)?.nombre || 'Desconocido'}</span>
+      </div>
+    )}
+  </div>
+
+  {/* Metadatos */}
+  <div className="mt-3 space-y-1 text-sm">
+    <div className="flex items-center gap-2 text-green-400">
+      <UserPlus size={14} />
+      <span>
+       Vendido por: {vehiculo.vendidoPor || ""} ·{" "}
+        {vehiculo.vendidoEn
+          ? new Date(vehiculo.vendidoEn.seconds * 1000).toLocaleString()
+          : "-"}
+      </span>
+      </div>
+      <div className="flex items-center gap-2 text-green-400">
+      <UserPlus size={14} />
+      <span>
+       Creó: {vehiculo.creadoPor || "Desconocido"} ·{" "}
+        {vehiculo.creadoEn
+          ? new Date(vehiculo.creadoEn.seconds * 1000).toLocaleString()
+          : "-"}
+      </span>
+    </div>
+    {vehiculo.modificadoPor && (
+      <div className="flex items-center gap-2 text-yellow-300">
+        <UserCheck size={14} />
+        <span>
+          Modifico: {vehiculo.modificadoPor} ·{" "}
+          {vehiculo.modificadoEn
+            ? new Date(vehiculo.modificadoEn.seconds * 1000).toLocaleString()
+            : "-"}
+        </span>
+      </div>
+    )}
+  </div>
+
+  {/* Acciones */}
+  <div className="flex justify-center gap-4 mt-4 text-lg">
+    <TooltipWrapper label="Editar vehículo">
+      <button
+        onClick={() => editarVehiculo(vehiculo)}
+        className="text-indigo-300 hover:text-indigo-500"
+      >
+        <Pencil />
+      </button>
+    </TooltipWrapper>
+
+    <TooltipWrapper label="Eliminar vehículo">
+      <button
+        onClick={() => eliminarVehiculo(vehiculo.id)}
+        className="text-red-400 hover:text-red-600"
+      >
+        <Trash2 />
+      </button>
+    </TooltipWrapper>
+
+    <TooltipWrapper label="Registrar reparación">
+      <button
+        onClick={() => abrirModalReparacion(vehiculo)}
+        className="text-yellow-400 hover:text-yellow-500"
+      >
+        <KeyRound />
+      </button>
+    </TooltipWrapper>
+  </div>
+</motion.div>
+
           ))
         )}
       </div>

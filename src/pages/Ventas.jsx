@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db } from "../firebase";
+import { db, auth} from "../firebase";
 import {
   collection,
   getDocs,
@@ -48,6 +48,7 @@ const [modalOpen, setModalOpen] = useState(false);
 
 const [vehiculoPartePagoId, setVehiculoPartePagoId] = useState(null);
 const [vehiculoPartePago, setVehiculoPartePago] = useState(null);
+const user = auth.currentUser;
 
 
 const agregarVehiculoAlStock = async (vehiculo) => {
@@ -61,12 +62,14 @@ const agregarVehiculoAlStock = async (vehiculo) => {
       estado: vehiculo.estado || "Disponible",
       clienteNombre: vehiculo.clienteNombre || "",
       clienteApellido: vehiculo.clienteApellido || "",
+      creadoPor: user?.email || "Desconocido",
+      creadoEn: new Date(),
       fechaIngreso: new Date(),
       // ...otros campos que tengas en vehiculoPartePago
     };
 
     const docRef = await addDoc(collection(db, "vehiculos"), nuevoVehiculo);
-    console.log("Vehículo agregado con ID:", docRef.id);
+    console.log("Vehículo agregado a Vehiculos con ID:", docRef.id);
   } catch (error) {
     console.error("Error al agregar el vehículo al stock:", error);
   }
@@ -156,6 +159,8 @@ useEffect(() => {
       monto: parseFloat(monto),
       pagos: pagosMultiples ? pagosProcesados : [],
       fecha: Timestamp.fromDate(new Date(fechaVenta)),
+      creadoPor: user?.email || "Desconocido",
+      creadoEn: new Date(),
     });
 
     // 2. Si hay vehículo en parte de pago, guardarlo por separado
@@ -163,20 +168,30 @@ useEffect(() => {
       const vehiculoRef = await addDoc(collection(db, "vehiculosPartePago"), {
         ...vehiculoPartePago,
         clienteId: clienteSeleccionado.id,
+        clienteNombre: clienteSeleccionado.nombre,
+        clienteApellido: clienteSeleccionado.apellido,
         ventaId: ventaRef.id,
         fechaEntrega: new Date(),
+        creadoPor: user?.email || "Desconocido",
+        creadoEn: new Date(),
       });
 
       const vehiculoParaGuardar = {
   marca: vehiculoPartePago.marca?.trim() || "No especificado",
   modelo: vehiculoPartePago.modelo?.trim() || "No especificado",
-  modelo: vehiculoPartePago.tipo?.trim() || "No especificado",
+  tipo: vehiculoPartePago.tipo?.trim() || "No especificado",
+  patente: vehiculoPartePago.patente.trim() || "No especificado",
   año: parseInt(vehiculoPartePago.año) || null,
   color: vehiculoPartePago.color || "",
+  etiqueta: "Usado",
+  vendidoPor: user?.email || "",
+  vendidoEn: new Date(),
   monto: parseFloat(vehiculoPartePago.monto) || 0,
   clienteNombre: clienteSeleccionado?.nombre || "",
   clienteApellido: clienteSeleccionado?.apellido || "",
   precioCompra: parseFloat(monto) || 0,
+  creadoPor: user?.email || "Desconocido",
+  creadoEn: new Date(),
 };
 
 await agregarVehiculoAlStock(vehiculoParaGuardar);
@@ -193,6 +208,13 @@ await agregarVehiculoAlStock(vehiculoParaGuardar);
     await updateDoc(doc(db, "vehiculos", vehiculoId), {
       estado: "Vendido",
       clienteId: clienteSeleccionado.id,
+      clienteNombre: clienteSeleccionado.nombre,
+      clienteApellido: clienteSeleccionado.apellido,
+      etiqueta: "Vendido",
+      vendidoPor: user?.email || "",
+  vendidoEn: new Date(),
+      modificadoPor: user?.email || "Desconocido",
+  modificadoEn: new Date(),
     });
 
     toast.success("¡Venta registrada con éxito!");

@@ -3,6 +3,7 @@ import usePlacesAutocomplete, {
   getGeocode,
   getLatLng,
 } from 'use-places-autocomplete';
+import {Search} from 'lucide-react'
 
 export default function LocalidadAutocomplete({ localidad, setLocalidad }) {
   const [seleccionManual, setSeleccionManual] = useState(false);
@@ -51,13 +52,14 @@ export default function LocalidadAutocomplete({ localidad, setLocalidad }) {
 
   return (
     <div className="relative md:col-span-2 focus-within:ring-2 focus-within:ring-indigo-500/50 rounded-xl transition">
+      <Search className="absolute left-3 top-8 -translate-y-1/2 text-blue-500 w-5 h-5" />
       <input
         id="localidad-input"
         value={value}
         onChange={handleInput}
         disabled={!ready}
         placeholder=" "
-        className="peer p-3 pt-5 w-full rounded-xl bg-slate-900 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 placeholder-transparent text-white transition"
+        className="peer px-10 p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 placeholder-transparent text-white transition"
         autoComplete="off"
       />
       <label
