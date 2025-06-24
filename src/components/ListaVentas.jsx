@@ -3,11 +3,12 @@ import { db } from "../firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
-import { Trash, XCircle, Download, LoaderCircle, Eye } from "lucide-react";
+import { Trash, XCircle, Download, LoaderCircle, Eye, User, Car, DollarSign, Calendar, Trash2, KeyRound, CreditCard,UserCircle,ShoppingCart, FilePlus     } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { jsPDF } from "jspdf";
 import exportarBoletoDOCX from "./boletos/exportarBoletoDOCX";
+import TooltipWrapper from "./Tooltip/TooltipWrapper";
 
 export default function ListaVentas() {
   const [ventas, setVentas] = useState([]);
@@ -220,145 +221,187 @@ export default function ListaVentas() {
           <AnimatePresence>
             {ventasPagina.map((venta) => (
               <motion.div
-                key={venta.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="bg-gradient-to-br from-slate-800 to-slate-700/70 backdrop-blur-sm rounded-xl p-6 shadow-lg hover:shadow-2xl border border-transparent hover:border-indigo-500 transition-all duration-300"
-              >
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1 space-y-3">
-                    <p className="font-semibold text-xl text-indigo-300">
-                      Cliente:{" "}
-                      <span className="text-indigo-100">
-                        {venta.clienteNombre} {venta.clienteApellido}
-                      </span>
-                    </p>
+  key={venta.id}
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  whileHover={{ scale: 1.02 }}
+  transition={{ duration: 0.3, ease: "easeOut" }}
+  className="bg-gradient-to-br from-slate-800 to-slate-700/70 backdrop-blur-sm border border-slate-600 p-5 rounded-xl shadow-md hover:shadow-xl transition-all duration-300"
+>
+  <div className="flex justify-between items-start gap-6">
+    {/* Datos */}
+    <div className="flex-1 space-y-2 text-sm text-slate-300">
+      <div className="flex items-center gap-2 text-slate-300 text-lg">
+        <User className="w-6 h-6" />
+        <span className="font-semibold">
+           {venta.clienteNombre} {venta.clienteApellido}
+        </span>
+      
 
-                    <p className="text-indigo-200 text-lg">
-                      Vehículo:{" "}
-                      <span className="font-medium text-indigo-50">
-                        {venta.vehiculoInfo ||
-                          `${venta.marca} ${venta.modelo} (${venta.patente})`}
-                      </span>
-                    </p>
+      <div className="flex items-center gap-2 text-cyan-300">
+        <Car className="w-6 h-6" />
+        <span>
+          {venta.vehiculoInfo || `${venta.marca} ${venta.modelo}`} ·{" "}
+          <span className="text-white">{venta.patente}</span>
+        </span>
+      </div>
+      </div>
 
-                    {venta.monto && (
-                      <p className="text-green-400 font-semibold text-lg">
-                        Monto:{" "}
-                        <span className="text-green-300 font-bold">
-                          $
-                          {Number(venta.monto).toLocaleString("es-AR", {
-                            maximumFractionDigits: 2,
-                          })}
-                        </span>
-                      </p>
-                    )}
+      {venta.monto && (
+        <div className="flex items-center gap-2  ">
+          <DollarSign className="w-4 h-4 text-lime-400" />
+          <span className=  "font-semibol text-lime-400">
+            
+            {Number(venta.monto).toLocaleString("es-AR", {
+              maximumFractionDigits: 2,
+            })}
+          </span>
+        </div>
+      )}
 
-                    <p className="text-indigo-300 text-sm font-mono">
-                      Fecha:{" "}
-                      {dayjs(venta.fechaObj).locale("es").format("DD/MM/YYYY")}
-                    </p>
+      <div className="flex items-center gap-2 text-pink-300">
+        <Calendar className="w-4 h-4" />
+        <span>
+          {dayjs(venta.fechaObj).locale("es").format("DD/MM/YYYY")}
+        </span>
+      </div>
 
-                    {venta.vehiculoPartePago && (
-                      <p className="text-purple-400 font-semibold text-md mt-2">
-                        🚗 Parte de Pago: {venta.vehiculoPartePago.marca}{" "}
-                        {venta.vehiculoPartePago.modelo} - (
-                        {venta.vehiculoPartePago.patente} -{" "}
-                        {venta.vehiculoPartePago.año}) -{" "}
-                        <span className="font-mono">
-                          $
-                          {Number(venta.vehiculoPartePago.monto).toLocaleString(
-                            "es-AR",
-                            { maximumFractionDigits: 2 }
-                          )}
-                        </span>
-                      </p>
-                    )}
+      {venta.vehiculoPartePago && (
+        <div className="text-purple-400 mt-2 text-sm">
+          <span className="flex items-center gap-1">
+            <KeyRound className="w-4 h-4" />
+            Parte de Pago: {venta.vehiculoPartePago.marca}{" "}
+            {venta.vehiculoPartePago.modelo} (
+            {venta.vehiculoPartePago.patente} - {venta.vehiculoPartePago.año}) ·{" "}
+            <span className="text-purple-300 font-mono">
+              $
+              {Number(venta.vehiculoPartePago.monto).toLocaleString("es-AR", {
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          </span>
+        </div>
+      )}
 
-                    {venta.pagos && venta.pagos.length > 0 && (
-                      <p className="text-indigo-200 text-sm mt-3">
-                        Método{venta.pagos.length > 1 ? "s" : ""} de pago:{" "}
-                        <span className="text-indigo-100">
-                          {venta.pagos.map((pago, i) => (
-                            <span key={i}>
-                              {pago.metodo || "N/A"}{" "}
-                              {pago.monto
-                                ? `($${Number(pago.monto).toLocaleString(
-                                    "es-AR",
-                                    {
-                                      minimumFractionDigits: 0,
-                                      maximumFractionDigits: 2,
-                                    }
-                                  )})`
-                                : ""}
-                              {i < venta.pagos.length - 1 ? ", " : ""}
-                            </span>
-                          ))}
-                        </span>
-                      </p>
-                    )}
+      {venta.pagos?.length > 0 && (
+        <div className="text-indigo-200 text-sm">
+          <span className="flex items-center gap-1">
+            <CreditCard className="w-4 h-4 text-indigo-400" />
+            Método{venta.pagos.length > 1 ? "s" : ""} de pago:{" "}
+            {venta.pagos.map((pago, i) => (
+              <span key={i}>
+                {pago.metodo || "N/A"}{" "}
+                {pago.monto
+                  ? `($${Number(pago.monto).toLocaleString("es-AR", {
+                      maximumFractionDigits: 2,
+                    })})`
+                  : ""}
+                {i < venta.pagos.length - 1 ? ", " : ""}
+              </span>
+            ))}
+          </span>
+        </div>
+      )}
+    </div>
+
+
+
+
+    {/* Botones */}
+    <div className="flex flex-col items-center gap-4 mt-2 text-white">
+      <TooltipWrapper label="Ver detalle">
+        <button
+          onClick={() => setDetalleId(venta.id)}
+          className="text-yellow-400 hover:text-yellow-600"
+        >
+          <Eye size={22} />
+        </button>
+      </TooltipWrapper>
+
+      <TooltipWrapper label="Exportar PDF">
+        <button
+          onClick={() =>  exportarBoletoDOCX(venta)}
+          className="text-green-400 hover:text-green-600"
+        >
+          <Download size={22} />
+        </button>
+      </TooltipWrapper>
+
+      <TooltipWrapper label="Eliminar venta">
+        <button
+          onClick={() => setConfirmarId(venta.id)}
+          className="text-red-400 hover:text-red-600"
+        >
+          <Trash2 size={22} />
+        </button>
+      </TooltipWrapper>
+    </div>
+
+    
+  </div>
+
+      <div className="mt-5 pt-4 border-t border-slate-600">
+                <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
+                  Datos de La Compra/Venta
+                </h4>
+
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <UserCircle className="text-blue-500" size={16} />
+                    <span>
+                      <strong className="text-blue-500">Tomado por:</strong>{" "}
+                      {venta.vehiculoPartePago?.recibidoPor || "—"} ·{" "}
+                      {venta.creadoEn
+                        ? new Date(
+                            venta.creadoEn.seconds * 1000
+                          ).toLocaleString()
+                        : "—"}
+                    </span>
                   </div>
 
-                  <div className="flex flex-col items-center gap-5 mt-2">
-                    <button
-                      onClick={() => setDetalleId(venta.id)}
-                      title="Ver detalle"
-                      className="text-yellow-400 hover:text-yellow-600 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400 rounded"
-                      aria-label={`Ver detalle de la venta de ${venta.clienteNombre} ${venta.clienteApellido}`}
-                    >
-                      <Eye size={26} />
-                    </button>
-
-                    <button
-                      onClick={() => exportarPDF(venta)}
-                      title="Exportar PDF"
-                      className="text-green-400 hover:text-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-400 rounded"
-                      aria-label={`Exportar PDF de la venta de ${venta.clienteNombre} ${venta.clienteApellido}`}
-                    >
-                      <Download size={26} />
-                    </button>
-
-                    <button
-                      onClick={() => setConfirmarId(venta.id)}
-                      title="Eliminar venta"
-                      className="text-red-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 rounded"
-                      aria-label={`Eliminar venta de ${venta.clienteNombre} ${venta.clienteApellido}`}
-                    >
-                      <Trash size={26} />
-                    </button>
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="text-green-500" size={16} />
+                    <span>
+                      <strong className="text-green-500">Vendido por:</strong>{" "}
+                      {venta.vendidoPor || "—"} ·{" "}
+                     
+                    </span>
                   </div>
-                </div>
 
-                {/* Confirmar eliminación */}
-                <AnimatePresence>
-                  {confirmarId === venta.id && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-3 bg-red-900/40 p-3 rounded"
-                    >
-                      <p>¿Eliminar esta venta?</p>
-                      <div className="flex space-x-2 mt-2">
-                        <button
-                          onClick={() => eliminarVenta(venta.id)}
-                          className="btn btn-sm bg-red-700 hover:bg-red-800 text-white"
-                        >
-                          Sí, eliminar
-                        </button>
-                        <button
-                          onClick={() => setConfirmarId(null)}
-                          className="btn btn-sm btn-outline"
-                        >
-                          Cancelar
-                        </button>
-                      </div>
-                    </motion.div>
+                  <div className="flex items-center gap-2">
+                    <FilePlus className="text-indigo-500" size={16} />
+                    <span>
+                      <strong className="text-indigo-500">Creado por:</strong>{" "}
+                      {venta.creadoPor || "—"} ·{" "}
+                      {venta.creadoEn
+                        ? new Date(
+                            venta.creadoEn.seconds * 1000
+                          ).toLocaleString()
+                        : "—"}
+                    </span>
+                  </div>
+
+                  {venta.modificadoPor && (
+                    <div className="flex items-center gap-2">
+                      <Hammer className="text-yellow-500" size={16} />
+                      <span>
+                        <strong className="text-yellow-500">
+                          Modificado por:
+                        </strong>{" "}
+                        {venta.modificadoPor} ·{" "}
+                        {venta.modificadoEn
+                          ? new Date(
+                              venta.modificadoEn.seconds * 1000
+                            ).toLocaleString()
+                          : "—"}
+                      </span>
+                    </div>
                   )}
-                </AnimatePresence>
-              </motion.div>
+                </div>
+              </div>
+</motion.div>
+
+
             ))}
           </AnimatePresence>
         </div>

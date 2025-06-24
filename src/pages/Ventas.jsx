@@ -27,8 +27,14 @@ import {
 import { NumericFormat } from "react-number-format";
 import Listaventas from "../components/ListaVentas";
 import ModalVehiculoPartePago from "../components/ModalVehiculoPartePago";
+import exportarBoletoDOCX from "../components/boletos/exportarBoletoDOCX";
+
 
 export default function NuevaVenta() {
+  const [usuarios, setUsuarios] = useState([]);
+const [vendidoPor, setVendidoPor] = useState(""); // usuario seleccionado
+
+
   const [clienteId, setClienteId] = useState("");
   const [vehiculoId, setVehiculoId] = useState("");
   const [vehiculosDisponibles, setVehiculosDisponibles] = useState([]);
@@ -54,6 +60,20 @@ export default function NuevaVenta() {
   const [vehiculoPartePagoId, setVehiculoPartePagoId] = useState(null);
   const [vehiculoPartePago, setVehiculoPartePago] = useState(null);
   const user = auth.currentUser;
+
+
+  useEffect(() => {
+  const fetchUsuarios = async () => {
+    const usuariosSnapshot = await getDocs(collection(db, "usuarios"));
+    const usuariosList = usuariosSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setUsuarios(usuariosList);
+  };
+
+  fetchUsuarios();
+}, []);
 
   useEffect(() => {
     if (parteDePago) setModalOpen(true);
@@ -140,6 +160,7 @@ export default function NuevaVenta() {
         fecha: Timestamp.fromDate(new Date(fechaVenta)),
         creadoPor: user?.email || "Desconocido",
         creadoEn: new Date(),
+        vendidoPor,
       });
 
       // 2. Procesar parte de pago si corresponde
@@ -155,8 +176,13 @@ export default function NuevaVenta() {
             fechaEntrega: new Date(),
             creadoPor: user?.email || "Desconocido",
             creadoEn: new Date(),
+             recibidoPor: vehiculoPartePago.recibidoPor || "No especificado",
+             vendidoPor,
           }
         );
+console.log("Vehículo parte de pago:", vehiculoPartePago);
+
+
 
         // Validación mínima antes de guardar en "vehiculos"
         const vehiculoValido =
@@ -203,8 +229,9 @@ export default function NuevaVenta() {
         clienteNombre: clienteSeleccionado.nombre,
         clienteApellido: clienteSeleccionado.apellido,
         etiqueta: "Vendido",
-        vendidoPor: user?.email || "",
+        modificadoPor: user?.email || "",
         vendidoEn: new Date(),
+        vendidoPor,
       });
 
       toast.success("¡Venta registrada con éxito!");
@@ -214,7 +241,6 @@ export default function NuevaVenta() {
       setVehiculoId("");
       setMonto("");
       setClienteSeleccionado(null);
-      setVehiculoSeleccionado(null);
       setPagos([{ metodo: "", monto: "" }]);
       setPagosMultiples(false);
       setErrores({});
@@ -270,6 +296,23 @@ export default function NuevaVenta() {
               className="w-full p-3 rounded bg-slate-700 text-white border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </section>
+
+
+{/* Sección: Datos Venta */}
+          <label className="text-sm text-white block mb-2">Vendido por:</label>
+<select
+  value={vendidoPor}
+  onChange={(e) => setVendidoPor(e.target.value)}
+  className="w-full p-3 mb-4 rounded bg-slate-700 text-white"
+  required
+>
+  <option value="">Seleccione un usuario</option>
+  {usuarios.map((usuario) => (
+    <option key={usuario.id} value={usuario.nombre}>
+      {usuario.nombre}
+    </option>
+  ))}
+</select>
 
           {/* Sección: Cliente y Vehículo */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">

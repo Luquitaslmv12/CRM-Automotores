@@ -1,8 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { db } from "../firebase"; // tu configuración
-import { collection, addDoc, updateDoc, doc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function ModalVehiculoPartePago({ onClose, onSave }) {
+  const [usuarios, setUsuarios] = useState([]);
+const [recibidoPor, setRecibidoPor] = useState("");
+
+
+useEffect(() => {
+  const fetchUsuarios = async () => {
+    const usuariosSnapshot = await getDocs(collection(db, "usuarios"));
+    const usuariosList = usuariosSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    setUsuarios(usuariosList);
+  };
+
+  fetchUsuarios();
+}, []);
+
  const [vehiculo, setVehiculo] = useState({
   marca: "",
   modelo: "",
@@ -10,6 +27,7 @@ export default function ModalVehiculoPartePago({ onClose, onSave }) {
   color: "",
   monto: "",
   patente: "",
+  tipo: "",
 });
 
   const handleChange = (e) => {
@@ -20,6 +38,7 @@ const handleSubmit = (e) => {
   e.preventDefault();
   onSave({
     ...vehiculo,
+    recibidoPor,
     fechaEntrega: new Date(),
   });
   
@@ -34,6 +53,21 @@ const handleSubmit = (e) => {
         <h3 className="text-xl font-semibold mb-4 text-white">
           Datos del vehículo entregado en parte de pago
         </h3>
+
+        <label className="text-white block mb-2">Recibido por:</label>
+<select
+  value={recibidoPor}
+  onChange={(e) => setRecibidoPor(e.target.value)}
+  className="w-full p-3 mb-3 rounded bg-slate-700 text-white"
+  required
+>
+  <option value="">Seleccione un usuario</option>
+  {usuarios.map((usuario) => (
+    <option key={usuario.id} value={usuario.nombre}>
+      {usuario.nombre}
+    </option>
+  ))}
+</select> 
 
         <input
           name="marca"
@@ -59,6 +93,14 @@ const handleSubmit = (e) => {
           required
         />
         <input
+          name="tipo"
+          placeholder="Tipo"
+          value={vehiculo.tipo}
+          onChange={handleChange}
+          className="w-full p-3 mb-3 rounded bg-slate-700 text-white"
+          required
+        />
+       <input
   name="monto"
   type="number"
   step="0.01"
@@ -66,8 +108,17 @@ const handleSubmit = (e) => {
   value={vehiculo.monto}
   onChange={handleChange}
   className="w-full p-3 mb-3 rounded bg-slate-700 text-white"
-  required
 />
+
+{/* Vista del monto en formato pesos */}
+{vehiculo.monto && (
+  <p className="text-sm text-lime-400 font-mono">
+    {Number(vehiculo.monto).toLocaleString("es-AR", {
+      style: "currency",
+      currency: "ARS",
+    })}
+  </p>
+)}
         <input
           name="año"
           type="number"
