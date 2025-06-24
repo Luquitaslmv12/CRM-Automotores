@@ -3,6 +3,7 @@ import { db, auth } from "../firebase";
 import {
   collection,
   getDocs,
+  getDoc,
   addDoc,
   doc,
   updateDoc,
@@ -29,11 +30,9 @@ import Listaventas from "../components/ListaVentas";
 import ModalVehiculoPartePago from "../components/ModalVehiculoPartePago";
 import exportarBoletoDOCX from "../components/boletos/exportarBoletoDOCX";
 
-
 export default function NuevaVenta() {
   const [usuarios, setUsuarios] = useState([]);
-const [vendidoPor, setVendidoPor] = useState(""); // usuario seleccionado
-
+  const [vendidoPor, setVendidoPor] = useState(""); // usuario seleccionado
 
   const [clienteId, setClienteId] = useState("");
   const [vehiculoId, setVehiculoId] = useState("");
@@ -61,19 +60,18 @@ const [vendidoPor, setVendidoPor] = useState(""); // usuario seleccionado
   const [vehiculoPartePago, setVehiculoPartePago] = useState(null);
   const user = auth.currentUser;
 
-
   useEffect(() => {
-  const fetchUsuarios = async () => {
-    const usuariosSnapshot = await getDocs(collection(db, "usuarios"));
-    const usuariosList = usuariosSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    setUsuarios(usuariosList);
-  };
+    const fetchUsuarios = async () => {
+      const usuariosSnapshot = await getDocs(collection(db, "usuarios"));
+      const usuariosList = usuariosSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setUsuarios(usuariosList);
+    };
 
-  fetchUsuarios();
-}, []);
+    fetchUsuarios();
+  }, []);
 
   useEffect(() => {
     if (parteDePago) setModalOpen(true);
@@ -81,14 +79,21 @@ const [vendidoPor, setVendidoPor] = useState(""); // usuario seleccionado
   }, [parteDePago]);
 
   // Obtener info del cliente seleccionado
+
   useEffect(() => {
     if (!clienteId) return setClienteSeleccionado(null);
+
     const obtenerCliente = async () => {
-      const snap = await getDocs(collection(db, "clientes"));
-      const cliente = snap.docs.find((doc) => doc.id === clienteId);
-      if (cliente)
-        setClienteSeleccionado({ id: cliente.id, ...cliente.data() });
+      const ref = doc(db, "clientes", clienteId);
+      const snap = await getDoc(ref);
+
+      if (snap.exists()) {
+        setClienteSeleccionado({ id: snap.id, ...snap.data() });
+      } else {
+        setClienteSeleccionado(null);
+      }
     };
+
     obtenerCliente();
   }, [clienteId]);
 
@@ -176,13 +181,11 @@ const [vendidoPor, setVendidoPor] = useState(""); // usuario seleccionado
             fechaEntrega: new Date(),
             creadoPor: user?.email || "Desconocido",
             creadoEn: new Date(),
-             recibidoPor: vehiculoPartePago.recibidoPor || "No especificado",
-             vendidoPor,
+            recibidoPor: vehiculoPartePago.recibidoPor || "No especificado",
+            vendidoPor,
           }
         );
-console.log("Vehículo parte de pago:", vehiculoPartePago);
-
-
+        console.log("Vehículo parte de pago:", vehiculoPartePago);
 
         // Validación mínima antes de guardar en "vehiculos"
         const vehiculoValido =
@@ -297,22 +300,21 @@ console.log("Vehículo parte de pago:", vehiculoPartePago);
             />
           </section>
 
-
-{/* Sección: Datos Venta */}
+          {/* Sección: Datos Venta */}
           <label className="text-sm text-white block mb-2">Vendido por:</label>
-<select
-  value={vendidoPor}
-  onChange={(e) => setVendidoPor(e.target.value)}
-  className="w-full p-3 mb-4 rounded bg-slate-700 text-white"
-  required
->
-  <option value="">Seleccione un usuario</option>
-  {usuarios.map((usuario) => (
-    <option key={usuario.id} value={usuario.nombre}>
-      {usuario.nombre}
-    </option>
-  ))}
-</select>
+          <select
+            value={vendidoPor}
+            onChange={(e) => setVendidoPor(e.target.value)}
+            className="w-full p-3 mb-4 rounded bg-slate-700 text-white"
+            required
+          >
+            <option value="">Seleccione un usuario</option>
+            {usuarios.map((usuario) => (
+              <option key={usuario.id} value={usuario.nombre}>
+                {usuario.nombre}
+              </option>
+            ))}
+          </select>
 
           {/* Sección: Cliente y Vehículo */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
