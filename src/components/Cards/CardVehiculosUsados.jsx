@@ -30,7 +30,9 @@ export default function CardVehiculosUsados() {
     doc.setFontSize(12);
     usados.forEach((v, i) => {
       doc.text(
-        `${i + 1}. ${v.marca} ${v.modelo} - ${v.patente} - ${v.año} - ${v.estado} - $${v.precioVenta}`,
+        `${i + 1}. ${v.marca} ${v.modelo} - ${v.patente} - ${v.año} - ${
+          v.estado
+        } - $${v.precioVenta}`,
         20,
         30 + i * 10
       );
@@ -45,10 +47,12 @@ export default function CardVehiculosUsados() {
   );
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow border-l-4 border-yellow-500">
+    <div className="bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow border-l-4 border-yellow-500">
       <div className="flex items-center gap-4 mb-2">
         <Truck className="text-yellow-600 w-8 h-8" />
-        <h3 className="text-xl font-semibold flex-grow">Vehículos Usados Disponibles</h3>
+        <h3 className="text-xl font-semibold flex-grow">
+          Vehículos Usados Disponibles
+        </h3>
         <button
           onClick={exportarPDF}
           className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm"
@@ -85,7 +89,9 @@ export default function CardVehiculosUsados() {
             Página {paginaActual} de {totalPaginas}
           </span>
           <button
-            onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
+            onClick={() =>
+              setPaginaActual((p) => Math.min(totalPaginas, p + 1))
+            }
             disabled={paginaActual === totalPaginas}
             className="p-1 text-gray-600 hover:text-black disabled:opacity-40"
           >

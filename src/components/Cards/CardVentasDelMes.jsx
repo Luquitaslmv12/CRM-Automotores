@@ -94,7 +94,7 @@ export default function CardVentasDelMes() {
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow border-l-4 border-green-500 flex flex-col gap-4"
+      className="bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow border-l-4 border-green-500 flex flex-col gap-4"
     >
       <div className="flex items-center gap-4">
         <DollarSign className="text-green-600 w-8 h-8" />

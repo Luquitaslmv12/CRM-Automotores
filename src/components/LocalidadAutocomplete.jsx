@@ -1,9 +1,9 @@
-import {React, useEffect, useState } from 'react';
+import { React, useEffect, useState } from "react";
 import usePlacesAutocomplete, {
   getGeocode,
   getLatLng,
-} from 'use-places-autocomplete';
-import {Search} from 'lucide-react'
+} from "use-places-autocomplete";
+import { Search } from "lucide-react";
 
 export default function LocalidadAutocomplete({ localidad, setLocalidad }) {
   const [seleccionManual, setSeleccionManual] = useState(false);
@@ -22,7 +22,7 @@ export default function LocalidadAutocomplete({ localidad, setLocalidad }) {
   // Sync externo → interno
   useEffect(() => {
     if (!seleccionManual) {
-      setValue(localidad || '');
+      setValue(localidad || "");
       setMostrarSugerencias(false); // ocultar sugerencias cuando carga externo
     } else {
       setSeleccionManual(false);
@@ -44,9 +44,9 @@ export default function LocalidadAutocomplete({ localidad, setLocalidad }) {
     try {
       const results = await getGeocode({ address });
       const { lat, lng } = await getLatLng(results[0]);
-      console.log('Ubicación:', { lat, lng });
+      console.log("Ubicación:", { lat, lng });
     } catch (error) {
-      console.error('Error al buscar coordenadas', error);
+      console.error("Error al buscar coordenadas", error);
     }
   };
 
@@ -64,12 +64,14 @@ export default function LocalidadAutocomplete({ localidad, setLocalidad }) {
       />
       <label
         htmlFor="localidad-input"
-        className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+        className="absolute left-10 top-1 text-lime-400 text-sm transition-all
+            peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-200
+            peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
       >
         Localidad
       </label>
 
-      {status === 'OK' && mostrarSugerencias && (
+      {status === "OK" && mostrarSugerencias && (
         <ul className="absolute z-50 bg-slate-900 border border-slate-700 w-full mt-1 max-h-48 overflow-auto rounded shadow-lg">
           {data.map(({ place_id, description }) => (
             <li

@@ -79,7 +79,7 @@ export default function CardVehiculosReparacion() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow border-l-4 border-indigo-500">
+    <div className="bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow border-l-4 border-indigo-500">
       <div className="flex items-center gap-4 mb-2">
         <Wrench className="text-indigo-600 w-8 h-8" />
         <h3 className="text-xl font-semibold flex-grow">En Reparación</h3>
@@ -97,7 +97,10 @@ export default function CardVehiculosReparacion() {
 
       <div className="space-y-3 text-sm mb-2">
         {reparandoPagina.map((v) => (
-          <div key={v.id} className="bg-gray-50 dark:bg-gray-700 p-2 rounded-md">
+          <div
+            key={v.id}
+            className="bg-gray-50 dark:bg-gray-700 p-2 rounded-md"
+          >
             <div className="font-medium text-gray-800 dark:text-white">
               {v.marca} {v.modelo} - {v.patente} ({v.año})
             </div>
@@ -105,11 +108,11 @@ export default function CardVehiculosReparacion() {
               <div className="text-gray-500 text-xs mt-1">
                 🏭 Taller:{" "}
                 <Link
-  to={`/proveedores/${v.tallerId}`}
-  className="text-blue-600 hover:underline font-semibold"
->
-  {proveedoresMap[v.tallerId] || "Ver taller"}
-</Link>
+                  to={`/proveedores/${v.tallerId}`}
+                  className="text-blue-600 hover:underline font-semibold"
+                >
+                  {proveedoresMap[v.tallerId] || "Ver taller"}
+                </Link>
               </div>
             )}
           </div>
@@ -129,7 +132,9 @@ export default function CardVehiculosReparacion() {
             Página {paginaActual} de {totalPaginas}
           </span>
           <button
-            onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
+            onClick={() =>
+              setPaginaActual((p) => Math.min(totalPaginas, p + 1))
+            }
             disabled={paginaActual === totalPaginas}
             className="p-1 text-gray-600 hover:text-black disabled:opacity-40"
           >

@@ -195,7 +195,7 @@ export default function CardEvolucionVentas() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-gray-800 p-6 rounded-xl shadow flex flex-col gap-4 border-l-4 border-blue-500"
+      className="bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow flex flex-col gap-4 border-l-4 border-blue-500"
     >
       <div className="flex justify-between items-center">
         <div className="flex gap-3 items-center">

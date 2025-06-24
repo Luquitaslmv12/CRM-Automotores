@@ -76,7 +76,7 @@ export default function CardClientesMorosos() {
   };
 
   return (
-    <div className="relative bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-xl shadow border-l-4 border-red-500">
+    <div className="relative bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow border-l-4 border-red-500">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-2">
         <Users className="text-red-600 w-6 h-6 sm:w-8 sm:h-8" />
         <h3 className="text-lg sm:text-xl font-semibold flex-grow text-center">

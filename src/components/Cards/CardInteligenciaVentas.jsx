@@ -152,7 +152,7 @@ export default function CardInteligenciaVentas() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className={`bg-white dark:bg-gray-800 p-5 rounded-xl shadow border-l-4 ${
+      className={`bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-5 rounded-xl shadow border-l-4 ${
         estado.arriba ? "border-green-500" : "border-red-500"
       } flex flex-col gap-4`}
     >

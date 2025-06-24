@@ -24,23 +24,27 @@ export default function CardPresupuestosRecientes() {
   const [datosListos, setDatosListos] = useState(false);
 
   useEffect(() => {
-  const cargarClientesYVehiculos = async () => {
-    const [snapClientes, snapVehiculos] = await Promise.all([
-      getDocs(collection(db, "clientes")),
-      getDocs(collection(db, "vehiculos")),
-    ]);
-    setClientes(snapClientes.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    setVehiculos(snapVehiculos.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    setDatosListos(true); // ✅ ahora marcamos como listos
-  };
-  cargarClientesYVehiculos();
-}, []);
+    const cargarClientesYVehiculos = async () => {
+      const [snapClientes, snapVehiculos] = await Promise.all([
+        getDocs(collection(db, "clientes")),
+        getDocs(collection(db, "vehiculos")),
+      ]);
+      setClientes(
+        snapClientes.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
+      setVehiculos(
+        snapVehiculos.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+      );
+      setDatosListos(true); // ✅ ahora marcamos como listos
+    };
+    cargarClientesYVehiculos();
+  }, []);
 
-useEffect(() => {
-  if (datosListos) {
-    cargarPresupuestos(); // ✅ solo cuando ya están los datos
-  }
-}, [datosListos]);
+  useEffect(() => {
+    if (datosListos) {
+      cargarPresupuestos(); // ✅ solo cuando ya están los datos
+    }
+  }, [datosListos]);
 
   const cargarPresupuestos = async (next = true) => {
     if (loading) return;
@@ -62,7 +66,8 @@ useEffect(() => {
           );
     } else {
       // Para ir hacia atrás, tomamos el último cursor guardado en pageHistory
-      const prevCursor = pageHistory.length > 1 ? pageHistory[pageHistory.length - 2] : null;
+      const prevCursor =
+        pageHistory.length > 1 ? pageHistory[pageHistory.length - 2] : null;
       if (prevCursor === null) {
         // Volver a la primera página
         q = query(
@@ -97,12 +102,14 @@ useEffect(() => {
       // Enriquecer los presupuestos con datos de cliente y vehículo
       const datos = docs.map((docPres) => {
         const data = docPres.data();
-        const cliente = clientes.find(c => c.id === data.clienteId);
-        const vehiculo = vehiculos.find(v => v.id === data.vehiculoId);
+        const cliente = clientes.find((c) => c.id === data.clienteId);
+        const vehiculo = vehiculos.find((v) => v.id === data.vehiculoId);
 
         return {
           id: docPres.id,
-          cliente: cliente ? `${cliente.nombre} ${cliente.apellido}` : "Cliente no encontrado",
+          cliente: cliente
+            ? `${cliente.nombre} ${cliente.apellido}`
+            : "Cliente no encontrado",
           vehiculo: vehiculo
             ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
             : "Vehículo no encontrado",
@@ -124,7 +131,7 @@ useEffect(() => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow border-l-4 border-indigo-500"
+      className="bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-5 rounded-xl shadow border-l-4 border-indigo-500"
     >
       <div className="flex items-center gap-3 mb-4">
         <ClipboardList className="text-indigo-500 w-6 h-6" />
@@ -136,19 +143,25 @@ useEffect(() => {
       {loading && <p>Cargando...</p>}
 
       {presupuestos.length === 0 && !loading ? (
-        <p className="text-gray-600 dark:text-gray-300 text-sm">Sin presupuestos recientes.</p>
+        <p className="text-gray-600 dark:text-gray-300 text-sm">
+          Sin presupuestos recientes.
+        </p>
       ) : (
         <>
           <ul className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
             {presupuestos.map((p) => (
               <li key={p.id} className="py-2 flex justify-between items-start">
                 <div className="flex flex-col">
-                  <span className="font-medium text-gray-800 dark:text-gray-100">{p.cliente}</span>
-                  <span className="text-gray-600 dark:text-gray-300">{p.vehiculo}</span>
+                  <span className="font-medium text-gray-800 dark:text-gray-100">
+                    {p.cliente}
+                  </span>
+                  <span className="text-gray-600 dark:text-gray-300">
+                    {p.vehiculo}
+                  </span>
                   <span className="text-xs text-gray-400">{p.fecha}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-indigo-600 font-semibold">
+                  <span className="text-lime-500 font-semibold">
                     ${p.monto.toLocaleString("es-AR")}
                   </span>
                 </div>

@@ -28,6 +28,10 @@ import {
   Car,
   User,
   Factory,
+  UserCircle,
+  ShoppingCart,
+  FilePlus,
+  Hammer,
 } from "lucide-react";
 import ModalReparacion from "../components/reparaciones/ModalReparacion";
 import TooltipWrapper from "../components/Tooltip/TooltipWrapper";
@@ -355,101 +359,155 @@ export default function Vehiculos() {
 
       {/* Formulario */}
       <motion.form
-  ref={formRef}
-  onSubmit={(e) => {
-    e.preventDefault();
-    guardarVehiculo();
-  }}
-  initial={{ opacity: 0, y: -20 }}
-  animate={{ opacity: 1, y: 0 }}
-  className="bg-slate-900/70 backdrop-blur-md p-8 rounded-3xl shadow-xl w-full max-w-4xl mx-auto mb-10 border border-slate-700/50"
->
-  <div className="flex items-center gap-2 mb-6">
-    <PlusCircle className="text-green-400" />
-    <h2 className="text-2xl font-bold text-white tracking-wide">
-      {modoEdicion ? 'Editar Vehículo' : 'Agregar Vehículo'}
-    </h2>
-  </div>
+        ref={formRef}
+        onSubmit={(e) => {
+          e.preventDefault();
+          guardarVehiculo();
+        }}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-indigo-700/10 backdrop-blur-md p-8 rounded-3xl shadow-xl w-full max-w-4xl mx-auto mb-10 border border-slate-700/50"
+      >
+        <div className="flex items-center gap-2 mb-6">
+          <PlusCircle className="text-green-400" />
+          <h2 className="text-2xl font-bold text-white tracking-wide">
+            {modoEdicion ? "Editar Vehículo" : "Agregar Vehículo"}
+          </h2>
+        </div>
 
-  {/* Información básica */}
-  <h3 className="text-slate-200 text-sm font-semibold mb-2 mt-6">Información básica</h3>
-   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-    {[
-      { id: 'marca', label: 'Marca', value: marca, setValue: setMarca },
-      { id: 'modelo', label: 'Modelo', value: modelo, setValue: setModelo },
-      { id: 'patente', label: 'Patente', value: patente, setValue: setPatente },
-      { id: 'año', label: 'Año', value: año, setValue: setAño, type: 'number' },
-      { id: 'estado', label: 'Estado', value: estado, setValue: setEstado },
-      { id: 'tipo', label: 'Tipo', value: tipo, setValue: setTipo },
-      { id: 'precioVenta', label: 'Precio de Venta', value: precioVenta, setValue: setPrecioVenta, type: 'number' },
-    ].map(({ id, label, value, setValue, type = 'text' }) => (
-      <div key={id} className="relative rounded-xl transition-shadow duration-300
-          shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
-        <input
-          id={id}
-          type={type}
-          placeholder=" "
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none placeholder-transparent text-white transition duration-300"
-          autoComplete="off"
-          min={type === 'number' ? 0 : undefined}
-          step={type === 'number' ? 'any' : undefined}
-          required={['marca', 'modelo', 'patente', 'año'].includes(id)}
-        />
-        <label
-          htmlFor={id}
-          className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
-        >
-          {label}{['marca', 'modelo', 'patente', 'año'].includes(id) ? ' *' : ''}
-        </label>
-      </div>
-    ))}
+        {/* Información básica */}
+        <h3 className="text-slate-200 text-sm font-semibold mb-2 mt-6">
+          Información básica
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { id: "marca", label: "Marca", value: marca, setValue: setMarca },
+            {
+              id: "modelo",
+              label: "Modelo",
+              value: modelo,
+              setValue: setModelo,
+            },
+            {
+              id: "patente",
+              label: "Patente",
+              value: patente,
+              setValue: setPatente,
+            },
+            {
+              id: "año",
+              label: "Año",
+              value: año,
+              setValue: setAño,
+              type: "number",
+            },
+            {
+              id: "estado",
+              label: "Estado",
+              value: estado,
+              setValue: setEstado,
+            },
+            { id: "tipo", label: "Tipo", value: tipo, setValue: setTipo },
+            {
+              id: "precioVenta",
+              label: "Precio de Venta",
+              value: precioVenta,
+              setValue: setPrecioVenta,
+              type: "number",
+            },
+          ].map(({ id, label, value, setValue, type = "text" }) => (
+            <div
+              key={id}
+              className="relative rounded-xl transition-shadow duration-300
+          shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70"
+            >
+              <input
+                id={id}
+                type={type}
+                placeholder=" "
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none placeholder-transparent text-white transition duration-300"
+                autoComplete="off"
+                min={type === "number" ? 0 : undefined}
+                step={type === "number" ? "any" : undefined}
+                required={["marca", "modelo", "patente", "año"].includes(id)}
+              />
+              <label
+                htmlFor={id}
+                className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+              >
+                {label}
+                {["marca", "modelo", "patente", "año"].includes(id) ? " *" : ""}
+              </label>
+            </div>
+          ))}
 
-    {/* Selector etiqueta */}
-    <select
-      value={etiqueta}
-      onChange={(e) => setEtiqueta(e.target.value)}
-      className="w-full p-3 rounded-xl bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition"
-    >
-      <option value="">Etiqueta</option>
-      <option value="Nuevo">Nuevo</option>
-      <option value="Usado">Usado</option>
-      <option value="Reparación">Reparación</option>
-      <option value="Vendido">Vendido</option>
-    </select>
+          {/* Selector etiqueta */}
+          <select
+            className={`w-full p-3 rounded-xl bg-slate-800  text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/70 transition duration-300
+    ${
+      etiqueta === ""
+        ? "border-indigo-500 border-1"
+        : etiqueta === "Nuevo"
+        ? "border-green-500 border-4"
+        : etiqueta === "Usado"
+        ? "border-yellow-500 border-4"
+        : etiqueta === "Reparación"
+        ? "border-red-500 border-4"
+        : etiqueta === "Vendido"
+        ? "border-slate-500 border-4"
+        : ""
+    }
+  `}
+            value={etiqueta}
+            onChange={(e) => setEtiqueta(e.target.value)}
+          >
+            <option value="">Seleccionar etiqueta</option>
+            <option value="Nuevo">Nuevo (0KM)</option>
+            <option value="Usado">Usado</option>
+            <option value="Vendido">Vendido</option>
+            <option value="Reparación">Reparación</option>
+          </select>
 
-    {/* Buscador Cliente */}
-    <div className="md:col-span-3">
-      <BuscadorCliente value={clienteId} onChange={setClienteId} placeholder="Asignar cliente/Cliente Asignado" />
-    </div>
-  </div>
+          {/* Buscador Cliente */}
+          <div className="md:col-span-3">
+            <BuscadorCliente
+              value={clienteId}
+              onChange={setClienteId}
+              placeholder="Asignar cliente/Cliente Asignado"
+            />
+          </div>
+        </div>
 
-  {/* Botones */}
-  <div className="flex flex-col md:flex-row gap-4">
-    <button
-      type="submit"
-      className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-xl transition-all duration-200 shadow-md flex-1
-        ${modoEdicion ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'}
+        {/* Botones */}
+        <div className="flex flex-col md:flex-row gap-4">
+          <button
+            type="submit"
+            className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-xl transition-all duration-200 shadow-md flex-1
+        ${
+          modoEdicion
+            ? "bg-green-600 hover:bg-green-700"
+            : "bg-indigo-600 hover:bg-indigo-700"
+        }
         hover:scale-[1.02]
       `}
-    >
-      <PlusCircle size={18} />
-      {modoEdicion ? 'Actualizar' : 'Agregar Vehículo'}
-    </button>
+          >
+            <PlusCircle size={18} />
+            {modoEdicion ? "Actualizar" : "Agregar Vehículo"}
+          </button>
 
-    {modoEdicion && (
-      <button
-        type="button"
-        onClick={cancelarEdicion}
-        className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-xl shadow-md transition-all duration-200 flex-1 hover:scale-[1.02]"
-      >
-        Cancelar
-      </button>
-    )}
-  </div>
-</motion.form>
-
+          {modoEdicion && (
+            <button
+              type="button"
+              onClick={cancelarEdicion}
+              className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-xl shadow-md transition-all duration-200 flex-1 hover:scale-[1.02]"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
+      </motion.form>
 
       {/* Filtros y exportar */}
       <div className="max-w-3xl mx-auto flex flex-col md:flex-row items-stretch md:items-center gap-4 mb-6">
@@ -474,15 +532,29 @@ export default function Vehiculos() {
         </div>
 
         <select
-          className="w-full md:w-48 p-3 rounded bg-slate-700 border border-slate-600 text-white"
+          className={`w-full md:w-48 p-3 rounded-xl bg-slate-800 border-4 rounded bg-slate-700   text-white
+    ${
+      filtroEtiqueta === ""
+        ? "border-red-500 border-l-indigo-500 border-t-green-500 border-b-yellow-500"
+        : filtroEtiqueta === "Nuevo"
+        ? "border-green-500"
+        : filtroEtiqueta === "Usado"
+        ? "border-yellow-500"
+        : filtroEtiqueta === "Reparación"
+        ? "border-red-500"
+        : filtroEtiqueta === "Vendido"
+        ? "border-slate-500"
+        : ""
+    }
+  `}
           value={filtroEtiqueta}
           onChange={(e) => setFiltroEtiqueta(e.target.value)}
         >
-          <option value="">Todas las etiquetas</option>
-          <option value="Nuevo">Nuevo</option>
+          <option value="">🔍 Etiqueta</option>
+          <option value="Nuevo">Nuevo (0KM)</option>
           <option value="Usado">Usado</option>
-          <option value="Reparación">Reparación</option>
           <option value="Vendido">Vendido</option>
+          <option value="Reparación">Reparación</option>
         </select>
 
         <button
@@ -505,135 +577,182 @@ export default function Vehiculos() {
         ) : (
           vehiculosPaginados.map((vehiculo) => (
             <motion.div
-  key={vehiculo.id}
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  whileHover={{ scale: 1.02 }}
-  transition={{ duration: 0.3, ease: "easeOut" }}
-  className="bg-gradient-to-br from-slate-800 to-slate-700/70 backdrop-blur-sm border border-slate-600 p-4 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
->
-  {/* Encabezado */}
-  <div className="mb-2 flex justify-between items-center">
-    <h3 className="text-lg font-bold text-white">
-      {vehiculo.marca} {vehiculo.modelo} * {vehiculo.patente || '-'}
-    </h3>
-    {vehiculo.etiqueta && (
-      <span
-        className={`ml-2 px-3 py-0.5 rounded-full text-xs font-semibold ${colorEtiqueta(vehiculo.etiqueta)} text-white`}
-      >
-        {vehiculo.etiqueta}
-      </span>
-    )}
-  </div>
+              key={vehiculo.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="bg-gradient-to-br from-slate-800 to-slate-700/70 backdrop-blur-sm border border-slate-600 p-4 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
+            >
+              {/* Encabezado */}
+              <div className="mb-2 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-white">
+                  {vehiculo.marca} {vehiculo.modelo} * {vehiculo.patente || "-"}
+                </h3>
+                {vehiculo.etiqueta && (
+                  <span
+                    className={`ml-2 px-3 py-0.5 rounded-full text-xs font-semibold ${colorEtiqueta(
+                      vehiculo.etiqueta
+                    )} text-white`}
+                  >
+                    {vehiculo.etiqueta}
+                  </span>
+                )}
+              </div>
 
-  {/* Datos principales */}
-  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-slate-300">
-    <div className="flex items-center gap-2">
-      <KeyRound className="w-4 h-4 text-yellow-400" />
-      <span>Patente: {vehiculo.patente || '-'}</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <IdCard className="w-4 h-4 text-indigo-400" />
-      <span>Estado: {vehiculo.estado || '-'}</span>
-    </div>
-    <div className="flex items-center gap-2">
-      <Car className="w-4 h-4 text-cyan-400" />
-      <span>Tipo: {vehiculo.tipo || '-'}</span>
-    </div>
-    {vehiculo.precioVenta && (
-      <div className="flex items-center gap-2">
-        <DollarSign className="w-4 h-4 text-green-400" />
-        <span>${vehiculo.precioVenta}</span>
-      </div>
-    )}
-    <div className="col-span-2 flex items-center gap-2">
-      <Calendar className="w-4 h-4 text-gray-400" />
-      <span>Año: {vehiculo.año || '-'}</span>
-    </div>
-  </div>
+              {/* Datos principales */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-slate-300">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="w-4 h-4 text-yellow-400" />
+                  <strong className="text-slate-300">Patente:</strong>
+                  <span>{vehiculo.patente || "-"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <IdCard className="w-4 h-4 text-indigo-400" />
+                  <strong className="text-slate-300">Estado:</strong>
+                  <span>{vehiculo.estado || "-"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Car className="w-4 h-4 text-cyan-400" />
+                  <strong className="text-slate-300">Tipo:</strong>
+                  <span>{vehiculo.tipo || "-"}</span>
+                </div>
+                {vehiculo.precioVenta && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-green-400" />
+                    <strong className="text-slate-300">Precio Sugerido:</strong>
+                    <strong className="text-lime-400">
+                      {vehiculo.precioVenta.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "ARS",
+                        minimumFractionDigits: 0,
+                      })}
+                    </strong>
+                  </div>
+                )}
+                <div className="col-span-2 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-pink-400" />
+                  <span>Año: {vehiculo.año || "-"}</span>
+                </div>
+              </div>
 
-  {/* Cliente y Taller */}
-  <div className="mt-2 text-sm text-slate-300 space-y-1">
-    {vehiculo.clienteId && (
-      <div className="flex items-center gap-2 text-indigo-300">
-        <User className="w-4 h-4" />
-        <span>
-        Cliente Dueño: {vehiculo.clienteNombre} {vehiculo.clienteApellido}
-        </span>
-      </div>
-    )}
-    {vehiculo.tallerId && (
-      <div className="flex items-center gap-2 text-cyan-400">
-        <Factory className="w-4 h-4" />
-        <span>Taller: {talleres.find((t) => t.id === vehiculo.tallerId)?.nombre || 'Desconocido'}</span>
-      </div>
-    )}
-  </div>
+              {/* Cliente y Taller */}
+              <div className="mt-2 text-sm text-slate-300 space-y-1">
+                {vehiculo.clienteId && (
+                  <div className="flex items-center gap-2 text-indigo-300">
+                    <User className="w-4 h-4" />
+                    <span>
+                      Cliente Dueño: {vehiculo.clienteNombre}{" "}
+                      {vehiculo.clienteApellido}
+                    </span>
+                  </div>
+                )}
+                {vehiculo.tallerId && (
+                  <div className="flex items-center gap-2 text-cyan-400">
+                    <Factory className="w-4 h-4" />
+                    <span>
+                      Taller:{" "}
+                      {talleres.find((t) => t.id === vehiculo.tallerId)
+                        ?.nombre || "Desconocido"}
+                    </span>
+                  </div>
+                )}
+              </div>
 
-  {/* Metadatos */}
-  <div className="mt-3 space-y-1 text-sm">
-    <div className="flex items-center gap-2 text-green-400">
-      <UserPlus size={14} />
-      <span>
-       Vendido por: {vehiculo.vendidoPor || ""} ·{" "}
-        {vehiculo.vendidoEn
-          ? new Date(vehiculo.vendidoEn.seconds * 1000).toLocaleString()
-          : "-"}
-      </span>
-      </div>
-      <div className="flex items-center gap-2 text-green-400">
-      <UserPlus size={14} />
-      <span>
-       Creó: {vehiculo.creadoPor || "Desconocido"} ·{" "}
-        {vehiculo.creadoEn
-          ? new Date(vehiculo.creadoEn.seconds * 1000).toLocaleString()
-          : "-"}
-      </span>
-    </div>
-    {vehiculo.modificadoPor && (
-      <div className="flex items-center gap-2 text-yellow-300">
-        <UserCheck size={14} />
-        <span>
-          Modifico: {vehiculo.modificadoPor} ·{" "}
-          {vehiculo.modificadoEn
-            ? new Date(vehiculo.modificadoEn.seconds * 1000).toLocaleString()
-            : "-"}
-        </span>
-      </div>
-    )}
-  </div>
+              <div className="mt-5 pt-4 border-t border-slate-600">
+                <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
+                  Datos de La Compra/Venta
+                </h4>
 
-  {/* Acciones */}
-  <div className="flex justify-center gap-4 mt-4 text-lg">
-    <TooltipWrapper label="Editar vehículo">
-      <button
-        onClick={() => editarVehiculo(vehiculo)}
-        className="text-indigo-300 hover:text-indigo-500"
-      >
-        <Pencil />
-      </button>
-    </TooltipWrapper>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <UserCircle className="text-blue-500" size={16} />
+                    <span>
+                      <strong className="text-blue-500">Tomado por:</strong>{" "}
+                      {vehiculo.tomadoPor || "—"} ·{" "}
+                      {vehiculo.tomadoEn
+                        ? new Date(
+                            vehiculo.tomadoEn.seconds * 1000
+                          ).toLocaleString()
+                        : "—"}
+                    </span>
+                  </div>
 
-    <TooltipWrapper label="Eliminar vehículo">
-      <button
-        onClick={() => eliminarVehiculo(vehiculo.id)}
-        className="text-red-400 hover:text-red-600"
-      >
-        <Trash2 />
-      </button>
-    </TooltipWrapper>
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="text-green-500" size={16} />
+                    <span>
+                      <strong className="text-green-500">Vendido por:</strong>{" "}
+                      {vehiculo.vendidoPor || "—"} ·{" "}
+                      {vehiculo.vendidoEn
+                        ? new Date(
+                            vehiculo.vendidoEn.seconds * 1000
+                          ).toLocaleString()
+                        : "—"}
+                    </span>
+                  </div>
 
-    <TooltipWrapper label="Registrar reparación">
-      <button
-        onClick={() => abrirModalReparacion(vehiculo)}
-        className="text-yellow-400 hover:text-yellow-500"
-      >
-        <KeyRound />
-      </button>
-    </TooltipWrapper>
-  </div>
-</motion.div>
+                  <div className="flex items-center gap-2">
+                    <FilePlus className="text-indigo-500" size={16} />
+                    <span>
+                      <strong className="text-indigo-500">Creado por:</strong>{" "}
+                      {vehiculo.creadoPor || "—"} ·{" "}
+                      {vehiculo.creadoEn
+                        ? new Date(
+                            vehiculo.creadoEn.seconds * 1000
+                          ).toLocaleString()
+                        : "—"}
+                    </span>
+                  </div>
 
+                  {vehiculo.modificadoPor && (
+                    <div className="flex items-center gap-2">
+                      <Hammer className="text-yellow-500" size={16} />
+                      <span>
+                        <strong className="text-yellow-500">
+                          Modificado por:
+                        </strong>{" "}
+                        {vehiculo.modificadoPor} ·{" "}
+                        {vehiculo.modificadoEn
+                          ? new Date(
+                              vehiculo.modificadoEn.seconds * 1000
+                            ).toLocaleString()
+                          : "—"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Acciones */}
+              <div className="flex justify-center gap-4 mt-4 text-lg">
+                <TooltipWrapper label="Editar vehículo">
+                  <button
+                    onClick={() => editarVehiculo(vehiculo)}
+                    className="text-indigo-300 hover:text-indigo-500"
+                  >
+                    <Pencil />
+                  </button>
+                </TooltipWrapper>
+
+                <TooltipWrapper label="Eliminar vehículo">
+                  <button
+                    onClick={() => eliminarVehiculo(vehiculo.id)}
+                    className="text-red-400 hover:text-red-600"
+                  >
+                    <Trash2 />
+                  </button>
+                </TooltipWrapper>
+
+                <TooltipWrapper label="Registrar reparación">
+                  <button
+                    onClick={() => abrirModalReparacion(vehiculo)}
+                    className="text-yellow-400 hover:text-yellow-500"
+                  >
+                    <KeyRound />
+                  </button>
+                </TooltipWrapper>
+              </div>
+            </motion.div>
           ))
         )}
       </div>

@@ -1,112 +1,101 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { db } from "../firebase";
-import {
-    query,
-    orderBy,
-    limit,
-  collection,
-  getDocs,
-  deleteDoc,
-  doc,
-  addDoc,
-} from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast, Toaster } from "react-hot-toast";
-import {
-  Trash,
-  FileText,
-  LoaderCircle,
-  PlusCircle,
-  XCircle,
-  Download,
-} from "lucide-react";
+import { toast } from "react-hot-toast";
+import { Trash, XCircle, Download, LoaderCircle, Eye } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { jsPDF } from "jspdf";
 import exportarBoletoDOCX from "./boletos/exportarBoletoDOCX";
 
-
-
-export default function Listaventas() {
-  const [ventas, setventas] = useState([]);
+export default function ListaVentas() {
+  const [ventas, setVentas] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmarId, setConfirmarId] = useState(null);
-
-  // Modal detalle
   const [detalleId, setDetalleId] = useState(null);
-
-  // Modal nuevo venta
-  const [modalNuevo, setModalNuevo] = useState(false);
-  const [formData, setFormData] = useState({
-    clienteId: "",
-    vehiculoId: "",
-    monto: "",
-    vigencia: "",
-    fecha: dayjs().toDate(),
-  });
 
   // Filtros y paginación
   const [filtroNombre, setFiltroNombre] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
-
   const [paginaActual, setPaginaActual] = useState(1);
   const ITEMS_POR_PAGINA = 5;
 
-  const [modalBoleto, setModalBoleto] = useState(null);
-
-
   useEffect(() => {
-    cargarTodo();
+    cargarDatos();
   }, []);
 
-  const cargarTodo = async () => {
+  const cargarDatos = async () => {
     try {
-      const [snapPres, snapCli, snapVeh] = await Promise.all([
-        getDocs(collection(db, "ventas")),
-        getDocs(collection(db, "clientes")),
-        getDocs(collection(db, "vehiculos")),
-      ]);
+      setLoading(true);
+      const [ventasSnap, clientesSnap, vehiculosSnap, vehiculosPartePagoSnap] =
+        await Promise.all([
+          getDocs(collection(db, "ventas")),
+          getDocs(collection(db, "clientes")),
+          getDocs(collection(db, "vehiculos")),
+          getDocs(collection(db, "vehiculosPartePago")), // <-- traer esta colección
+        ]);
 
-      const listaVentas = snapPres.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const listaClientes = snapCli.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const listaVehiculos = snapVeh.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const listaClientes = clientesSnap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      const listaVehiculos = vehiculosSnap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      // Map con los vehiculos de parte de pago por id para acceso rápido
+      const mapaVehiculosPartePago = {};
+      vehiculosPartePagoSnap.docs.forEach((doc) => {
+        mapaVehiculosPartePago[doc.id] = doc.data();
+      });
+
+      const listaVentas = ventasSnap.docs
+        .map((doc) => {
+          const data = doc.data();
+          const cliente = listaClientes.find((c) => c.id === data.clienteId);
+          const vehiculo = listaVehiculos.find((v) => v.id === data.vehiculoId);
+          const vehiculoPartePago =
+            data.vehiculoPartePagoId &&
+            mapaVehiculosPartePago[data.vehiculoPartePagoId]
+              ? mapaVehiculosPartePago[data.vehiculoPartePagoId]
+              : null;
+
+          return {
+            id: doc.id,
+            ...data,
+            clienteNombre: cliente?.nombre || "Cliente no encontrado",
+            clienteApellido: cliente?.apellido || "",
+            dniCliente: cliente?.dni || "",
+            vehiculoInfo: vehiculo
+              ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
+              : "Vehículo no encontrado",
+            patenteVehiculo: vehiculo?.patente || "",
+            vehiculoPartePago, // agregar aquí el objeto completo de parte de pago
+            fechaObj: data.fecha?.toDate ? data.fecha.toDate() : new Date(),
+          };
+        })
+        .sort((a, b) => b.fechaObj - a.fechaObj);
 
       setClientes(listaClientes);
       setVehiculos(listaVehiculos);
-
-      const enriquecidos = listaVentas.map((p) => {
-  const cliente = listaClientes.find((c) => c.id === p.clienteId);
-  const vehiculo = listaVehiculos.find((v) => v.id === p.vehiculoId);
-  return {
-    ...p,
-    clienteNombre: cliente ? cliente.nombre : "Cliente no encontrado",
-    clienteApellido: cliente ? cliente.apellido : "",
-    dniCliente: cliente?.dni || "",
-    vehiculoInfo: vehiculo
-      ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
-      : "Vehículo no encontrado",
-    patenteVehiculo: vehiculo?.patente || "",
-    fechaObj: p.fecha?.toDate ? p.fecha.toDate() : new Date(),
-  };
-})
-.sort((a, b) => b.fechaObj - a.fechaObj);
-
-      setventas(enriquecidos);
-      setLoading(false);
+      setVentas(listaVentas);
     } catch (error) {
       console.error(error);
       toast.error("Error al cargar los datos");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const eliminarventa = async (id) => {
+  const eliminarVenta = async (id) => {
     try {
       await deleteDoc(doc(db, "ventas", id));
       toast.success("Venta eliminada");
-      setventas(ventas.filter((p) => p.id !== id));
+      setVentas(ventas.filter((v) => v.id !== id));
       setConfirmarId(null);
     } catch (error) {
       console.error(error);
@@ -114,96 +103,70 @@ export default function Listaventas() {
     }
   };
 
-  const abrirDetalle = (id) => {
-    setDetalleId(id);
-  };
-
-  const cerrarDetalle = () => {
-    setDetalleId(null);
-  };
-
-  const ventaDetalle = ventas.find((p) => p.id === detalleId);
-
-  const exportarPDF = () => {
-    if (!ventaDetalle) return;
-
-    const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text("Detalle de Venta", 20, 20);
-
-    doc.setFontSize(14);
-    doc.text(`Cliente: ${ventaDetalle.clienteNombre}`, 20, 40);
-    doc.text(`Vehículo: ${ventaDetalle.vehiculoInfo}`, 20, 50);
-    doc.text(
-      `Monto: $${Number(ventaDetalle.monto).toLocaleString("es-AR", { minimumFractionDigits: 2 })}`,
-      20,
-      60
-    );
-    doc.text(
-      `Fecha: ${dayjs(ventaDetalle.fechaObj).locale("es").format("DD/MM/YYYY")}`,
-      20,
-      80
-    );
-
-    doc.save(`venta_${ventaDetalle.id}.pdf`);
-  };
-
-
-
-
-  // Filtrado con búsqueda por múltiples campos y filtro de fecha
-  const ventasFiltrados = useMemo(() => {
-    const textoFiltro = filtroNombre.toLowerCase().trim();
-
-    return ventas.filter((p) => {
-      // Buscar por cliente
-      const nombreCompleto = p.clienteNombre.toLowerCase();
-      const dni = p.dniCliente.toString().toLowerCase();
-      // Vehículo separado para buscar patente, marca y modelo
-      const vehiculo = p.vehiculoInfo.toLowerCase();
-      const patente = p.patenteVehiculo.toLowerCase();
-
-    const textoCoincide =
-  (p.clienteNombre?.toLowerCase() || "").includes(textoFiltro) ||
-  (p.clienteApellido?.toLowerCase() || "").includes(textoFiltro) ||
-  (p.dniCliente?.toString().toLowerCase() || "").includes(textoFiltro) ||
-  (p.vehiculoInfo?.toLowerCase() || "").includes(textoFiltro) ||
-  (p.patenteVehiculo?.toLowerCase() || "").includes(textoFiltro);
+  // Filtro y paginación memoizados
+  const ventasFiltradas = useMemo(() => {
+    const filtro = filtroNombre.toLowerCase().trim();
+    return ventas.filter((v) => {
+      const textoCoincide = [
+        v.clienteNombre.toLowerCase(),
+        v.clienteApellido.toLowerCase(),
+        v.dniCliente.toString().toLowerCase(),
+        v.vehiculoInfo.toLowerCase(),
+        v.patenteVehiculo.toLowerCase(),
+      ].some((campo) => campo.includes(filtro));
 
       if (!textoCoincide) return false;
-
-      // Filtrar por fechas
-      if (fechaInicio) {
-        if (dayjs(p.fechaObj).isBefore(dayjs(fechaInicio), "day")) {
-          return false;
-        }
-      }
-      if (fechaFin) {
-        if (dayjs(p.fechaObj).isAfter(dayjs(fechaFin), "day")) {
-          return false;
-        }
-      }
-
+      if (fechaInicio && dayjs(v.fechaObj).isBefore(dayjs(fechaInicio), "day"))
+        return false;
+      if (fechaFin && dayjs(v.fechaObj).isAfter(dayjs(fechaFin), "day"))
+        return false;
       return true;
     });
   }, [ventas, filtroNombre, fechaInicio, fechaFin]);
 
-  // Paginación
-  const totalPaginas = Math.ceil(ventasFiltrados.length / ITEMS_POR_PAGINA);
-  const ventasPagina = ventasFiltrados.slice(
+  const totalPaginas = Math.ceil(ventasFiltradas.length / ITEMS_POR_PAGINA);
+  const ventasPagina = ventasFiltradas.slice(
     (paginaActual - 1) * ITEMS_POR_PAGINA,
     paginaActual * ITEMS_POR_PAGINA
   );
 
-  // Cambiar página
   const irAPagina = (num) => {
     if (num < 1 || num > totalPaginas) return;
     setPaginaActual(num);
   };
 
+  // Exportar PDF para venta específica
+  const exportarPDF = useCallback((venta) => {
+    if (!venta) return;
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text("Detalle de Venta", 20, 20);
+    doc.setFontSize(14);
+    doc.text(
+      `Cliente: ${venta.clienteNombre} ${venta.clienteApellido}`,
+      20,
+      40
+    );
+    doc.text(`Vehículo: ${venta.vehiculoInfo}`, 20, 50);
+    doc.text(
+      `Monto: $${Number(venta.monto).toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+      })}`,
+      20,
+      60
+    );
+    doc.text(
+      `Fecha: ${dayjs(venta.fechaObj).locale("es").format("DD/MM/YYYY")}`,
+      20,
+      80
+    );
+    doc.save(`venta_${venta.id}.pdf`);
+  }, []);
+
+  const ventaDetalle = ventas.find((v) => v.id === detalleId);
+
   return (
     <div className="p-6 max-w-4xl mx-auto text-white">
-
       {/* Filtros */}
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <input
@@ -212,9 +175,10 @@ export default function Listaventas() {
           value={filtroNombre}
           onChange={(e) => {
             setFiltroNombre(e.target.value);
-            setPaginaActual(1); // reiniciar página al buscar
+            setPaginaActual(1);
           }}
           className="p-2 rounded bg-slate-800 text-white"
+          aria-label="Buscar ventas"
         />
         <input
           type="date"
@@ -224,6 +188,7 @@ export default function Listaventas() {
             setPaginaActual(1);
           }}
           className="p-2 rounded bg-slate-800 text-white"
+          aria-label="Fecha inicio"
         />
         <input
           type="date"
@@ -233,337 +198,272 @@ export default function Listaventas() {
             setPaginaActual(1);
           }}
           className="p-2 rounded bg-slate-800 text-white"
+          aria-label="Fecha fin"
         />
       </div>
 
-        {loading ? (
-        <div className="text-center text-slate-400 py-10">
+      {loading ? (
+        <div
+          className="text-center text-slate-400 py-10"
+          role="status"
+          aria-live="polite"
+        >
           <LoaderCircle className="animate-spin mx-auto" size={32} />
           Cargando ventas...
         </div>
-      ) : ventasFiltrados.length === 0 ? (
-        <p className="text-center text-slate-400">No hay ventas que coincidan con el filtro.</p>
+      ) : ventasFiltradas.length === 0 ? (
+        <p className="text-center text-slate-400">
+          No hay ventas que coincidan con el filtro.
+        </p>
       ) : (
-        <>
-          <div className="grid gap-4">
-            <AnimatePresence>
-              {ventasPagina.map((p) => (
-                <motion.div
-                  key={p.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-slate-800 rounded-xl p-4 shadow-md "
-                  
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold">
-                        Cliente: <span className="text-blue-300">{p.clienteNombre} {p.clienteApellido}</span>
-                      </p>
-                      <p>
-                        Vehículo: <span className="text-blue-300">{p.vehiculoInfo}</span>
-                      </p>
-                      {p.monto && (
-                        <p>
-                          Monto:{" "}
-                          <span className="text-green-400">
-                            ${p.monto.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
-                          </span>
-                        </p>
-                      )}
-                      <p className="text-slate-400 ">
-                        Fecha: {dayjs(p.fechaObj).locale("es").format("DD/MM/YYYY")}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col items-center gap-2">
-                      {confirmarId === p.id ? (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              eliminarventa(p.id);
-                            }}
-                            className="text-red-500 hover:text-red-700 cursor-pointer"
-                            title="Confirmar eliminar"
-                          >
-                            <Trash size={24} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmarId(null);
-                            }}
-                            className="text-gray-400 hover:text-gray-600 cursor-pointer"
-                            title="Cancelar"
-                          >
-                            <XCircle size={24} />
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmarId(p.id);
-                          }}
-                          className="text-red-400 hover:text-red-600 cursor-pointer"
-                          title="Eliminar venta"
-                        >
-                          <Trash size={24} />
-                        </button>
-                        
-                      )}
-                  
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          exportarPDF();
-                        }}
-                        className="text-green-400 hover:text-green-600 cursor-pointer"
-                        title="Descargar"
-                      >
-                        <Download size={24} onClick={() => abrirDetalle(p.id)} />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-
-          {/* Paginación */}
-          <div className="mt-6 flex justify-center gap-2">
-            <button
-              onClick={() => irAPagina(paginaActual - 1)}
-              disabled={paginaActual === 1}
-              className="px-3 py-1 rounded bg-slate-800 disabled:opacity-50"
-            >
-              Anterior
-            </button>
-            {[...Array(totalPaginas)].map((_, i) => (
-              <button
-                key={i}
-                onClick={() => irAPagina(i + 1)}
-                className={`px-3 py-1 rounded ${
-                  paginaActual === i + 1 ? "bg-yellow-400 text-black" : "bg-slate-800"
-                }`}
+        <div className="grid gap-6">
+          <AnimatePresence>
+            {ventasPagina.map((venta) => (
+              <motion.div
+                key={venta.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="bg-gradient-to-br from-slate-800 to-slate-700/70 backdrop-blur-sm rounded-xl p-6 shadow-lg hover:shadow-2xl border border-transparent hover:border-indigo-500 transition-all duration-300"
               >
-                {i + 1}
-              </button>
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 space-y-3">
+                    <p className="font-semibold text-xl text-indigo-300">
+                      Cliente:{" "}
+                      <span className="text-indigo-100">
+                        {venta.clienteNombre} {venta.clienteApellido}
+                      </span>
+                    </p>
+
+                    <p className="text-indigo-200 text-lg">
+                      Vehículo:{" "}
+                      <span className="font-medium text-indigo-50">
+                        {venta.vehiculoInfo ||
+                          `${venta.marca} ${venta.modelo} (${venta.patente})`}
+                      </span>
+                    </p>
+
+                    {venta.monto && (
+                      <p className="text-green-400 font-semibold text-lg">
+                        Monto:{" "}
+                        <span className="text-green-300 font-bold">
+                          $
+                          {Number(venta.monto).toLocaleString("es-AR", {
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </p>
+                    )}
+
+                    <p className="text-indigo-300 text-sm font-mono">
+                      Fecha:{" "}
+                      {dayjs(venta.fechaObj).locale("es").format("DD/MM/YYYY")}
+                    </p>
+
+                    {venta.vehiculoPartePago && (
+                      <p className="text-purple-400 font-semibold text-md mt-2">
+                        🚗 Parte de Pago: {venta.vehiculoPartePago.marca}{" "}
+                        {venta.vehiculoPartePago.modelo} - (
+                        {venta.vehiculoPartePago.patente} -{" "}
+                        {venta.vehiculoPartePago.año}) -{" "}
+                        <span className="font-mono">
+                          $
+                          {Number(venta.vehiculoPartePago.monto).toLocaleString(
+                            "es-AR",
+                            { maximumFractionDigits: 2 }
+                          )}
+                        </span>
+                      </p>
+                    )}
+
+                    {venta.pagos && venta.pagos.length > 0 && (
+                      <p className="text-indigo-200 text-sm mt-3">
+                        Método{venta.pagos.length > 1 ? "s" : ""} de pago:{" "}
+                        <span className="text-indigo-100">
+                          {venta.pagos.map((pago, i) => (
+                            <span key={i}>
+                              {pago.metodo || "N/A"}{" "}
+                              {pago.monto
+                                ? `($${Number(pago.monto).toLocaleString(
+                                    "es-AR",
+                                    {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 2,
+                                    }
+                                  )})`
+                                : ""}
+                              {i < venta.pagos.length - 1 ? ", " : ""}
+                            </span>
+                          ))}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col items-center gap-5 mt-2">
+                    <button
+                      onClick={() => setDetalleId(venta.id)}
+                      title="Ver detalle"
+                      className="text-yellow-400 hover:text-yellow-600 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400 rounded"
+                      aria-label={`Ver detalle de la venta de ${venta.clienteNombre} ${venta.clienteApellido}`}
+                    >
+                      <Eye size={26} />
+                    </button>
+
+                    <button
+                      onClick={() => exportarPDF(venta)}
+                      title="Exportar PDF"
+                      className="text-green-400 hover:text-green-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-400 rounded"
+                      aria-label={`Exportar PDF de la venta de ${venta.clienteNombre} ${venta.clienteApellido}`}
+                    >
+                      <Download size={26} />
+                    </button>
+
+                    <button
+                      onClick={() => setConfirmarId(venta.id)}
+                      title="Eliminar venta"
+                      className="text-red-400 hover:text-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400 rounded"
+                      aria-label={`Eliminar venta de ${venta.clienteNombre} ${venta.clienteApellido}`}
+                    >
+                      <Trash size={26} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirmar eliminación */}
+                <AnimatePresence>
+                  {confirmarId === venta.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-3 bg-red-900/40 p-3 rounded"
+                    >
+                      <p>¿Eliminar esta venta?</p>
+                      <div className="flex space-x-2 mt-2">
+                        <button
+                          onClick={() => eliminarVenta(venta.id)}
+                          className="btn btn-sm bg-red-700 hover:bg-red-800 text-white"
+                        >
+                          Sí, eliminar
+                        </button>
+                        <button
+                          onClick={() => setConfirmarId(null)}
+                          className="btn btn-sm btn-outline"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             ))}
-            <button
-              onClick={() => irAPagina(paginaActual + 1)}
-              disabled={paginaActual === totalPaginas}
-              className="px-3 py-1 rounded bg-slate-800 disabled:opacity-50"
-            >
-              Siguiente
-            </button>
-          </div>
-        </>
+          </AnimatePresence>
+        </div>
       )}
 
-      {/* Confirmar eliminar */}
-      <AnimatePresence>
-        {confirmarId && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
-          >
-            <div className="bg-slate-900 p-6 rounded max-w-sm w-full text-center">
-              <p className="mb-4">¿Seguro que quieres eliminar este venta?</p>
-              <div className="flex justify-around gap-4">
-                <button
-                  onClick={() => eliminarventa(confirmarId)}
-                  className="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
-                >
-                  Sí, eliminar
-                </button>
-                <button
-                  onClick={() => setConfirmarId(null)}
-                  className="bg-slate-700 px-4 py-2 rounded hover:bg-slate-600"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Detalle venta */}
-     <AnimatePresence>
-  {detalleId && ventaDetalle && (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
-    >
-      <div className="bg-slate-900 p-6 rounded max-w-md w-full relative text-white">
+      {/* Paginación */}
+      <nav
+        className="flex justify-center mt-6 space-x-2"
+        role="navigation"
+        aria-label="Paginación de ventas"
+      >
         <button
-          onClick={cerrarDetalle}
-          className="absolute top-2 right-2 text-red-400 hover:text-red-600"
-          title="Cerrar"
+          onClick={() => irAPagina(paginaActual - 1)}
+          disabled={paginaActual === 1}
+          aria-label="Página anterior"
+          className="btn btn-sm"
         >
-          <XCircle size={24} />
+          &lt;
         </button>
 
-        <h3 className="text-2xl font-semibold mb-4">Detalle de venta</h3>
-        <p>
-          <strong>Cliente:</strong> {ventaDetalle.clienteNombre}
-        </p>
-        <p>
-          <strong>DNI:</strong> {ventaDetalle.dniCliente}
-        </p>
-        <p>
-          <strong>Vehículo:</strong> {ventaDetalle.vehiculoInfo}
-        </p>
-        <p>
-          <strong>Monto:</strong>{" "}
-          ${Number(ventaDetalle.monto).toLocaleString("es-UY", { minimumFractionDigits: 2 })}
-        </p>
-        <p>
-          <strong>Fecha:</strong>{" "}
-          {dayjs(ventaDetalle.fechaObj).locale("es").format("DD/MM/YYYY")}
-        </p>
+        {[...Array(totalPaginas).keys()].map((i) => {
+          const num = i + 1;
+          return (
+            <button
+              key={num}
+              onClick={() => irAPagina(num)}
+              aria-current={paginaActual === num ? "page" : undefined}
+              className={`btn btn-sm ${
+                paginaActual === num ? "bg-blue-600 text-white" : "bg-slate-700"
+              }`}
+              aria-label={`Página ${num}`}
+            >
+              {num}
+            </button>
+          );
+        })}
 
-        <div className="mt-6 flex flex-wrap gap-3 justify-center">
-      
+        <button
+          onClick={() => irAPagina(paginaActual + 1)}
+          disabled={paginaActual === totalPaginas}
+          aria-label="Página siguiente"
+          className="btn btn-sm"
+        >
+          &gt;
+        </button>
+      </nav>
 
-          <button
-            onClick={() =>{
-               exportarBoletoDOCX(ventaDetalle);
-               cerrarDetalle();
-            }}
-            className="flex items-center gap-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            title="Descargar BOLETO"
-            
-          >
-            <Download size={18} />
-            Descargar BOLETO
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  )}
-</AnimatePresence>
-
-
-      {/* Modal nuevo venta */}
+      {/* Modal detalle */}
       <AnimatePresence>
-        {modalNuevo && (
+        {detalleId && ventaDetalle && (
           <motion.div
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+            aria-modal="true"
+            role="dialog"
+            aria-labelledby="titulo-detalle"
+            onKeyDown={(e) => e.key === "Escape" && setDetalleId(null)}
+            tabIndex={-1}
           >
-            <motion.form
-              onSubmit={manejarSubmitNuevo}
+            <motion.div
+              className="bg-slate-800 p-6 rounded-xl max-w-lg w-full text-white relative"
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
-              className="bg-slate-900 p-6 rounded max-w-md w-full space-y-4 text-white"
             >
-              <h3 className="text-2xl font-semibold">Nuevo venta</h3>
+              <button
+                onClick={() => setDetalleId(null)}
+                className="absolute top-3 right-3 text-slate-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded"
+                aria-label="Cerrar detalle"
+              >
+                ✕
+              </button>
 
-              <label>
-                Cliente:
-                <select
-                  name="clienteId"
-                  value={formData.clienteId}
-                  onChange={manejarCambio}
-                  className="w-full mt-1 p-2 bg-slate-800 rounded"
-                >
-                  {clientes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre} {c.apellido} (DNI: {c.dni})
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <h2 id="titulo-detalle" className="text-xl font-bold mb-4">
+                Detalle de Venta
+              </h2>
+              <p>
+                <strong>Cliente:</strong> {ventaDetalle.clienteNombre}{" "}
+                {ventaDetalle.clienteApellido}
+              </p>
+              <p>
+                <strong>DNI:</strong> {ventaDetalle.dniCliente}
+              </p>
+              <p>
+                <strong>Vehículo:</strong> {ventaDetalle.vehiculoInfo}
+              </p>
+              <p>
+                <strong>Patente:</strong> {ventaDetalle.patenteVehiculo}
+              </p>
+              <p>
+                <strong>Monto:</strong> $
+                {Number(ventaDetalle.monto).toLocaleString("es-AR", {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+              <p>
+                <strong>Fecha:</strong>{" "}
+                {dayjs(ventaDetalle.fechaObj).locale("es").format("DD/MM/YYYY")}
+              </p>
 
-              <label>
-                Vehículo:
-                <select
-                  name="vehiculoId"
-                  value={formData.vehiculoId}
-                  onChange={manejarCambio}
-                  className="w-full mt-1 p-2 bg-slate-800 rounded"
-                >
-                  {vehiculos.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.marca} {v.modelo} (Patente: {v.patente})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                Monto estimado:
-                <input
-                  type="number"
-                  name="monto"
-                  min="0"
-                  step="0.01"
-                  value={formData.monto}
-                  onChange={manejarCambio}
-                  className="w-full mt-1 p-2 bg-slate-800 rounded"
-                  required
-                />
-              </label>
-
-              <label>
-                Vigencia (días):
-                <input
-                  type="number"
-                  name="vigencia"
-                  min="1"
-                  value={formData.vigencia}
-                  onChange={manejarCambio}
-                  className="w-full mt-1 p-2 bg-slate-800 rounded"
-                  required
-                />
-              </label>
-
-              <label>
-                Fecha:
-                <input
-                  type="date"
-                  name="fecha"
-                  value={dayjs(formData.fecha).format("YYYY-MM-DD")}
-                  onChange={(e) =>
-                    setFormData((f) => ({
-                      ...f,
-                      fecha: new Date(e.target.value),
-                    }))
-                  }
-                  className="w-full mt-1 p-2 bg-slate-800 rounded"
-                  required
-                />
-              </label>
-
-              <div className="flex justify-between">
-                <button
-                  type="button"
-                  onClick={cerrarModalNuevo}
-                  className="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
-                >
-                  Guardar
-                </button>
-              </div>
-            </motion.form>
+              {/* Puedes agregar más detalles según tus datos */}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
