@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import {
   Pencil,
@@ -18,17 +18,24 @@ const ITEMS_POR_PAGINA = 5;
 export default function Reparaciones() {
   const [reparaciones, setReparaciones] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
+  const [vehiculosEnReparacion, setVehiculosEnReparacion] = useState([]);
   const [talleres, setTalleres] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [paginaActual, setPaginaActual] = useState(1);
 
   const [loading, setLoading] = useState(true);
+  const [loadingVehEnRep, setLoadingVehEnRep] = useState(true);
   const [toast, setToast] = useState(null);
   const [confirmModal, setConfirmModal] = useState(false);
   const [reparacionAEliminar, setReparacionAEliminar] = useState(null);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [reparacionEditar, setReparacionEditar] = useState(null);
+
+  // NUEVOS filtros
+  const [filtroTaller, setFiltroTaller] = useState("");
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
 
   const mostrarToast = (mensaje, tipo = "ok") => {
     setToast({ mensaje, tipo });
@@ -56,8 +63,23 @@ export default function Reparaciones() {
     }
   };
 
+  // Cargar vehículos con etiqueta diferente a "vendido" y "reparacion" (para listar disponibles)
+  const fetchVehiculosEnReparacion = async () => {
+    try {
+      setLoadingVehEnRep(true);
+      const q = query(collection(db, "vehiculos"), where("etiqueta", "==", "Reparación"));
+      const snapshot = await getDocs(q);
+      setVehiculosEnReparacion(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (error) {
+      mostrarToast("Error al cargar vehículos en reparación", "error");
+    } finally {
+      setLoadingVehEnRep(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchVehiculosEnReparacion();
   }, []);
 
   const eliminarReparacion = async () => {
@@ -94,22 +116,34 @@ export default function Reparaciones() {
     XLSX.writeFile(wb, "reparaciones.xlsx");
   };
 
-  const reparacionesFiltradas = reparaciones.filter((r) =>
-    r.descripcionReparacion.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  // FILTRADO
+  const reparacionesFiltradas = reparaciones.filter((r) => {
+    const textoOk = r.descripcionReparacion
+      .toLowerCase()
+      .includes(busqueda.toLowerCase());
 
-  const totalPaginas = Math.ceil(
-    reparacionesFiltradas.length / ITEMS_POR_PAGINA
-  );
+    const tallerOk = !filtroTaller || r.tallerId === filtroTaller;
 
+    const fechaCreado = r.creadoEn
+      ? new Date(r.creadoEn.seconds * 1000)
+      : null;
+
+    const fechaDesdeOk = !fechaDesde || (fechaCreado && fechaCreado >= new Date(fechaDesde));
+    const fechaHastaOk = !fechaHasta || (fechaCreado && fechaCreado <= new Date(fechaHasta));
+
+    return textoOk && tallerOk && fechaDesdeOk && fechaHastaOk;
+  });
+
+  // Paginación
+  const totalPaginas = Math.ceil(reparacionesFiltradas.length / ITEMS_POR_PAGINA);
   const reparacionesPagina = reparacionesFiltradas.slice(
     (paginaActual - 1) * ITEMS_POR_PAGINA,
     paginaActual * ITEMS_POR_PAGINA
   );
 
   return (
-    <div className="p-6 max-w-4xl mx-auto text-white">
-      <h1 className="text-2xl font-bold mb-4">Reparaciones</h1>
+    <div className="p-6 max-w-7xl mx-auto text-white">
+      <h1 className="text-2xl font-bold mb-6">Reparaciones</h1>
 
       {/* Toast */}
       <AnimatePresence>
@@ -127,18 +161,67 @@ export default function Reparaciones() {
         )}
       </AnimatePresence>
 
-      {/* Acciones */}
-      <div className="flex items-center gap-4 mb-4">
+      {/* FILTROS */}
+      <div className="flex flex-wrap gap-4 mb-6 items-center">
         <input
           type="text"
-          placeholder="Buscar..."
+          placeholder="Buscar descripción..."
           value={busqueda}
           onChange={(e) => {
             setBusqueda(e.target.value);
             setPaginaActual(1);
           }}
-          className="bg-slate-800 p-2 rounded-md w-full max-w-md"
+          className="bg-slate-800 p-2 rounded-md flex-grow max-w-md"
         />
+
+        <select
+          value={filtroTaller}
+          onChange={(e) => {
+            setFiltroTaller(e.target.value);
+            setPaginaActual(1);
+          }}
+          className="bg-slate-800 p-2 rounded-md"
+        >
+          <option value="">Todos los talleres</option>
+          {talleres.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.nombre}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex gap-2 items-center">
+          <label className="text-sm text-slate-300" htmlFor="fechaDesde">
+            Desde:
+          </label>
+          <input
+            id="fechaDesde"
+            type="date"
+            value={fechaDesde}
+            onChange={(e) => {
+              setFechaDesde(e.target.value);
+              setPaginaActual(1);
+            }}
+            className="bg-slate-800 p-2 rounded-md"
+          />
+        </div>
+
+        <div className="flex gap-2 items-center">
+          <label className="text-sm text-slate-300" htmlFor="fechaHasta">
+            Hasta:
+          </label>
+          <input
+            id="fechaHasta"
+            type="date"
+            value={fechaHasta}
+            onChange={(e) => {
+              setFechaHasta(e.target.value);
+              setPaginaActual(1);
+            }}
+            className="bg-slate-800 p-2 rounded-md"
+          />
+        </div>
+
         <button
           onClick={exportarExcel}
           className="flex gap-2 items-center bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-md"
@@ -157,7 +240,33 @@ export default function Reparaciones() {
         </button>
       </div>
 
-      {/* Estado de carga */}
+      {/* NUEVO BLOQUE - VEHÍCULOS EN REPARACIÓN */}
+      <section className="mb-8 border border-indigo-500 rounded-md p-4">
+        <h2 className="text-xl font-semibold mb-3">Vehículos en Reparación</h2>
+
+        {loadingVehEnRep ? (
+          <div className="text-center text-slate-400 py-4">
+            <LoaderCircle className="animate-spin mx-auto" size={24} />
+            Cargando vehículos en reparación...
+          </div>
+        ) : vehiculosEnReparacion.length === 0 ? (
+          <p className="text-slate-400">No hay vehículos en reparación actualmente.</p>
+        ) : (
+          <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {vehiculosEnReparacion.map((v) => (
+              <li
+                key={v.id}
+                className="bg-slate-700 p-4 rounded shadow cursor-default"
+              >
+                <p className="font-bold text-lg">{v.patente}</p>
+                <p className="text-sm text-slate-300">{v.modelo}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* LISTADO DE REPARACIONES */}
       {loading ? (
         <div className="text-center text-slate-400 py-10">
           <LoaderCircle className="animate-spin mx-auto" size={32} />
@@ -165,11 +274,12 @@ export default function Reparaciones() {
         </div>
       ) : reparacionesFiltradas.length === 0 ? (
         <p className="text-center text-slate-400">
-          No se encontraron reparaciones.
+          No se encontraron reparaciones con esos filtros.
         </p>
       ) : (
         <>
-          <div className="space-y-3">
+          {/* LISTADO */}
+          <div className="space-y-4 mb-8 border border-indigo-500 rounded-md p-4">
             {reparacionesPagina.map((r) => {
               const vehiculo = obtenerVehiculo(r.vehiculoId);
               const taller = obtenerTaller(r.tallerId);
@@ -184,135 +294,132 @@ export default function Reparaciones() {
                   className="bg-slate-700 p-4 rounded-lg shadow flex justify-between items-start"
                 >
                   <div>
-                    <p className="text-lg font-bold">
-                      {r.descripcionReparacion}
+                    <p className="text-lg font-bold">{r.descripcionReparacion}</p>
+                    <p className="text-sm text-slate-300">
+                      Vehículo: {vehiculo?.patente || "Desconocido"} - {vehiculo?.modelo || ""}
                     </p>
                     <p className="text-sm text-slate-300">
-                      Vehículo: {vehiculo?.patente || "Desconocido"} (
-                      {vehiculo?.modelo})
+                      Taller: {taller?.nombre || "Desconocido"}
                     </p>
-
-                    <p>
-                      Mano de Obra: ${Number(r.precioManoObra ?? 0).toFixed(2)}
+                    <p className="text-sm">Precio: ${r.precioServicio}</p>
+                    <p className="text-sm text-slate-300">
+                      Observaciones: {r.observaciones || "Ninguna"}
                     </p>
-                    <p>
-                      Repuestos: ${Number(r.precioRepuestos ?? 0).toFixed(2)}
-                    </p>
-                    <p>
-                      <strong>
-                        Total: ${Number(r.precioTotal ?? 0).toFixed(2)}
-                      </strong>
-                    </p>
-
-                    <p className="text-sm text-slate-400">
-                      Precio: ${r.precioServicio}
-                    </p>
-                    {r.observaciones && (
-                      <p className="text-xs text-slate-400 mt-1">
-                        📝 {r.observaciones}
-                      </p>
-                    )}
                   </div>
-                  <div className="flex flex-col gap-2 items-end">
-                    {numeroWhatsApp && (
-                      <a
-                        href={`https://wa.me/${numeroWhatsApp}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-green-400 hover:text-green-600"
-                      >
-                        <MessageCircle />
-                      </a>
-                    )}
+
+                  <div className="flex flex-col gap-2">
                     <button
-                      className="text-indigo-400 hover:text-indigo-600"
                       onClick={() => {
                         setReparacionEditar(r);
                         setModalVisible(true);
                       }}
-                      aria-label="Editar reparación"
+                      title="Editar"
+                      className="p-2 rounded hover:bg-indigo-600"
                     >
-                      <Pencil />
+                      <Pencil size={18} />
                     </button>
+
                     <button
-                      className="text-red-400 hover:text-red-600"
                       onClick={() => {
                         setReparacionAEliminar(r);
                         setConfirmModal(true);
                       }}
-                      aria-label="Eliminar reparación"
+                      title="Eliminar"
+                      className="p-2 rounded hover:bg-red-700"
                     >
-                      <Trash2 />
+                      <Trash2 size={18} />
                     </button>
+
+                    {numeroWhatsApp && (
+                      <a
+                        href={`https://wa.me/56${numeroWhatsApp}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="WhatsApp"
+                        className="p-2 rounded hover:bg-green-700"
+                      >
+                        <MessageCircle size={18} />
+                      </a>
+                    )}
                   </div>
                 </motion.div>
               );
             })}
           </div>
 
-          {/* Paginación */}
-          <div className="mt-6 flex justify-center gap-2">
-            {Array.from({ length: totalPaginas }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => setPaginaActual(i + 1)}
-                className={`px-3 py-1 rounded-md ${
-                  paginaActual === i + 1
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-600 text-slate-300 hover:bg-slate-500"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
+          {/* PAGINACIÓN */}
+          <div className="flex justify-center gap-2 mt-6">
+            <button
+              onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
+              disabled={paginaActual === 1}
+              className="bg-slate-600 px-3 py-1 rounded disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span className="px-3 py-1">
+              Página {paginaActual} de {totalPaginas}
+            </span>
+            <button
+              onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
+              disabled={paginaActual === totalPaginas}
+              className="bg-slate-600 px-3 py-1 rounded disabled:opacity-50"
+            >
+              Siguiente
+            </button>
           </div>
         </>
       )}
 
-      {/* Modal creación/edición */}
-      <ModalNuevaReparacion
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSuccess={fetchData}
-        reparacion={reparacionEditar}
-      />
+      {/* MODAL NUEVA REPARACION */}
+      {modalVisible && (
+        <ModalNuevaReparacion
+          reparacionEditar={reparacionEditar}
+          setModalVisible={setModalVisible}
+          talleres={talleres}
+          vehiculos={vehiculos}
+          onSave={(nuevaReparacion) => {
+            if (reparacionEditar) {
+              setReparaciones((prev) =>
+                prev.map((r) => (r.id === reparacionEditar.id ? nuevaReparacion : r))
+              );
+            } else {
+              setReparaciones((prev) => [nuevaReparacion, ...prev]);
+            }
+            setModalVisible(false);
+            mostrarToast(
+              reparacionEditar
+                ? "Reparación actualizada"
+                : "Reparación creada correctamente"
+            );
+          }}
+        />
+      )}
 
-      {/* Confirmación eliminación */}
-      <AnimatePresence>
-        {confirmModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          >
-            <div className="bg-slate-800 p-6 rounded-lg shadow-lg text-white max-w-sm w-full">
-              <h2 className="text-xl font-bold mb-2">Eliminar reparación</h2>
-              <p className="mb-4">
-                ¿Estás seguro de que querés eliminar la reparación "
-                <span className="font-semibold">
-                  {reparacionAEliminar?.descripcionReparacion}
-                </span>
-                "?
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  className="bg-slate-600 hover:bg-slate-700 px-3 py-1 rounded-md"
-                  onClick={() => setConfirmModal(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md"
-                  onClick={eliminarReparacion}
-                >
-                  Eliminar
-                </button>
-              </div>
+      {/* MODAL CONFIRMAR ELIMINACION */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-slate-800 p-6 rounded-lg max-w-sm w-full">
+            <h3 className="text-lg font-bold mb-4">Confirmar eliminación</h3>
+            <p className="mb-4">
+              ¿Estás seguro que quieres eliminar esta reparación?
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setConfirmModal(false)}
+                className="bg-slate-600 px-4 py-2 rounded"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={eliminarReparacion}
+                className="bg-red-700 px-4 py-2 rounded"
+              >
+                Eliminar
+              </button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

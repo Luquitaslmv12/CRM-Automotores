@@ -7,6 +7,8 @@ import {
   updateDoc,
   doc,
   getDocs,
+  query,
+  where,
 } from "firebase/firestore";
 
 export default function ModalNuevaReparacion({
@@ -33,12 +35,25 @@ export default function ModalNuevaReparacion({
     if (!visible) return;
 
     const fetchData = async () => {
-      const [vehSnap, talSnap] = await Promise.all([
-        getDocs(collection(db, "vehiculos")),
-        getDocs(collection(db, "proveedores")),
-      ]);
-      setVehiculos(vehSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setTalleres(talSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      try {
+        // Query para traer solo vehículos con etiqueta distinta a "vendido" y "reparacion"
+        const vehQuery = query(
+          collection(db, "vehiculos"),
+          where("etiqueta", "not-in", ["Vendido", "Reparación"])
+        );
+
+        const [vehSnap, talSnap] = await Promise.all([
+          getDocs(vehQuery),
+          getDocs(collection(db, "proveedores")),
+        ]);
+
+        setVehiculos(vehSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setTalleres(talSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setVehiculos([]);
+        setTalleres([]);
+      }
     };
 
     fetchData();
@@ -101,6 +116,7 @@ export default function ModalNuevaReparacion({
       const total = Number(precioManoObra) + Number(precioRepuestos);
 
       if (reparacion) {
+        // Actualizar reparación existente
         const ref = doc(db, "reparaciones", reparacion.id);
         await updateDoc(ref, {
           descripcionReparacion: descripcion,
@@ -114,6 +130,7 @@ export default function ModalNuevaReparacion({
           modificadoEn: new Date(),
         });
       } else {
+        // Crear nueva reparación
         await addDoc(collection(db, "reparaciones"), {
           descripcionReparacion: descripcion,
           vehiculoId,
@@ -125,6 +142,10 @@ export default function ModalNuevaReparacion({
           observaciones,
           creadoEn: new Date(),
         });
+
+        // Actualizar etiqueta del vehículo a "reparacion"
+        const vehRef = doc(db, "vehiculos", vehiculoId);
+        await updateDoc(vehRef, { etiqueta: "reparacion" });
       }
       onSuccess();
       onClose();
@@ -158,9 +179,7 @@ export default function ModalNuevaReparacion({
             </h2>
 
             {error && (
-              <p className="mb-4 text-red-500 font-medium select-none">
-                {error}
-              </p>
+              <p className="mb-4 text-red-500 font-medium select-none">{error}</p>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5 text-white">

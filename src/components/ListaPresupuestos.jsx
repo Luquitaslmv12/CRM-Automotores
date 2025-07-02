@@ -388,19 +388,22 @@ export default function ListaPresupuestos(props) {
                         : "—"}{" "}
                       · {p.clienteNombre} {p.clienteApellido}
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <Calculator className="w-4 h-4 text-purple-400" />
-                      <span className="text-slate-300 font-medium">
-                        Diferencia:
-                      </span>
-                      <span className="text-lime-400 font-bold">
-                        {p.diferenciaMonto.toLocaleString("es-AR", {
-                          style: "currency",
-                          currency: "ARS",
-                          minimumFractionDigits: 0,
-                        })}
-                      </span>
-                    </div>
+                   <div className="flex items-center gap-2">
+  <Calculator className="w-4 h-4 text-purple-400" />
+  <span className="text-slate-300 font-medium">Diferencia:</span>
+  <span
+    className={`font-bold ${
+      p.diferenciaMonto < 0 ? "text-yellow-400" : "text-lime-400"
+    }`}
+  >
+    {p.diferenciaMonto.toLocaleString("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+    })}
+  </span>
+</div>
+
                   </div>
 
                   {/* 🚗 Vehículo de Agencia */}
