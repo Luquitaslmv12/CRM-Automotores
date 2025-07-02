@@ -1,90 +1,117 @@
 import { useState, useEffect } from "react";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
-import { Pencil, Trash2, MessageCircle, LoaderCircle } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  MessageCircle,
+  LoaderCircle,
+  FileDown,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import ConfirmModal from "../components/proveedores/ConfirmModal";
-import ProveedorModal from "../components/proveedores/ProveedorModal";
-import ModalReparacion from "../components/reparaciones/ModalReparacion";
+import * as XLSX from "xlsx";
+import ModalNuevaReparacion from "../components/reparaciones/ModalNuevaReparacion";
+
+// CONSTANTES
+const ITEMS_POR_PAGINA = 5;
 
 export default function Reparaciones() {
   const [reparaciones, setReparaciones] = useState([]);
-  const [busqueda, setBusqueda] = useState("");
-  const [reparacionSeleccionado, setReparacionSeleccionado] = useState(null);
-  const [confirmModal, setConfirmModal] = useState(false);
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [reparacionAEliminar, setReparacionAEliminar] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [vehiculos, setVehiculos] = useState([]);
-const [talleres, setTalleres] = useState([]);
- const [toast, setToast] = useState(null);
+  const [talleres, setTalleres] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [paginaActual, setPaginaActual] = useState(1);
 
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(false);
+  const [reparacionAEliminar, setReparacionAEliminar] = useState(null);
 
-
-
-const obtenerVehiculo = (id) => vehiculos.find((v) => v.id === id);
-const obtenerTaller = (id) => talleres.find((t) => t.id === id);
-
+  const [modalVisible, setModalVisible] = useState(false);
+  const [reparacionEditar, setReparacionEditar] = useState(null);
 
   const mostrarToast = (mensaje, tipo = "ok") => {
     setToast({ mensaje, tipo });
     setTimeout(() => setToast(null), 3000);
   };
 
+  const obtenerVehiculo = (id) => vehiculos.find((v) => v.id === id);
+  const obtenerTaller = (id) => talleres.find((t) => t.id === id);
 
-
-useEffect(() => {
   const fetchData = async () => {
     try {
-      const [reparacionSnap, vehiculoSnap, tallerSnap] = await Promise.all([
+      setLoading(true);
+      const [repSnap, vehSnap, talSnap] = await Promise.all([
         getDocs(collection(db, "reparaciones")),
         getDocs(collection(db, "vehiculos")),
         getDocs(collection(db, "proveedores")),
       ]);
-
-      const reparacionesData = reparacionSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const vehiculosData = vehiculoSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const talleresData = tallerSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-
-      setReparaciones(reparacionesData);
-      setVehiculos(vehiculosData);
-      setTalleres(talleresData);
-    } catch (err) {
-      console.error("Error al cargar datos:", err);
-      setError("Error al cargar los datos.");
+      setReparaciones(repSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setVehiculos(vehSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setTalleres(talSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (e) {
+      mostrarToast("Error al cargar datos", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  fetchData();
-}, []);
-
-
-  const handleBusqueda = (e) => {
-    setBusqueda(e.target.value.toLowerCase());
-  };
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const eliminarReparacion = async () => {
     if (reparacionAEliminar) {
-      await deleteDoc(doc(db, "reparaciones", reparacionAEliminar.id));
-      setReparaciones((prev) => prev.filter((p) => p.id !== reparacionAEliminar.id));
-      setConfirmModal(false);
+      try {
+        await deleteDoc(doc(db, "reparaciones", reparacionAEliminar.id));
+        setReparaciones((prev) =>
+          prev.filter((p) => p.id !== reparacionAEliminar.id)
+        );
+        setConfirmModal(false);
+        mostrarToast("Reparación eliminada correctamente");
+      } catch (error) {
+        mostrarToast("Error al eliminar reparación", "error");
+      }
     }
   };
 
-  const reparacionesFiltrados = reparaciones.filter((p) =>
-    `${p.nombre} ${p.tipo}`.toLowerCase().includes(busqueda)
+  const exportarExcel = () => {
+    const data = reparaciones.map((r) => ({
+      Descripción: r.descripcionReparacion,
+      Vehículo: obtenerVehiculo(r.vehiculoId)?.patente || "Desconocido",
+      Taller: obtenerTaller(r.tallerId)?.nombre || "Desconocido",
+      Precio: r.precioServicio,
+      Observaciones: r.observaciones || "",
+      CreadoPor: r.creadoPor || "",
+      FechaCreado: r.creadoEn
+        ? new Date(r.creadoEn.seconds * 1000).toLocaleString()
+        : "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Reparaciones");
+    XLSX.writeFile(wb, "reparaciones.xlsx");
+  };
+
+  const reparacionesFiltradas = reparaciones.filter((r) =>
+    r.descripcionReparacion.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const totalPaginas = Math.ceil(
+    reparacionesFiltradas.length / ITEMS_POR_PAGINA
+  );
+
+  const reparacionesPagina = reparacionesFiltradas.slice(
+    (paginaActual - 1) * ITEMS_POR_PAGINA,
+    paginaActual * ITEMS_POR_PAGINA
   );
 
   return (
-
-
-    <div className="p-6 text-white max-w-4xl mx-auto">
+    <div className="p-6 max-w-4xl mx-auto text-white">
       <h1 className="text-2xl font-bold mb-4">Reparaciones</h1>
-      
-          {/* Toast notificación */}
+
+      {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -100,191 +127,192 @@ useEffect(() => {
         )}
       </AnimatePresence>
 
-
-
-      {/* Filtro y botón */}
-      <div className="flex justify-between items-center mb-4 gap-4">
+      {/* Acciones */}
+      <div className="flex items-center gap-4 mb-4">
         <input
           type="text"
-          placeholder="Buscar reparaciones..."
+          placeholder="Buscar..."
           value={busqueda}
-          onChange={handleBusqueda}
-          className="bg-slate-800 p-2 rounded-md w-full max-w-sm"
+          onChange={(e) => {
+            setBusqueda(e.target.value);
+            setPaginaActual(1);
+          }}
+          className="bg-slate-800 p-2 rounded-md w-full max-w-md"
         />
         <button
-          onClick={() => {
-            setReparacionSeleccionado(null);
-            setModalAbierto(true);
-          }}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md"
-          aria-label="Agregar reparacion"
+          onClick={exportarExcel}
+          className="flex gap-2 items-center bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-md"
         >
-          Agregar reparacion
+          <FileDown size={18} /> Exportar
+        </button>
+
+        <button
+          onClick={() => {
+            setReparacionEditar(null); // Crear nuevo
+            setModalVisible(true);
+          }}
+          className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-md"
+        >
+          + Nueva Reparación
         </button>
       </div>
 
-      {/* Estado de carga o error */}
+      {/* Estado de carga */}
       {loading ? (
         <div className="text-center text-slate-400 py-10">
-        <LoaderCircle className="animate-spin mx-auto" size={32} />
-        Cargando reparaciones...
+          <LoaderCircle className="animate-spin mx-auto" size={32} />
+          Cargando reparaciones...
         </div>
-      ) : error ? (
-        <p className="text-center text-red-400">{error}</p>
-      ) : reparacionesFiltrados.length === 0 ? (
+      ) : reparacionesFiltradas.length === 0 ? (
         <p className="text-center text-slate-400">
-          No hay reparaciones que coincidan.
+          No se encontraron reparaciones.
         </p>
       ) : (
-        <div className="space-y-3">
-          {reparacionesFiltrados.map((reparacion) => {
-            const numeroWhatsApp = reparacion.telefono?.replace(/\D/g, "");
-             const vehiculo = obtenerVehiculo(reparacion.vehiculoId);
-             const taller = obtenerTaller(reparacion.tallerId);
+        <>
+          <div className="space-y-3">
+            {reparacionesPagina.map((r) => {
+              const vehiculo = obtenerVehiculo(r.vehiculoId);
+              const taller = obtenerTaller(r.tallerId);
+              const numeroWhatsApp = r.telefono?.replace(/\D/g, "");
 
-            return (
-                
-              <motion.div
-                key={reparacion.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3 }}
-                className="bg-slate-700 p-4 rounded-xl shadow-md flex justify-between items-center"
-              >
-                <div>
-                  <div className="font-bold text-lg">{reparacion.descripcionReparacion}</div>
-      <div className="text-sm text-slate-300">
-        Vehículo: {vehiculo?.patente || "Desconocido"} ({vehiculo?.modelo})
-      </div>
-      <div className="text-sm text-slate-300">
-        Taller: {taller?.nombre || "Desconocido"}
-      </div>
-      <div className="text-sm text-slate-400">
-        Precio: ${reparacion.precioServicio}
-      </div>
-                  <p className="text-l text-green-400 mt-1">
-                    Creado por: {reparacion.creadoPor || "Desconocido"} ·{" "}
-                    {reparacion.creadoEn
-                      ? new Date(
-                          reparacion.creadoEn.seconds * 1000
-                        ).toLocaleString()
-                      : "-"}
-                  </p>
-                  <p className="text-l text-yellow-400 mt-1">
-                    Modificado por: {reparacion.modificadoPor || "Desconocido"} ·{" "}
-                    {reparacion.modificadoEn
-                      ? new Date(
-                          reparacion.modificadoEn.seconds * 1000
-                        ).toLocaleString()
-                      : "-"}
-                  </p>
-                  {reparacion.observaciones && (
-                    <p className="text-s text-slate-400 mt-1">
-                      📝 {reparacion.observaciones}
+              return (
+                <motion.div
+                  key={r.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                  className="bg-slate-700 p-4 rounded-lg shadow flex justify-between items-start"
+                >
+                  <div>
+                    <p className="text-lg font-bold">
+                      {r.descripcionReparacion}
                     </p>
-                  )}
-                </div>
+                    <p className="text-sm text-slate-300">
+                      Vehículo: {vehiculo?.patente || "Desconocido"} (
+                      {vehiculo?.modelo})
+                    </p>
 
-                <div className="flex gap-3 items-center">
-                  {numeroWhatsApp && (
-                    <a
-                      href={`https://wa.me/${numeroWhatsApp}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-green-400 hover:text-green-600"
-                      aria-label="Enviar WhatsApp"
+                    <p>
+                      Mano de Obra: ${Number(r.precioManoObra ?? 0).toFixed(2)}
+                    </p>
+                    <p>
+                      Repuestos: ${Number(r.precioRepuestos ?? 0).toFixed(2)}
+                    </p>
+                    <p>
+                      <strong>
+                        Total: ${Number(r.precioTotal ?? 0).toFixed(2)}
+                      </strong>
+                    </p>
+
+                    <p className="text-sm text-slate-400">
+                      Precio: ${r.precioServicio}
+                    </p>
+                    {r.observaciones && (
+                      <p className="text-xs text-slate-400 mt-1">
+                        📝 {r.observaciones}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2 items-end">
+                    {numeroWhatsApp && (
+                      <a
+                        href={`https://wa.me/${numeroWhatsApp}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-green-400 hover:text-green-600"
+                      >
+                        <MessageCircle />
+                      </a>
+                    )}
+                    <button
+                      className="text-indigo-400 hover:text-indigo-600"
+                      onClick={() => {
+                        setReparacionEditar(r);
+                        setModalVisible(true);
+                      }}
+                      aria-label="Editar reparación"
                     >
-                      <MessageCircle />
-                    </a>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      setReparacionSeleccionado(reparacion);
-                      setModalAbierto(true);
-                    }}
-                    className="text-indigo-300 hover:text-indigo-500"
-                    aria-label="Editar reparacion"
-                  >
-                    <Pencil />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setReparacionAEliminar(reparacion);
-                      setConfirmModal(true);
-                    }}
-                    className="text-red-400 hover:text-red-600"
-                    aria-label="Eliminar reparacion"
-                  >
-                    <Trash2 />
-                  </button>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Modales */}
-      {modalAbierto && (
-       /*  <ModalReparacion
-          abierto={modalAbierto}
-          cerrar={() => setModalAbierto(false)}
-          reparacionActual={reparacionSeleccionado}
-          onSave={(nuevoReparacion) => {
-            if (reparacionSeleccionado) {
-              setReparaciones((prev) =>
-                prev.map((p) =>
-                  p.id === nuevoReparacion.id ? nuevoReparacion : p
-                )
+                      <Pencil />
+                    </button>
+                    <button
+                      className="text-red-400 hover:text-red-600"
+                      onClick={() => {
+                        setReparacionAEliminar(r);
+                        setConfirmModal(true);
+                      }}
+                      aria-label="Eliminar reparación"
+                    >
+                      <Trash2 />
+                    </button>
+                  </div>
+                </motion.div>
               );
-            } else {
-              setReparaciones((prev) => [...prev, nuevoReparacion]);
-            }
-          }}
-        /> */
+            })}
+          </div>
 
-       <ModalReparacion
-  visible={modalAbierto}
-  vehiculo={
-    reparacionSeleccionado
-      ? obtenerVehiculo(reparacionSeleccionado.vehiculoId)
-      : null
-  }
-  reparacion={reparacionSeleccionado}
-  onClose={() => {
-    setModalAbierto(false);
-    setReparacionSeleccionado(null);
-  }}
-  onSuccess={async () => {
-    mostrarToast(
-      reparacionSeleccionado
-        ? "Reparación actualizada correctamente"
-        : "Reparación creada correctamente"
-    );
-    // Refrescar datos desde Firestore para reflejar cambios
-    const snapshot = await getDocs(collection(db, "reparaciones"));
-    const actualizadas = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    setReparaciones(actualizadas);
-    setReparacionSeleccionado(null);
-    setModalAbierto(false);
-  }}
-/>
+          {/* Paginación */}
+          <div className="mt-6 flex justify-center gap-2">
+            {Array.from({ length: totalPaginas }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => setPaginaActual(i + 1)}
+                className={`px-3 py-1 rounded-md ${
+                  paginaActual === i + 1
+                    ? "bg-indigo-600 text-white"
+                    : "bg-slate-600 text-slate-300 hover:bg-slate-500"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
+      {/* Modal creación/edición */}
+      <ModalNuevaReparacion
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSuccess={fetchData}
+        reparacion={reparacionEditar}
+      />
 
-      
-
-      {confirmModal && (
-        <ConfirmModal
-          abierto={confirmModal}
-          title="Eliminar reparacion"
-          message={`¿Estás seguro de que quieres eliminar al reparacion ${reparacionAEliminar?.nombre}?`}
-          onConfirm={eliminarReparacion}
-          onCancel={() => setConfirmModal(false)}
-        />
-      )}
+      {/* Confirmación eliminación */}
+      <AnimatePresence>
+        {confirmModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          >
+            <div className="bg-slate-800 p-6 rounded-lg shadow-lg text-white max-w-sm w-full">
+              <h2 className="text-xl font-bold mb-2">Eliminar reparación</h2>
+              <p className="mb-4">
+                ¿Estás seguro de que querés eliminar la reparación "
+                <span className="font-semibold">
+                  {reparacionAEliminar?.descripcionReparacion}
+                </span>
+                "?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  className="bg-slate-600 hover:bg-slate-700 px-3 py-1 rounded-md"
+                  onClick={() => setConfirmModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md"
+                  onClick={eliminarReparacion}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -24,7 +24,10 @@ export default function BuscadorVehiculo({
     }
 
     const unsub = onSnapshot(collection(db, "vehiculos"), (snapshot) => {
-      const datos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const datos = snapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((v) => v.etiqueta !== "reparacion" && v.etiqueta !== "vendido");
+
       setVehiculos(datos);
     });
 

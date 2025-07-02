@@ -16,12 +16,27 @@ import {
   PlusCircle,
   XCircle,
   Download,
+  KeyRound,
+  IdCard,
+  Car,
+  ScanLine,
+  GaugeCircle,
+  Calendar,
+  User,
+  UserCircle,
+  ShoppingCart,
+  FilePlus,
+  DollarSign,
+  Calculator,
+  Trash2,
 } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { jsPDF } from "jspdf";
+import ExportToWordButton from "../components/presupuestos/ExportToWordButton";
+import TooltipWrapper from "./Tooltip/TooltipWrapper";
 
-export default function ListaPresupuestos() {
+export default function ListaPresupuestos(props) {
   const [presupuestos, setPresupuestos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
@@ -61,31 +76,56 @@ export default function ListaPresupuestos() {
         getDocs(collection(db, "vehiculos")),
       ]);
 
-      const listaPresupuestos = snapPres.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const listaClientes = snapCli.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const listaVehiculos = snapVeh.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const listaPresupuestos = snapPres.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      const listaClientes = snapCli.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      const listaVehiculos = snapVeh.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
       setClientes(listaClientes);
       setVehiculos(listaVehiculos);
 
       const enriquecidos = listaPresupuestos.map((p) => {
-  const cliente = listaClientes.find((c) => c.id === p.clienteId);
-  const vehiculo = listaVehiculos.find((v) => v.id === p.vehiculoId);
+        const cliente = listaClientes.find((c) => c.id === p.clienteId);
+        const vehiculo = listaVehiculos.find((v) => v.id === p.vehiculoId);
+        const parte = p.parteDePago;
 
-  return {
-    ...p,
-    clienteNombre: cliente ? cliente.nombre : "Cliente no encontrado",
-    clienteApellido: cliente?.apellido || "",
-    dniCliente: cliente?.dni || "",
-    vehiculoInfo: vehiculo
-      ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
-      : "Vehículo no encontrado",
-    patenteVehiculo: vehiculo?.patente || "",
-    fechaObj: p.fecha?.toDate ? p.fecha.toDate() : new Date(),
-  };
-});
+        return {
+          ...p,
+          clienteNombre: cliente?.nombre || "Cliente no encontrado",
+          clienteApellido: cliente?.apellido || "",
+          dniCliente: cliente?.dni || "",
+          vehiculoInfo: vehiculo
+            ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
+            : "Vehículo no encontrado",
+          patenteVehiculo: vehiculo?.patente || "-",
+          estadoVehiculo: vehiculo?.estado || "-",
+          tipoVehiculo: vehiculo?.tipo || "-",
+          chasisVehiculo: vehiculo?.chasis || "-",
+          motorVehiculo: vehiculo?.motor || "-",
+          añoVehiculo: vehiculo?.año || "-",
+          fechaObj: p.fecha?.toDate ? p.fecha.toDate() : new Date(),
 
-
+          parteDePago: parte || null,
+          parteDePagoInfo: parte
+            ? `${parte.marca} ${parte.modelo} (${parte.patente})`
+            : "—",
+          parteDePagoPatente: parte?.patente || "-",
+          parteDePagoMonto: parte?.monto || "-",
+          parteDePagoRecibidoPor: parte?.recibidoPor || "-",
+          parteDePagoAño: parte?.año || "-",
+          parteDePagoTipo: parte?.tipo || "-",
+          parteDePagoColor: parte?.color || "-",
+          diferenciaMonto: p.monto - Number(p.parteDePago?.monto || 0),
+        };
+      });
 
       setPresupuestos(enriquecidos);
       setLoading(false);
@@ -107,14 +147,6 @@ export default function ListaPresupuestos() {
     }
   };
 
-  const abrirDetalle = (id) => {
-    setDetalleId(id);
-  };
-
-  const cerrarDetalle = () => {
-    setDetalleId(null);
-  };
-
   const presupuestoDetalle = presupuestos.find((p) => p.id === detalleId);
 
   const exportarPDF = () => {
@@ -128,13 +160,18 @@ export default function ListaPresupuestos() {
     doc.text(`Cliente: ${presupuestoDetalle.clienteNombre}`, 20, 40);
     doc.text(`Vehículo: ${presupuestoDetalle.vehiculoInfo}`, 20, 50);
     doc.text(
-      `Monto estimado: $${Number(presupuestoDetalle.monto).toLocaleString("es-UY", { minimumFractionDigits: 2 })}`,
+      `Monto estimado: $${Number(presupuestoDetalle.monto).toLocaleString(
+        "es-UY",
+        { minimumFractionDigits: 2 }
+      )}`,
       20,
       60
     );
     doc.text(`Vigencia: ${presupuestoDetalle.vigencia} días`, 20, 70);
     doc.text(
-      `Fecha: ${dayjs(presupuestoDetalle.fechaObj).locale("es").format("DD/MM/YYYY")}`,
+      `Fecha: ${dayjs(presupuestoDetalle.fechaObj)
+        .locale("es")
+        .format("DD/MM/YYYY")}`,
       20,
       80
     );
@@ -153,19 +190,24 @@ export default function ListaPresupuestos() {
     setModalNuevo(true);
   };
 
-  const cerrarModalNuevo = () => {
+  /*  const cerrarModalNuevo = () => {
     setModalNuevo(false);
-  };
+  }; */
 
   const manejarCambio = (e) => {
     const { name, value } = e.target;
     setFormData((f) => ({ ...f, [name]: value }));
   };
 
-  const manejarSubmitNuevo = async (e) => {
+  /* const manejarSubmitNuevo = async (e) => {
     e.preventDefault();
 
-    if (!formData.clienteId || !formData.vehiculoId || !formData.monto || !formData.vigencia) {
+    if (
+      !formData.clienteId ||
+      !formData.vehiculoId ||
+      !formData.monto ||
+      !formData.vigencia
+    ) {
       toast.error("Completa todos los campos");
       return;
     }
@@ -183,19 +225,23 @@ export default function ListaPresupuestos() {
 
       const cliente = clientes.find((c) => c.id === nuevaData.clienteId);
       const vehiculo = vehiculos.find((v) => v.id === nuevaData.vehiculoId);
-
-      setPresupuestos((prev) => [
+ */
+  /* setPresupuestos((prev) => [
         ...prev,
         {
           id: docRef.id,
           ...nuevaData,
-          clienteNombre: cliente ? `${cliente.nombre} ${cliente.apellido}` : "Cliente no encontrado",
+          clienteNombre: cliente
+            ? `${cliente.nombre} ${cliente.apellido}`
+            : "Cliente no encontrado",
           dniCliente: cliente?.dni || "",
           vehiculoInfo: vehiculo
             ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
             : "Vehículo no encontrado",
           patenteVehiculo: vehiculo?.patente || "",
-          fechaObj: nuevaData.fecha.toDate ? nuevaData.fecha.toDate() : nuevaData.fecha,
+          fechaObj: nuevaData.fecha.toDate
+            ? nuevaData.fecha.toDate()
+            : nuevaData.fecha,
         },
       ]);
 
@@ -205,7 +251,7 @@ export default function ListaPresupuestos() {
       console.error(error);
       toast.error("Error al crear presupuesto");
     }
-  };
+  }; */
 
   // Filtrado con búsqueda por múltiples campos y filtro de fecha
   const presupuestosFiltrados = useMemo(() => {
@@ -219,12 +265,12 @@ export default function ListaPresupuestos() {
       const vehiculo = p.vehiculoInfo.toLowerCase();
       const patente = p.patenteVehiculo.toLowerCase();
 
-    const textoCoincide =
-  (p.clienteNombre?.toLowerCase() || "").includes(textoFiltro) ||
-  (p.clienteApellido?.toLowerCase() || "").includes(textoFiltro) ||
-  (p.dniCliente?.toString().toLowerCase() || "").includes(textoFiltro) ||
-  (p.vehiculoInfo?.toLowerCase() || "").includes(textoFiltro) ||
-  (p.patenteVehiculo?.toLowerCase() || "").includes(textoFiltro);
+      const textoCoincide =
+        (p.clienteNombre?.toLowerCase() || "").includes(textoFiltro) ||
+        (p.clienteApellido?.toLowerCase() || "").includes(textoFiltro) ||
+        (p.dniCliente?.toString().toLowerCase() || "").includes(textoFiltro) ||
+        (p.vehiculoInfo?.toLowerCase() || "").includes(textoFiltro) ||
+        (p.patenteVehiculo?.toLowerCase() || "").includes(textoFiltro);
 
       if (!textoCoincide) return false;
 
@@ -245,7 +291,9 @@ export default function ListaPresupuestos() {
   }, [presupuestos, filtroNombre, fechaInicio, fechaFin]);
 
   // Paginación
-  const totalPaginas = Math.ceil(presupuestosFiltrados.length / ITEMS_POR_PAGINA);
+  const totalPaginas = Math.ceil(
+    presupuestosFiltrados.length / ITEMS_POR_PAGINA
+  );
   const presupuestosPagina = presupuestosFiltrados.slice(
     (paginaActual - 1) * ITEMS_POR_PAGINA,
     paginaActual * ITEMS_POR_PAGINA
@@ -264,16 +312,16 @@ export default function ListaPresupuestos() {
       <div className="flex items-center gap-2 mb-4 justify-between">
         <div className="flex items-center gap-2">
           <FileText size={28} className="text-yellow-400" />
-          <h2 className="text-2xl font-semibold">Presupuestos</h2>
+          <h2 className="text-2xl font-semibold">Listado</h2>
         </div>
-        <button
+        {/* <button
           onClick={abrirModalNuevo}
           className="flex items-center gap-1 text-green-400 hover:text-green-600"
           title="Crear nuevo presupuesto"
         >
           <PlusCircle size={24} />
           Nuevo
-        </button>
+        </button> */}
       </div>
 
       {/* Filtros */}
@@ -308,13 +356,15 @@ export default function ListaPresupuestos() {
         />
       </div>
 
-        {loading ? (
+      {loading ? (
         <div className="text-center text-slate-400 py-10">
           <LoaderCircle className="animate-spin mx-auto" size={32} />
           Cargando presupuestos...
         </div>
       ) : presupuestosFiltrados.length === 0 ? (
-        <p className="text-center text-slate-400">No hay presupuestos que coincidan con el filtro.</p>
+        <p className="text-center text-slate-400">
+          No hay presupuestos que coincidan con el filtro.
+        </p>
       ) : (
         <>
           <div className="grid gap-4">
@@ -322,83 +372,216 @@ export default function ListaPresupuestos() {
               {presupuestosPagina.map((p) => (
                 <motion.div
                   key={p.id}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-slate-800 rounded-xl p-4 shadow-md "
-                  
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="bg-gradient-to-br from-slate-800 to-slate-700/70 backdrop-blur-sm border border-slate-600 p-4 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 space-y-4"
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold">
-                        Cliente: <span className="text-blue-300">{p.clienteNombre}</span>
-                      </p>
-                      <p>
-                        Vehículo: <span className="text-blue-300">{p.vehiculoInfo}</span>
-                      </p>
-                      {p.monto && (
-                        <p>
-                          Monto estimado:{" "}
-                          <span className="text-green-400">
-                            ${p.monto.toLocaleString("es-UY", { minimumFractionDigits: 2 })}
+                  {/* 🗓️ Fecha y Cliente */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <h3 className="text-lg font-semibold text-indigo-300">
+                      {p.fecha
+                        ? new Date(p.fecha.seconds * 1000).toLocaleDateString(
+                            "es-AR"
+                          )
+                        : "—"}{" "}
+                      · {p.clienteNombre} {p.clienteApellido}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <Calculator className="w-4 h-4 text-purple-400" />
+                      <span className="text-slate-300 font-medium">
+                        Diferencia:
+                      </span>
+                      <span className="text-lime-400 font-bold">
+                        {p.diferenciaMonto.toLocaleString("es-AR", {
+                          style: "currency",
+                          currency: "ARS",
+                          minimumFractionDigits: 0,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 🚗 Vehículo de Agencia */}
+                  {p.vehiculoId && (
+                    <div className="border-t border-slate-600 pt-4">
+                      <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-3">
+                        Vehículo de la Agencia
+                      </h4>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
+                        <div className="flex items-center gap-2">
+                          <Car className="w-4 h-4 text-cyan-400" />
+                          <span className="text-slate-300">Modelo:</span>
+                          <span className="font-semibold">
+                            {" "}
+                            {p.vehiculoInfo}
                           </span>
-                        </p>
-                      )}
-                      {p.vigencia && (
-                        <p>Vigencia: <span className="text-yellow-300">{p.vigencia} días</span></p>
-                      )}
-                      <p className="text-slate-400 text-sm">
-                        Fecha: {dayjs(p.fechaObj).locale("es").format("DD/MM/YYYY")}
-                      </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <KeyRound className="w-4 h-4 text-yellow-400" />
+                          <span className="text-slate-300">Patente:</span>
+                          <span className="font-semibold">
+                            {p.patenteVehiculo || "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <IdCard className="w-4 h-4 text-indigo-400" />
+                          <span className="text-slate-300">Estado:</span>
+                          <span className="font-semibold">
+                            {p.estado || "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Car className="w-4 h-4 text-cyan-400" />
+                          <span className="text-slate-300">Tipo:</span>
+                          <span className="font-semibold">
+                            {" "}
+                            {p.tipo || "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-green-400" />
+                          <span className="text-slate-300">
+                            Valor Tazado:{" "}
+                            <span className="text-lime-400 font-semibold">
+                              {p.monto?.toLocaleString("es-AR", {
+                                style: "currency",
+                                currency: "ARS",
+                                minimumFractionDigits: 0,
+                              })}
+                            </span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <ScanLine className="w-4 h-4 text-orange-400" />
+                          <span className="text-slate-300">Chasis:</span>
+                          <span className="font-semibold">
+                            {" "}
+                            {p.chasis || "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <GaugeCircle className="w-4 h-4 text-red-400" />
+                          <span className="text-slate-300">Motor:</span>
+                          <span className="font-semibold">
+                            {" "}
+                            {p.motor || "-"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 col-span-2">
+                          <Calendar className="w-4 h-4 text-pink-400" />
+                          <span className="text-slate-300">Año:</span>
+                          <span className="font-semibold"> {p.año || "-"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 🚙 Parte de pago */}
+                  {p.parteDePago && (
+                    <div className="border-t border-slate-600 pt-4">
+                      <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-3">
+                        Vehículo que entrega el cliente
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
+                        <div className="flex items-center gap-2">
+                          <Car className="w-4 h-4 text-cyan-400" />
+                          <span className="text-slate-300">Modelo:</span>
+                          <span className="font-semibold">
+                            {" "}
+                            {p.parteDePagoInfo}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-pink-400" />
+                          <span className="text-slate-300">Año:</span>
+                          <span className="font-semibold">
+                            {" "}
+                            {p.parteDePagoAño}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <KeyRound className="w-4 h-4 text-yellow-400" />
+                          <span className="text-slate-300">Patente:</span>
+                          <span className="font-semibold">
+                            {" "}
+                            {p.parteDePagoPatente}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-green-400" />
+                          <span>
+                            Valor Tazado:{" "}
+                            <span className="text-lime-400 font-semibold">
+                              {Number(p.parteDePagoMonto).toLocaleString(
+                                "es-AR",
+                                {
+                                  style: "currency",
+                                  currency: "ARS",
+                                  minimumFractionDigits: 0,
+                                }
+                              )}
+                            </span>
+                          </span>
+                        </div>
+                        <div className="col-span-2 flex items-center gap-2">
+                          <User className="w-4 h-4 text-blue-400" />
+                          <span className="text-slate-300">
+                            Recibido/Tazado Por:
+                          </span>
+                          <span className="font-semibold">
+                            {" "}
+                            {p.parteDePagoRecibidoPor}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 📃 Datos de gestión */}
+                  <div className="border-t border-slate-600 pt-4">
+                    <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-3">
+                      Datos de la Compra/Venta
+                    </h4>
+                    <div className="space-y-2 text-sm text-slate-400">
+                      <div className="flex items-center gap-2">
+                        <ShoppingCart className="text-green-500" size={16} />
+                        <span>
+                          <strong>Tazado por:</strong>{" "}
+                          {p.parteDePago?.recibidoPor || "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <FilePlus className="text-indigo-500" size={16} />
+                        <span>
+                          <strong>Creado por:</strong> {p.creadoPor || "—"} ·{" "}
+                          {p.fecha
+                            ? new Date(
+                                p.fecha.seconds * 1000
+                              ).toLocaleDateString("es-AR")
+                            : "—"}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="flex flex-col items-center gap-2">
-                      {confirmarId === p.id ? (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              eliminarPresupuesto(p.id);
-                            }}
-                            className="text-red-500 hover:text-red-700 cursor-pointer"
-                            title="Confirmar eliminar"
-                          >
-                            <Trash size={24} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmarId(null);
-                            }}
-                            className="text-gray-400 hover:text-gray-600 cursor-pointer"
-                            title="Cancelar"
-                          >
-                            <XCircle size={24} />
-                          </button>
-                        </>
-                      ) : (
+                    {/* ⚙️ Acciones */}
+                    <div className="flex justify-end gap-4 mt-4 text-lg">
+                      <TooltipWrapper label="Descargar en Word">
+                        <ExportToWordButton presupuesto={p} />
+                      </TooltipWrapper>
+
+                      <TooltipWrapper label="Eliminar vehículo">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmarId(p.id);
-                          }}
-                          className="text-red-400 hover:text-red-600 cursor-pointer"
-                          title="Eliminar presupuesto"
+                          onClick={() => eliminarPresupuesto(p.vehiculoId)}
+                          className="text-red-400 hover:text-red-600"
+                          title="Eliminar vehículo"
                         >
-                          <Trash size={24} />
+                          <Trash2 />
                         </button>
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          exportarPDF();
-                        }}
-                        className="text-green-400 hover:text-green-600 cursor-pointer"
-                        title="Exportar PDF"
-                      >
-                        <Download size={24} onClick={() => abrirDetalle(p.id)} />
-                      </button>
+                      </TooltipWrapper>
                     </div>
                   </div>
                 </motion.div>
@@ -420,7 +603,9 @@ export default function ListaPresupuestos() {
                 key={i}
                 onClick={() => irAPagina(i + 1)}
                 className={`px-3 py-1 rounded ${
-                  paginaActual === i + 1 ? "bg-yellow-400 text-black" : "bg-slate-800"
+                  paginaActual === i + 1
+                    ? "bg-yellow-400 text-black"
+                    : "bg-slate-800"
                 }`}
               >
                 {i + 1}
@@ -447,7 +632,9 @@ export default function ListaPresupuestos() {
             className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
           >
             <div className="bg-slate-900 p-6 rounded max-w-sm w-full text-center">
-              <p className="mb-4">¿Seguro que quieres eliminar este presupuesto?</p>
+              <p className="mb-4">
+                ¿Seguro que quieres eliminar este presupuesto?
+              </p>
               <div className="flex justify-around gap-4">
                 <button
                   onClick={() => eliminarPresupuesto(confirmarId)}
@@ -468,7 +655,7 @@ export default function ListaPresupuestos() {
       </AnimatePresence>
 
       {/* Detalle presupuesto */}
-      <AnimatePresence>
+      {/*  <AnimatePresence>
         {detalleId && presupuestoDetalle && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -484,7 +671,9 @@ export default function ListaPresupuestos() {
               >
                 <XCircle size={24} />
               </button>
-              <h3 className="text-2xl font-semibold mb-4">Detalle de Presupuesto</h3>
+              <h3 className="text-2xl font-semibold mb-4">
+                Detalle de Presupuesto
+              </h3>
               <p>
                 <strong>Cliente:</strong> {presupuestoDetalle.clienteNombre}
               </p>
@@ -495,15 +684,19 @@ export default function ListaPresupuestos() {
                 <strong>Vehículo:</strong> {presupuestoDetalle.vehiculoInfo}
               </p>
               <p>
-                <strong>Monto estimado:</strong>{" "}
-                ${Number(presupuestoDetalle.monto).toLocaleString("es-UY", { minimumFractionDigits: 2 })}
+                <strong>Monto estimado:</strong> $
+                {Number(presupuestoDetalle.monto).toLocaleString("es-UY", {
+                  minimumFractionDigits: 2,
+                })}
               </p>
               <p>
                 <strong>Vigencia:</strong> {presupuestoDetalle.vigencia} días
               </p>
               <p>
                 <strong>Fecha:</strong>{" "}
-                {dayjs(presupuestoDetalle.fechaObj).locale("es").format("DD/MM/YYYY")}
+                {dayjs(presupuestoDetalle.fechaObj)
+                  .locale("es")
+                  .format("DD/MM/YYYY")}
               </p>
 
               <button
@@ -517,10 +710,10 @@ export default function ListaPresupuestos() {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       {/* Modal nuevo presupuesto */}
-      <AnimatePresence>
+      {/*  <AnimatePresence>
         {modalNuevo && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -631,7 +824,7 @@ export default function ListaPresupuestos() {
             </motion.form>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
     </div>
   );
 }

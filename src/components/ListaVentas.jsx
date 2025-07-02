@@ -91,6 +91,7 @@ export default function ListaVentas() {
             localidadCliente: cliente?.localidad || "",
             telefonoCliente: cliente?.telefono || "",
             emailCliente: cliente?.email || "",
+            vehiculoResumen: vehiculo || null,
             vehiculoInfo: vehiculo
               ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
               : "Vehículo no encontrado",

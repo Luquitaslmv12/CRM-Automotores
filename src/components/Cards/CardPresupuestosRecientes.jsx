@@ -17,9 +17,8 @@ export default function CardPresupuestosRecientes() {
   const [presupuestos, setPresupuestos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
-  const [lastVisible, setLastVisible] = useState(null); // cursor para siguiente página
-  const [firstVisible, setFirstVisible] = useState(null); // cursor para página anterior
-  const [pageHistory, setPageHistory] = useState([]); // stack para cursors previos
+  const [lastVisible, setLastVisible] = useState(null);
+  const [pageHistory, setPageHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [datosListos, setDatosListos] = useState(false);
 
@@ -35,14 +34,14 @@ export default function CardPresupuestosRecientes() {
       setVehiculos(
         snapVehiculos.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
       );
-      setDatosListos(true); // ✅ ahora marcamos como listos
+      setDatosListos(true);
     };
     cargarClientesYVehiculos();
   }, []);
 
   useEffect(() => {
     if (datosListos) {
-      cargarPresupuestos(); // ✅ solo cuando ya están los datos
+      cargarPresupuestos();
     }
   }, [datosListos]);
 
@@ -65,11 +64,9 @@ export default function CardPresupuestosRecientes() {
             limit(ITEMS_PER_PAGE)
           );
     } else {
-      // Para ir hacia atrás, tomamos el último cursor guardado en pageHistory
       const prevCursor =
         pageHistory.length > 1 ? pageHistory[pageHistory.length - 2] : null;
       if (prevCursor === null) {
-        // Volver a la primera página
         q = query(
           collection(db, "presupuestos"),
           orderBy("fecha", "desc"),
@@ -87,33 +84,46 @@ export default function CardPresupuestosRecientes() {
 
     try {
       const snap = await getDocs(q);
-
       const docs = snap.docs;
-      setFirstVisible(docs[0]);
-      setLastVisible(docs[docs.length - 1]);
+      if (docs.length === 0) {
+        setLoading(false);
+        return;
+      }
 
-      // Actualizamos el historial de páginas solo si vamos hacia adelante
+      setLastVisible(docs[docs.length - 1]);
       if (next) {
         setPageHistory((prev) => [...prev, docs[0]]);
       } else {
         setPageHistory((prev) => prev.slice(0, -1));
       }
 
-      // Enriquecer los presupuestos con datos de cliente y vehículo
       const datos = docs.map((docPres) => {
         const data = docPres.data();
         const cliente = clientes.find((c) => c.id === data.clienteId);
         const vehiculo = vehiculos.find((v) => v.id === data.vehiculoId);
+        const parte = data.parteDePago;
+
+        const montoVehiculo = Number(data.monto) || 0;
+        const montoParte = Number(parte?.monto) || 0;
+        const diferencia = montoVehiculo - montoParte;
 
         return {
           id: docPres.id,
           cliente: cliente
             ? `${cliente.nombre} ${cliente.apellido}`
             : "Cliente no encontrado",
-          vehiculo: vehiculo
-            ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
-            : "Vehículo no encontrado",
-          monto: data.monto || 0,
+          vehiculoTexto:
+            vehiculo && vehiculo.marca && vehiculo.modelo
+              ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
+              : "Vehículo no encontrado",
+          montoVehiculo,
+          parteDePagoTexto: parte
+            ? `${parte.marca || ""} ${parte.modelo || ""} (${
+                parte.patente || "-"
+              })`
+            : null,
+          montoParte,
+          diferencia,
           fecha: data.fecha?.toDate().toLocaleDateString("es-AR") || "",
         };
       });
@@ -148,22 +158,55 @@ export default function CardPresupuestosRecientes() {
         </p>
       ) : (
         <>
-          <ul className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+          <ul className="divide-y divide-gray-600 dark:divide-gray-700 text-sm">
             {presupuestos.map((p) => (
-              <li key={p.id} className="py-2 flex justify-between items-start">
-                <div className="flex flex-col">
-                  <span className="font-medium text-gray-800 dark:text-gray-100">
-                    {p.cliente}
-                  </span>
-                  <span className="text-gray-600 dark:text-gray-300">
-                    {p.vehiculo}
-                  </span>
-                  <span className="text-xs text-gray-400">{p.fecha}</span>
+              <li key={p.id} className="py-3 relative">
+                {/* Diferencia arriba derecha */}
+                <div
+                  className={`absolute top-3 right-3 text-xs font-semibold
+    px-2 py-1 rounded bg-opacity-70
+    ${
+      p.diferencia >= 0
+        ? "bg-green-600 dark:bg-green-700 text-white"
+        : "bg-red-600 dark:bg-red-700 text-white"
+    }
+  `}
+                  style={{ minWidth: "80px", textAlign: "center" }}
+                >
+                  {p.diferencia.toLocaleString("es-AR", {
+                    style: "currency",
+                    currency: "ARS",
+                  })}
                 </div>
-                <div className="text-right">
-                  <span className="text-lime-500 font-semibold">
-                    ${p.monto.toLocaleString("es-AR")}
+
+                <div className="flex flex-col gap-1">
+                  <span className="font-semibold text-gray-100">
+                    {p.fecha} {p.cliente}
                   </span>
+                  <div className="flex justify-between">
+                    <span className="text-indigo-300 font-semibold">
+                      Agencia: {p.vehiculoTexto}
+                    </span>
+                    <span className="text-lime-400 font-semibold">
+                      {p.montoVehiculo.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "ARS",
+                      })}
+                    </span>
+                  </div>
+                  {p.parteDePagoTexto && (
+                    <div className="flex justify-between">
+                      <span className="text-yellow-400 font-semibold">
+                        Cliente : {p.parteDePagoTexto}
+                      </span>
+                      <span className="text-yellow-400 font-semibold">
+                        {p.montoParte.toLocaleString("es-AR", {
+                          style: "currency",
+                          currency: "ARS",
+                        })}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </li>
             ))}

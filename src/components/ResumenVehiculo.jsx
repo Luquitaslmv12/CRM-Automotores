@@ -26,7 +26,7 @@ export default function ResumenVehiculo({ vehiculo, onRemove }) {
 
           {/* Título */}
           <div className="mb-4 flex items-center gap-2">
-            <Car className="text-indigo-500" size={20} />
+            <Car className="text-indigo-600" size={20} />
             <h3 className="text-lg font-semibold text-indigo-600 uppercase tracking-wide">
               Vehículo que se Vende
             </h3>

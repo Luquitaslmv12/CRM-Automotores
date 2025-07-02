@@ -24,6 +24,7 @@ import {
   Trash,
   Plus,
   DollarSign,
+  User,
 } from "lucide-react";
 import { NumericFormat } from "react-number-format";
 import Listaventas from "../components/ListaVentas";
@@ -156,10 +157,24 @@ export default function NuevaVenta() {
     }
 
     try {
+      const resumenVehiculo = vehiculoSeleccionado
+        ? {
+            marca: vehiculoSeleccionado.marca || "",
+            modelo: vehiculoSeleccionado.modelo || "",
+            patente: vehiculoSeleccionado.patente || "",
+            año: vehiculoSeleccionado.año || "",
+            color: vehiculoSeleccionado.color || "",
+            numeroChasis: vehiculoSeleccionado.chasis || "",
+            numeroMotor: vehiculoSeleccionado.motor || "",
+            precioVenta: vehiculoSeleccionado.precioVenta || 0,
+          }
+        : null;
+
       // 1. Crear la venta
       const ventaRef = await addDoc(collection(db, "ventas"), {
         clienteId: clienteSeleccionado.id,
         vehiculoId,
+        vehiculoResumen: resumenVehiculo,
         monto: parseFloat(monto),
         pagos: pagosMultiples ? pagosProcesados : [],
         fecha: Timestamp.fromDate(new Date(fechaVenta)),
@@ -235,6 +250,7 @@ export default function NuevaVenta() {
         modificadoPor: user?.email || "",
         vendidoEn: new Date(),
         vendidoPor,
+        monto: parseFloat(monto),
       });
 
       toast.success("¡Venta registrada con éxito!");
@@ -308,7 +324,7 @@ export default function NuevaVenta() {
             className="w-full p-3 mb-4 rounded bg-slate-700 text-white"
             required
           >
-            <option value="">Seleccione un usuario</option>
+            <option value="">👨‍💼 Seleccione un usuario</option>
             {usuarios.map((usuario) => (
               <option key={usuario.id} value={usuario.nombre}>
                 {usuario.nombre}

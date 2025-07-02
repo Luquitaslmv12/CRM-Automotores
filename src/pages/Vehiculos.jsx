@@ -32,6 +32,8 @@ import {
   ShoppingCart,
   FilePlus,
   Hammer,
+  ScanLine,
+  GaugeCircle,
 } from "lucide-react";
 import ModalReparacion from "../components/reparaciones/ModalReparacion";
 import TooltipWrapper from "../components/Tooltip/TooltipWrapper";
@@ -41,6 +43,8 @@ export default function Vehiculos() {
   const [modelo, setModelo] = useState("");
   const [patente, setPatente] = useState("");
   const [año, setAño] = useState("");
+  const [motor, setMotor] = useState("");
+  const [chasis, setChasis] = useState("");
   const [estado, setEstado] = useState("");
   const [tipo, setTipo] = useState("");
   const [precioVenta, setPrecioVenta] = useState("");
@@ -108,7 +112,7 @@ export default function Vehiculos() {
     setModelo("");
     setPatente("");
     setAño("");
-    setEstado("");
+    setMotor(""), setChasis(""), setEstado("");
     setTipo("");
     setPrecioVenta("");
     setClienteId("");
@@ -147,6 +151,8 @@ export default function Vehiculos() {
           modelo,
           patente,
           año,
+          motor,
+          chasis,
           estado,
           tipo,
           precioVenta: Number(precioVenta) || 0,
@@ -162,6 +168,8 @@ export default function Vehiculos() {
           modelo,
           patente,
           año,
+          motor,
+          chasis,
           estado,
           tipo,
           precioVenta: Number(precioVenta) || 0,
@@ -203,6 +211,8 @@ export default function Vehiculos() {
     setModelo(vehiculo.modelo || "");
     setPatente(vehiculo.patente || "");
     setAño(vehiculo.año || "");
+    setMotor(vehiculo.motor || "");
+    setChasis(vehiculo.chasis || "");
     setEstado(vehiculo.estado || "");
     setTipo(vehiculo.tipo || "");
     setPrecioVenta(vehiculo.precioVenta ? vehiculo.precioVenta.toString() : "");
@@ -225,6 +235,9 @@ export default function Vehiculos() {
       "Marca",
       "Modelo",
       "Patente",
+      "Año",
+      "Motor",
+      "Chasis",
       "Estado",
       "Tipo",
       "Precio Venta",
@@ -234,7 +247,9 @@ export default function Vehiculos() {
       v.marca,
       v.modelo,
       v.patente,
-      v.anio,
+      v.año,
+      v.motor,
+      v.chasis,
       v.estado || "",
       v.tipo || "",
       v.precioVenta || "",
@@ -366,7 +381,7 @@ export default function Vehiculos() {
         }}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-indigo-700/10 backdrop-blur-md p-8 rounded-3xl shadow-xl w-full max-w-4xl mx-auto mb-10 border border-slate-700/50"
+        className="bg-indigo-700/10 backdrop-blur-md p-8 rounded-3xl shadow-xl w-full max-w-4xl mx-auto mb-10 border-2 border-slate-600"
       >
         <div className="flex items-center gap-2 mb-6">
           <PlusCircle className="text-green-400" />
@@ -379,7 +394,7 @@ export default function Vehiculos() {
         <h3 className="text-slate-200 text-sm font-semibold mb-2 mt-6">
           Información básica
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ">
           {[
             { id: "marca", label: "Marca", value: marca, setValue: setMarca },
             {
@@ -400,6 +415,18 @@ export default function Vehiculos() {
               value: año,
               setValue: setAño,
               type: "number",
+            },
+            {
+              id: "motor",
+              label: "N° Motor",
+              value: motor,
+              setValue: setMotor,
+            },
+            {
+              id: "chasis",
+              label: "N° Chasis",
+              value: chasis,
+              setValue: setChasis,
             },
             {
               id: "estado",
@@ -426,13 +453,18 @@ export default function Vehiculos() {
                 type={type}
                 placeholder=" "
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) =>
+                  ["marca", "modelo", "patente", "motor", "chasis"].includes(id)
+                    ? setValue(e.target.value.toUpperCase())
+                    : setValue(e.target.value)
+                }
                 className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none placeholder-transparent text-white transition duration-300"
                 autoComplete="off"
                 min={type === "number" ? 0 : undefined}
                 step={type === "number" ? "any" : undefined}
                 required={["marca", "modelo", "patente", "año"].includes(id)}
               />
+
               <label
                 htmlFor={id}
                 className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
@@ -563,7 +595,7 @@ export default function Vehiculos() {
           aria-label="Exportar vehículos CSV"
         >
           <Download size={18} />
-          Exportar CSV
+          Exportar Listado
         </button>
       </div>
 
@@ -599,7 +631,6 @@ export default function Vehiculos() {
                   </span>
                 )}
               </div>
-
               {/* Datos principales */}
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-slate-300">
                 <div className="flex items-center gap-2">
@@ -617,6 +648,19 @@ export default function Vehiculos() {
                   <strong className="text-slate-300">Tipo:</strong>
                   <span>{vehiculo.tipo || "-"}</span>
                 </div>
+                {vehiculo.monto && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-green-400" />
+                    <strong className="text-slate-300">Vendido a:</strong>
+                    <strong className="text-lime-400">
+                      {vehiculo.monto.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "ARS",
+                        minimumFractionDigits: 0,
+                      })}
+                    </strong>
+                  </div>
+                )}
                 {vehiculo.precioVenta && (
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-green-400" />
@@ -630,6 +674,16 @@ export default function Vehiculos() {
                     </strong>
                   </div>
                 )}
+                <div className="flex items-center gap-2">
+                  <ScanLine className="w-4 h-4 text-orange-400" />
+                  <strong className="text-slate-300">N° Chasis:</strong>
+                  <span>{vehiculo.chasis || "-"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <GaugeCircle className="w-4 h-4 text-red-400" />
+                  <strong className="text-slate-300">N° Motor:</strong>
+                  <span>{vehiculo.motor || "-"}</span>
+                </div>
                 <div className="col-span-2 flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-pink-400" />
                   <span>Año: {vehiculo.año || "-"}</span>

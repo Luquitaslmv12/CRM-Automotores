@@ -1,0 +1,175 @@
+<motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="bg-gradient-to-br from-slate-800 to-slate-700/70 backdrop-blur-sm border border-slate-600 p-4 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300"
+                >
+                  {/* Encabezado */}
+                  <div className="mb-2 flex justify-between items-center">
+                    <h3 className="text-xl font-bold text-white">
+                      {p.marca} {p.modelo} * {p.patente || "-"}
+                    </h3>
+                    {p.etiqueta && (
+                      <span
+                        className={`ml-2 px-3 py-0.5 rounded-full text-xs font-semibold ${colorEtiqueta(
+                          p.etiqueta
+                        )} text-white`}
+                      >
+                        {p.etiqueta}
+                      </span>
+                    )}
+                  </div>
+                  {/* Datos principales */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-slate-300">
+                    <div className="flex items-center gap-2">
+                      <KeyRound className="w-4 h-4 text-yellow-400" />
+                      <strong className="text-slate-300">Patente:</strong>
+                      <span>{p.patente || "-"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <IdCard className="w-4 h-4 text-indigo-400" />
+                      <strong className="text-slate-300">Estado:</strong>
+                      <span>{p.estado || "-"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Car className="w-4 h-4 text-cyan-400" />
+                      <strong className="text-slate-300">Tipo:</strong>
+                      <span>{p.tipo || "-"}</span>
+                    </div>
+                    {p.precioVenta && (
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-green-400" />
+                        <strong className="text-slate-300">
+                          Precio Sugerido:
+                        </strong>
+                        <strong className="text-lime-400">
+                          {p.precioVenta.toLocaleString("es-AR", {
+                            style: "currency",
+                            currency: "ARS",
+                            minimumFractionDigits: 0,
+                          })}
+                        </strong>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <ScanLine className="w-4 h-4 text-orange-400" />
+                      <strong className="text-slate-300">N° Chasis:</strong>
+                      <span>{p.chasis || "-"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <GaugeCircle className="w-4 h-4 text-red-400" />
+                      <strong className="text-slate-300">N° Motor:</strong>
+                      <span>{p.motor || "-"}</span>
+                    </div>
+                    <div className="col-span-2 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-pink-400" />
+                      <span>Año: {p.año || "-"}</span>
+                    </div>
+                  </div>
+
+                  {/* Cliente y Taller */}
+                  <div className="mt-2 text-sm text-slate-300 space-y-1">
+                    {p.clienteId && (
+                      <div className="flex items-center gap-2 text-indigo-300">
+                        <User className="w-4 h-4" />
+                        <span>
+                          Cliente Dueño: {p.clienteNombre} {p.clienteApellido}
+                        </span>
+                      </div>
+                    )}
+                    {p.tallerId && (
+                      <div className="flex items-center gap-2 text-cyan-400">
+                        <Factory className="w-4 h-4" />
+                        <span>
+                          Taller:{" "}
+                          {talleres.find((t) => t.id === p.tallerId)?.nombre ||
+                            "Desconocido"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-5 pt-4 border-t border-slate-600">
+                    <h4 className="text-xs uppercase tracking-wide text-slate-400 mb-2">
+                      Datos de La Compra/Venta
+                    </h4>
+
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <UserCircle className="text-blue-500" size={16} />
+                        <span>
+                          <strong className="text-blue-500">Tomado por:</strong>{" "}
+                          {p.tomadoPor || "—"} ·{" "}
+                          {p.tomadoEn
+                            ? new Date(
+                                p.tomadoEn.seconds * 1000
+                              ).toLocaleString()
+                            : "—"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <ShoppingCart className="text-green-500" size={16} />
+                        <span>
+                          <strong className="text-green-500">
+                            Vendido por:
+                          </strong>{" "}
+                          {p.vendidoPor || "—"} ·{" "}
+                          {p.vendidoEn
+                            ? new Date(
+                                p.vendidoEn.seconds * 1000
+                              ).toLocaleString()
+                            : "—"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <FilePlus className="text-indigo-500" size={16} />
+                        <span>
+                          <strong className="text-indigo-500">
+                            Creado por:
+                          </strong>{" "}
+                          {p.creadoPor || "—"} ·{" "}
+                          {p.creadoEn
+                            ? new Date(
+                                p.creadoEn.seconds * 1000
+                              ).toLocaleString()
+                            : "—"}
+                        </span>
+                      </div>
+
+                      {p.modificadoPor && (
+                        <div className="flex items-center gap-2">
+                          <Hammer className="text-yellow-500" size={16} />
+                          <span>
+                            <strong className="text-yellow-500">
+                              Modificado por:
+                            </strong>{" "}
+                            {p.modificadoPor} ·{" "}
+                            {p.modificadoEn
+                              ? new Date(
+                                  p.modificadoEn.seconds * 1000
+                                ).toLocaleString()
+                              : "—"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+
+
+
+                  KeyRound,
+  IdCard,
+  Car,
+  ScanLine,
+  GaugeCircle,
+  Calendar,
+  User,
+  UserCircle,
+  ShoppingCart,
+  FilePlus ,
+} from "lucide-r
