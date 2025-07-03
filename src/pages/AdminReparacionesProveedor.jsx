@@ -1,12 +1,24 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+  query,
+  where,
+} from "firebase/firestore";
 import { db } from "../firebase";
 import {
   Pencil,
   Trash2,
   MessageCircle,
-  LoaderCircle,
+  Wrench,
+  Car,
+  Building,
+  DollarSign,
+  FileText,
   FileDown,
+  LoaderCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
@@ -67,9 +79,14 @@ export default function Reparaciones() {
   const fetchVehiculosEnReparacion = async () => {
     try {
       setLoadingVehEnRep(true);
-      const q = query(collection(db, "vehiculos"), where("etiqueta", "==", "Reparación"));
+      const q = query(
+        collection(db, "vehiculos"),
+        where("etiqueta", "==", "Reparación")
+      );
       const snapshot = await getDocs(q);
-      setVehiculosEnReparacion(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setVehiculosEnReparacion(
+        snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+      );
     } catch (error) {
       mostrarToast("Error al cargar vehículos en reparación", "error");
     } finally {
@@ -124,18 +141,20 @@ export default function Reparaciones() {
 
     const tallerOk = !filtroTaller || r.tallerId === filtroTaller;
 
-    const fechaCreado = r.creadoEn
-      ? new Date(r.creadoEn.seconds * 1000)
-      : null;
+    const fechaCreado = r.creadoEn ? new Date(r.creadoEn.seconds * 1000) : null;
 
-    const fechaDesdeOk = !fechaDesde || (fechaCreado && fechaCreado >= new Date(fechaDesde));
-    const fechaHastaOk = !fechaHasta || (fechaCreado && fechaCreado <= new Date(fechaHasta));
+    const fechaDesdeOk =
+      !fechaDesde || (fechaCreado && fechaCreado >= new Date(fechaDesde));
+    const fechaHastaOk =
+      !fechaHasta || (fechaCreado && fechaCreado <= new Date(fechaHasta));
 
     return textoOk && tallerOk && fechaDesdeOk && fechaHastaOk;
   });
 
   // Paginación
-  const totalPaginas = Math.ceil(reparacionesFiltradas.length / ITEMS_POR_PAGINA);
+  const totalPaginas = Math.ceil(
+    reparacionesFiltradas.length / ITEMS_POR_PAGINA
+  );
   const reparacionesPagina = reparacionesFiltradas.slice(
     (paginaActual - 1) * ITEMS_POR_PAGINA,
     paginaActual * ITEMS_POR_PAGINA
@@ -231,6 +250,7 @@ export default function Reparaciones() {
 
         <button
           onClick={() => {
+            console.log("Botón presionado");
             setReparacionEditar(null); // Crear nuevo
             setModalVisible(true);
           }}
@@ -250,7 +270,9 @@ export default function Reparaciones() {
             Cargando vehículos en reparación...
           </div>
         ) : vehiculosEnReparacion.length === 0 ? (
-          <p className="text-slate-400">No hay vehículos en reparación actualmente.</p>
+          <p className="text-slate-400">
+            No hay vehículos en reparación actualmente.
+          </p>
         ) : (
           <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {vehiculosEnReparacion.map((v) => (
@@ -278,8 +300,8 @@ export default function Reparaciones() {
         </p>
       ) : (
         <>
-          {/* LISTADO */}
-          <div className="space-y-4 mb-8 border border-indigo-500 rounded-md p-4">
+          {/* LISTADO AVANZADO */}
+          <div className="space-y-6 mb-12 border border-indigo-500 rounded-2xl p-6 bg-indigo-900/80 shadow-xl">
             {reparacionesPagina.map((r) => {
               const vehiculo = obtenerVehiculo(r.vehiculoId);
               const taller = obtenerTaller(r.tallerId);
@@ -288,33 +310,65 @@ export default function Reparaciones() {
               return (
                 <motion.div
                   key={r.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-slate-700 p-4 rounded-lg shadow flex justify-between items-start"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-gradient-to-br from-slate-800 to-slate-700/70 backdrop-blur-sm p-6 rounded-2xl shadow-md hover:shadow-xl transition-shadow flex flex-col md:flex-row md:justify-between md:items-start gap-6 border border-indigo-200"
                 >
-                  <div>
-                    <p className="text-lg font-bold">{r.descripcionReparacion}</p>
-                    <p className="text-sm text-slate-300">
-                      Vehículo: {vehiculo?.patente || "Desconocido"} - {vehiculo?.modelo || ""}
-                    </p>
-                    <p className="text-sm text-slate-300">
-                      Taller: {taller?.nombre || "Desconocido"}
-                    </p>
-                    <p className="text-sm">Precio: ${r.precioServicio}</p>
-                    <p className="text-sm text-slate-300">
-                      Observaciones: {r.observaciones || "Ninguna"}
-                    </p>
+                  {/* Información */}
+                  <div className="space-y-3 text-gray-800 flex-1">
+                    <div className="flex items-center gap-2 text-xl font-semibold text-indigo-700">
+                      <Wrench size={20} /> {r.descripcionReparacion}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Car size={16} className="text-sky-400" />
+                      Vehículo:{" "}
+                      <span className="font-medium text-gray-200">
+                        {vehiculo?.patente || "Desconocido"}
+                      </span>{" "}
+                      – {vehiculo?.modelo || ""}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Building size={16} className="text-indigo-300" />
+                      Taller:{" "}
+                      <span className="font-medium text-gray-200">
+                        {taller?.nombre || "Desconocido"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <DollarSign size={16} className="text-indigo-400" />
+                      Precio:{" "}
+                      <span className="text-green-600 font-medium">
+                        ${r.precioServicio}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <FileText size={16} className="text-indigo-400" />
+                      Observaciones:{" "}
+                      <span className="italic text-gray-200">
+                        {r.observaciones || "Ninguna"}
+                      </span>
+                    </div>
+
+                    {/* Badge */}
+                    <div className="inline-block px-3 py-1 text-xs rounded-full bg-indigo-100 text-indigo-600 font-medium">
+                      #{r.id}
+                    </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  {/* Acciones */}
+                  <div className="flex md:flex-col gap-3 items-start">
                     <button
                       onClick={() => {
                         setReparacionEditar(r);
                         setModalVisible(true);
                       }}
                       title="Editar"
-                      className="p-2 rounded hover:bg-indigo-600"
+                      className="p-2 rounded-full bg-indigo-500 hover:bg-indigo-400 transition-colors text-white"
                     >
                       <Pencil size={18} />
                     </button>
@@ -325,7 +379,7 @@ export default function Reparaciones() {
                         setConfirmModal(true);
                       }}
                       title="Eliminar"
-                      className="p-2 rounded hover:bg-red-700"
+                      className="p-2 rounded-full bg-red-500 hover:bg-red-400 transition-colors text-white"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -336,7 +390,7 @@ export default function Reparaciones() {
                         target="_blank"
                         rel="noopener noreferrer"
                         title="WhatsApp"
-                        className="p-2 rounded hover:bg-green-700"
+                        className="p-2 rounded-full bg-green-500 hover:bg-green-400 transition-colors text-white"
                       >
                         <MessageCircle size={18} />
                       </a>
@@ -360,7 +414,9 @@ export default function Reparaciones() {
               Página {paginaActual} de {totalPaginas}
             </span>
             <button
-              onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
+              onClick={() =>
+                setPaginaActual((p) => Math.min(totalPaginas, p + 1))
+              }
               disabled={paginaActual === totalPaginas}
               className="bg-slate-600 px-3 py-1 rounded disabled:opacity-50"
             >
@@ -373,25 +429,26 @@ export default function Reparaciones() {
       {/* MODAL NUEVA REPARACION */}
       {modalVisible && (
         <ModalNuevaReparacion
-          reparacionEditar={reparacionEditar}
-          setModalVisible={setModalVisible}
-          talleres={talleres}
-          vehiculos={vehiculos}
-          onSave={(nuevaReparacion) => {
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          onSuccess={(nuevaReparacion) => {
             if (reparacionEditar) {
               setReparaciones((prev) =>
-                prev.map((r) => (r.id === reparacionEditar.id ? nuevaReparacion : r))
+                prev.map((r) =>
+                  r.id === reparacionEditar.id ? nuevaReparacion : r
+                )
               );
             } else {
               setReparaciones((prev) => [nuevaReparacion, ...prev]);
             }
-            setModalVisible(false);
+
             mostrarToast(
               reparacionEditar
                 ? "Reparación actualizada"
                 : "Reparación creada correctamente"
             );
           }}
+          reparacion={reparacionEditar}
         />
       )}
 

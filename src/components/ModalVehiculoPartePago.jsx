@@ -1,10 +1,17 @@
 import { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
+import BuscadorCliente from "./BuscadorCliente";
 
-export default function ModalVehiculoPartePago({ vehiculo, onClose, onSave }) {
+export default function ModalVehiculoPartePago({
+  vehiculo,
+  onClose,
+  onSave,
+  modo,
+}) {
   const [usuarios, setUsuarios] = useState([]);
   const [recibidoPor, setRecibidoPor] = useState("");
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null); // nuevo
 
   const [vehiculoState, setVehiculoState] = useState({
     marca: "",
@@ -54,14 +61,19 @@ export default function ModalVehiculoPartePago({ vehiculo, onClose, onSave }) {
     onSave({
       ...vehiculoState,
       recibidoPor,
+      cliente: clienteSeleccionado,
       fechaEntrega: new Date(),
     });
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={onClose} // click afuera cierra modal
+    >
       <form
         onSubmit={handleSubmit}
+        onClick={(e) => e.stopPropagation()} // evita cierre al click dentro
         className="bg-slate-800 p-6 rounded-2xl shadow-xl max-w-lg w-full"
       >
         <h3 className="text-xl font-semibold mb-4 text-white">
@@ -82,6 +94,18 @@ export default function ModalVehiculoPartePago({ vehiculo, onClose, onSave }) {
             </option>
           ))}
         </select>
+
+        {/* Mostrar buscador solo si modo es compra */}
+        {modo === "compra" && (
+          <>
+            <label className="text-white block mb-2">Asignar Cliente:</label>
+            <BuscadorCliente
+              value={clienteSeleccionado}
+              onChange={setClienteSeleccionado}
+              placeholder="Dueño del vehiculo"
+            />
+          </>
+        )}
 
         <input
           name="marca"
@@ -118,7 +142,7 @@ export default function ModalVehiculoPartePago({ vehiculo, onClose, onSave }) {
           name="monto"
           type="number"
           step="0.01"
-          placeholder="Monto tomado en parte de pago"
+          placeholder="Monto tomado"
           value={vehiculoState.monto}
           onChange={handleChange}
           className="w-full p-3 mb-3 rounded bg-slate-700 text-white"

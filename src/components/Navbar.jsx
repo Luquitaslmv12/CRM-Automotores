@@ -81,6 +81,9 @@ export default function Navbar() {
               <Link to="/ventas" className={linkClase("/ventas")}>
                 Ventas
               </Link>
+              <Link to="/compras" className={linkClase("/compras")}>
+                Compras
+              </Link>
               <Link to="/presupuestos" className={linkClase("/presupuestos")}>
                 Presupuestos
               </Link>
@@ -93,7 +96,7 @@ export default function Navbar() {
               <Link to="/caja" className={linkClase("/caja")}>
                 Caja
               </Link>
-            
+
               {usuario?.rol === "admin" && (
                 <Link to="/admin" className={linkClase("/admin")}>
                   Admin
