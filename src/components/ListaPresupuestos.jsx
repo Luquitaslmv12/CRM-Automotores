@@ -6,6 +6,7 @@ import {
   deleteDoc,
   doc,
   addDoc,
+  updateDoc, Timestamp,
 } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "react-hot-toast";
@@ -35,13 +36,28 @@ import "dayjs/locale/es";
 import { jsPDF } from "jspdf";
 import ExportToWordButton from "../components/presupuestos/ExportToWordButton";
 import TooltipWrapper from "./Tooltip/TooltipWrapper";
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ListaPresupuestos(props) {
+  const { usuario } = useAuth();
   const [presupuestos, setPresupuestos] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmarId, setConfirmarId] = useState(null);
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+
+  const getEstadoColor = (estado) => {
+  switch (estado) {
+    case "cerrado":
+      return "bg-green-700 border-green-400";
+    case "perdido":
+      return "bg-red-700 border-red-400";
+    case "abierto":
+    default:
+      return "bg-yellow-600 border-yellow-400";
+  }
+};
 
   // Modal detalle
   const [detalleId, setDetalleId] = useState(null);
@@ -146,6 +162,41 @@ export default function ListaPresupuestos(props) {
       toast.error("Error al eliminar presupuesto");
     }
   };
+
+  const actualizarEstado = async (id, nuevoEstado) => {
+  try {
+    const fechaCierre =
+      nuevoEstado === "cerrado" || nuevoEstado === "perdido"
+        ? Timestamp.now()
+        : null;
+
+    const modificadoPor = usuario?.nombre || "Desconocido";
+
+    await updateDoc(doc(db, "presupuestos", id), {
+      estado: nuevoEstado,
+      fechaCierre,
+      modificadoPor,
+    });
+
+    setPresupuestos((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? {
+              ...p,
+              estado: nuevoEstado,
+              fechaCierre: fechaCierre ? fechaCierre.toDate() : null,
+              modificadoPor,
+            }
+          : p
+      )
+    );
+
+    toast.success("Estado actualizado");
+  } catch (error) {
+    console.error(error);
+    toast.error("Error al actualizar estado");
+  }
+};
 
   const presupuestoDetalle = presupuestos.find((p) => p.id === detalleId);
 
@@ -255,40 +306,39 @@ export default function ListaPresupuestos(props) {
 
   // Filtrado con búsqueda por múltiples campos y filtro de fecha
   const presupuestosFiltrados = useMemo(() => {
-    const textoFiltro = filtroNombre.toLowerCase().trim();
+  const textoFiltro = filtroNombre.toLowerCase().trim();
 
-    return presupuestos.filter((p) => {
-      // Buscar por cliente
-      const nombreCompleto = p.clienteNombre.toLowerCase();
-      const dni = p.dniCliente.toString().toLowerCase();
-      // Vehículo separado para buscar patente, marca y modelo
-      const vehiculo = p.vehiculoInfo.toLowerCase();
-      const patente = p.patenteVehiculo.toLowerCase();
+  return presupuestos.filter((p) => {
+    // Filtro de texto existente
+    const textoCoincide =
+      (p.clienteNombre?.toLowerCase() || "").includes(textoFiltro) ||
+      (p.clienteApellido?.toLowerCase() || "").includes(textoFiltro) ||
+      (p.dniCliente?.toString().toLowerCase() || "").includes(textoFiltro) ||
+      (p.vehiculoInfo?.toLowerCase() || "").includes(textoFiltro) ||
+      (p.patenteVehiculo?.toLowerCase() || "").includes(textoFiltro);
 
-      const textoCoincide =
-        (p.clienteNombre?.toLowerCase() || "").includes(textoFiltro) ||
-        (p.clienteApellido?.toLowerCase() || "").includes(textoFiltro) ||
-        (p.dniCliente?.toString().toLowerCase() || "").includes(textoFiltro) ||
-        (p.vehiculoInfo?.toLowerCase() || "").includes(textoFiltro) ||
-        (p.patenteVehiculo?.toLowerCase() || "").includes(textoFiltro);
+    if (!textoCoincide) return false;
 
-      if (!textoCoincide) return false;
-
-      // Filtrar por fechas
-      if (fechaInicio) {
-        if (dayjs(p.fechaObj).isBefore(dayjs(fechaInicio), "day")) {
-          return false;
-        }
+    // Filtrar por fechas
+    if (fechaInicio) {
+      if (dayjs(p.fechaObj).isBefore(dayjs(fechaInicio), "day")) {
+        return false;
       }
-      if (fechaFin) {
-        if (dayjs(p.fechaObj).isAfter(dayjs(fechaFin), "day")) {
-          return false;
-        }
+    }
+    if (fechaFin) {
+      if (dayjs(p.fechaObj).isAfter(dayjs(fechaFin), "day")) {
+        return false;
       }
+    }
 
-      return true;
-    });
-  }, [presupuestos, filtroNombre, fechaInicio, fechaFin]);
+    // **Filtro nuevo por estado**
+    if (filtroEstado && filtroEstado !== "todos") {
+      if (p.estado !== filtroEstado) return false;
+    }
+
+    return true;
+  });
+}, [presupuestos, filtroNombre, fechaInicio, fechaFin, filtroEstado]);
 
   // Paginación
   const totalPaginas = Math.ceil(
@@ -354,7 +404,23 @@ export default function ListaPresupuestos(props) {
           }}
           className="p-2 rounded bg-slate-800 text-white"
         />
+
+              <select
+  value={filtroEstado}
+  onChange={(e) => {
+    setFiltroEstado(e.target.value);
+    setPaginaActual(1); // reset de página
+  }}
+  className="p-2 rounded bg-slate-800 text-white"
+>
+  <option value="todos">Todos los estados</option>
+  <option value="abierto">Abierto</option>
+  <option value="cerrado">Cerrado</option>
+  <option value="perdido">Perdido</option>
+</select>
       </div>
+
+
 
       {loading ? (
         <div className="text-center text-slate-400 py-10">
@@ -569,6 +635,28 @@ export default function ListaPresupuestos(props) {
                         </span>
                       </div>
                     </div>
+
+                    {/* ▶️ Estado del presupuesto */}
+<div className="flex items-center gap-3 mt-4">
+  <span className="text-sm text-slate-300">Estado:</span>
+
+ <select
+  value={p.estado || "abierto"}
+  onChange={(e) => actualizarEstado(p.id, e.target.value)}
+  className={`border-2 text-white rounded px-2 py-1 text-sm ${getEstadoColor(p.estado || "abierto")}`}
+>
+    <option value="abierto">Abierto</option>
+    <option value="cerrado">Cerrado</option>
+    <option value="perdido">Perdido</option>
+  </select>
+
+  {p.fechaCierre && (
+  <span className="text-xs text-slate-400">
+    · Cierre: {dayjs(p.fechaCierre).locale("es").format("DD/MM/YYYY")} · Mod:{" "}
+    {p.modificadoPor || "—"}
+  </span>
+)}
+</div>
 
                     {/* ⚙️ Acciones */}
                     <div className="flex justify-end gap-4 mt-4 text-lg">

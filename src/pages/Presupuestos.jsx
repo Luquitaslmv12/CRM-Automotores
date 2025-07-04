@@ -147,6 +147,10 @@ export default function NuevoPresupuesto(props) {
         fecha: Timestamp.now(),
         creadoPor: user?.email || "Desconocido",
         emitidoPor,
+         asesor: emitidoPor,
+  estado: "abierto",
+  fechaCreacion: Timestamp.now(),
+  fechaCierre: null,
         parteDePago: parteDePago ? vehiculoPartePago : null,
       };
 
@@ -198,9 +202,9 @@ export default function NuevoPresupuesto(props) {
         >
           <option value="">Seleccione un usuario</option>
           {usuarios.map((usuario) => (
-            <option key={usuario.id} value={usuario.nombre}>
-              {usuario.nombre}
-            </option>
+           <option key={usuario.id} value={usuario.email}>
+  {usuario.nombre} ({usuario.email})
+</option>
           ))}
         </select>
 

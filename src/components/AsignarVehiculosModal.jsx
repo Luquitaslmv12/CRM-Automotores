@@ -1,289 +1,251 @@
-import { useState, useEffect } from "react";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
-import { db } from "../firebase";
-import {
-  Pencil,
-  Trash2,
-  MessageCircle,
-  LoaderCircle,
-  FileDown,
-  Plus,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import * as XLSX from "xlsx";
-import ModalReparacion from "../components/reparaciones/ModalReparacion";
+import { useState, useMemo } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { XCircle } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 
-const ITEMS_POR_PAGINA = 5;
+export default function AsignarVehiculosModal({
+  clienteSeleccionado,
+  setClienteSeleccionado,
+  vehiculosDisponibles,
+  setVehiculosDisponibles,
+  vehiculosAsignados,
+  setVehiculosAsignados,
+  asignarVehiculos,
+  vehiculosSeleccionados,
+  setVehiculosSeleccionados,
+  vehiculoEnConfirmacion,
+  setVehiculoEnConfirmacion,
+  quitarVehiculoAsignado,
+}) {
+  const [busqueda, setBusqueda] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [loadingQuitar, setLoadingQuitar] = useState(null); // id del vehículo que está quitando o null
 
-export default function Reparaciones() {
-  const [reparaciones, setReparaciones] = useState([]);
-  const [vehiculos, setVehiculos] = useState([]);
-  const [talleres, setTalleres] = useState([]);
-  const [busqueda, setBusqueda] = useState("");
-  const [paginaActual, setPaginaActual] = useState(1);
-  const [loading, setLoading] = useState(true);
 
-  const [toast, setToast] = useState(null);
-  const [confirmModal, setConfirmModal] = useState(false);
-  const [reparacionAEliminar, setReparacionAEliminar] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [reparacionEditar, setReparacionEditar] = useState(null);
+  const vehiculosFiltrados = useMemo(() => {
+    const term = busqueda.toLowerCase();
+    return vehiculosDisponibles.filter(
+      (v) =>
+        v.marca.toLowerCase().includes(term) ||
+        v.modelo.toLowerCase().includes(term) ||
+        v.patente.toLowerCase().includes(term)
+    );
+  }, [vehiculosDisponibles, busqueda]);
 
-  const mostrarToast = (mensaje, tipo = "ok") => {
-    setToast({ mensaje, tipo });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const obtenerVehiculo = (id) => vehiculos.find((v) => v.id === id);
-  const obtenerTaller = (id) => talleres.find((t) => t.id === id);
-
-  const fetchData = async () => {
+  const handleAsignarVehiculos = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const [repSnap, vehSnap, talSnap] = await Promise.all([
-        getDocs(collection(db, "reparaciones")),
-        getDocs(collection(db, "vehiculos")),
-        getDocs(collection(db, "proveedores")),
-      ]);
-      setReparaciones(repSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setVehiculos(vehSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      setTalleres(talSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    } catch {
-      mostrarToast("Error al cargar datos", "error");
+      await asignarVehiculos();
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const eliminarReparacion = async () => {
-    if (reparacionAEliminar) {
-      await deleteDoc(doc(db, "reparaciones", reparacionAEliminar.id));
-      setReparaciones((prev) =>
-        prev.filter((p) => p.id !== reparacionAEliminar.id)
-      );
-      setConfirmModal(false);
-      mostrarToast("Reparación eliminada correctamente");
+  // Nueva función para quitar vehículo con loadingQuitar
+  const handleQuitarVehiculoAsignado = async (vehiculoId) => {
+    setLoadingQuitar(vehiculoId);
+    try {
+      await quitarVehiculoAsignado(vehiculoId);
+      setVehiculoEnConfirmacion(null); // cerrar confirmación después de quitar
+    } finally {
+      setLoadingQuitar(null);
     }
   };
 
-  const exportarExcel = () => {
-    const data = reparaciones.map((r) => ({
-      Descripción: r.descripcionReparacion,
-      Vehículo: obtenerVehiculo(r.vehiculoId)?.patente || "Desconocido",
-      Taller: obtenerTaller(r.tallerId)?.nombre || "Desconocido",
-      Precio: r.precioServicio,
-      Observaciones: r.observaciones || "",
-      FechaIngreso: r.fechaIngreso?.toDate()?.toLocaleDateString() || "",
-      FechaSalida: r.fechaSalida?.toDate()?.toLocaleDateString() || "",
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Reparaciones");
-    XLSX.writeFile(wb, "reparaciones.xlsx");
-  };
-
-  const reparacionesFiltradas = reparaciones.filter((r) =>
-    r.descripcionReparacion.toLowerCase().includes(busqueda.toLowerCase())
-  );
-
-  const totalPaginas = Math.ceil(
-    reparacionesFiltradas.length / ITEMS_POR_PAGINA
-  );
-  const reparacionesPagina = reparacionesFiltradas.slice(
-    (paginaActual - 1) * ITEMS_POR_PAGINA,
-    paginaActual * ITEMS_POR_PAGINA
-  );
+  const isDisabled = loading || loadingQuitar !== null;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto text-white">
-      <h1 className="text-2xl font-bold mb-4">Reparaciones</h1>
-
-      {/* Toast */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -50, opacity: 0 }}
-            className={`fixed top-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg z-50 ${
-              toast.tipo === "error" ? "bg-red-600" : "bg-green-600"
-            }`}
-          >
-            {toast.mensaje}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Acciones */}
-      <div className="flex flex-wrap items-center gap-4 mb-4">
-        <input
-          type="text"
-          placeholder="Buscar..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          className="bg-slate-800 p-2 rounded-md flex-1 max-w-md"
-        />
-        <button
-          onClick={exportarExcel}
-          className="flex gap-2 items-center bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-md"
+    <AnimatePresence>
+      {clienteSeleccionado && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50"
         >
-          <FileDown size={18} /> Exportar
-        </button>
-        <button
-          onClick={() => {
-            setReparacionEditar(null);
-            setModalVisible(true);
-          }}
-          className="flex gap-2 items-center bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-md"
-        >
-          <Plus size={18} /> Nueva
-        </button>
-      </div>
-
-      {/* Estado de carga */}
-      {loading ? (
-        <div className="text-center text-slate-400 py-10">
-          <LoaderCircle className="animate-spin mx-auto" size={32} />
-          Cargando reparaciones...
-        </div>
-      ) : reparacionesFiltradas.length === 0 ? (
-        <p className="text-center text-slate-400">
-          No se encontraron reparaciones.
-        </p>
-      ) : (
-        <>
-          <div className="space-y-3">
-            {reparacionesPagina.map((r) => {
-              const vehiculo = obtenerVehiculo(r.vehiculoId);
-              const taller = obtenerTaller(r.tallerId);
-              const numeroWhatsApp = r.telefono?.replace(/\D/g, "");
-
-              return (
-                <motion.div
-                  key={r.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-slate-700 p-4 rounded-lg shadow flex justify-between items-start"
-                >
-                  <div>
-                    <p className="text-lg font-bold">
-                      {r.descripcionReparacion}
-                    </p>
-                    <p className="text-sm text-slate-300">
-                      Vehículo: {vehiculo?.patente || "Desconocido"} (
-                      {vehiculo?.modelo})
-                    </p>
-                    <p className="text-sm text-slate-300">
-                      Taller: {taller?.nombre || "Desconocido"}
-                    </p>
-                    <p className="text-sm text-slate-400">
-                      Precio: ${r.precioServicio}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2 items-end">
-                    {numeroWhatsApp && (
-                      <a
-                        href={`https://wa.me/${numeroWhatsApp}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-green-400 hover:text-green-600"
-                      >
-                        <MessageCircle />
-                      </a>
-                    )}
-                    <button
-                      className="text-indigo-400 hover:text-indigo-600"
-                      onClick={() => {
-                        setReparacionEditar(r);
-                        setModalVisible(true);
-                      }}
-                    >
-                      <Pencil />
-                    </button>
-                    <button
-                      className="text-red-400 hover:text-red-600"
-                      onClick={() => {
-                        setReparacionAEliminar(r);
-                        setConfirmModal(true);
-                      }}
-                    >
-                      <Trash2 />
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* Paginación */}
-          <div className="mt-6 flex justify-center gap-2">
-            {Array.from({ length: totalPaginas }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => setPaginaActual(i + 1)}
-                className={`px-3 py-1 rounded-md ${
-                  paginaActual === i + 1
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-600 text-slate-300 hover:bg-slate-500"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* Modal Reparación */}
-      <ModalReparacion
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSuccess={fetchData}
-        reparacion={reparacionEditar}
-      />
-
-      {/* Confirmación eliminación */}
-      <AnimatePresence>
-        {confirmModal && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.95 }}
+            className="relative bg-slate-900 text-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl border border-slate-700 max-h-[90vh] overflow-y-auto"
           >
-            <div className="bg-slate-800 p-6 rounded-lg shadow-lg text-white max-w-sm w-full">
-              <h2 className="text-xl font-bold mb-2">Eliminar reparación</h2>
-              <p className="mb-4">
-                ¿Estás seguro de que querés eliminar la reparación "
-                <span className="font-semibold">
-                  {reparacionAEliminar?.descripcionReparacion}
-                </span>
-                "?
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  className="bg-slate-600 hover:bg-slate-700 px-3 py-1 rounded-md"
-                  onClick={() => setConfirmModal(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md"
-                  onClick={eliminarReparacion}
-                >
-                  Eliminar
-                </button>
+            {/* Overlay loading general */}
+            {(loading || loadingQuitar !== null) && (
+              <div className="absolute inset-0 bg-black/60 flex flex-col justify-center items-center rounded-2xl z-50">
+                <LoaderCircle className="animate-spin" size={48} />
+                <p className="mt-3 text-white text-lg">
+                  {loading ? 'Cargando...' : 'Quitando vehículo...'}
+                </p>
               </div>
+            )}
+
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-3">
+              <h2 className="text-2xl font-semibold">
+                Asignar vehículos a{' '}
+                <span className="text-indigo-400">
+  {clienteSeleccionado.nombre} {clienteSeleccionado.apellido ?? ''}
+</span>
+              </h2>
+              <button
+                onClick={() => setClienteSeleccionado(null)}
+                disabled={isDisabled}
+                className="text-red-400 hover:text-red-600 transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
             </div>
+
+            {/* Vehículos asignados */}
+            {vehiculosAsignados.length > 0 && (
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-green-300 mb-2">
+                  Vehículos ya asignados
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <AnimatePresence>
+                    {vehiculosAsignados.map((v) => (
+                      <motion.div
+                        key={v.id}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="bg-slate-800 rounded-lg px-4 py-3 text-sm border border-slate-700 flex items-center justify-between"
+                      >
+                        <span>
+                          {v.marca} {v.modelo} ·{' '}
+                          <span className="text-indigo-300 font-bold">{v.patente}</span>
+                        </span>
+
+                        {vehiculoEnConfirmacion === v.id ? (
+                          <AnimatePresence mode="wait">
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.9 }}
+                              transition={{ duration: 0.2 }}
+                              className="flex gap-2 text-xs"
+                            >
+                              <button
+                                onClick={() => handleQuitarVehiculoAsignado(v.id)}
+                                disabled={isDisabled}
+                                className="text-red-400 hover:text-red-500 font-medium flex items-center gap-1"
+                              >
+                                {loadingQuitar === v.id ? (
+                                  <>
+                                    <LoaderCircle className="animate-spin" size={14} />
+                                    Confirmar
+                                  </>
+                                ) : (
+                                  'Confirmar'
+                                )}
+                              </button>
+                              <button
+                                onClick={() => setVehiculoEnConfirmacion(null)}
+                                disabled={isDisabled}
+                                className="text-slate-400 hover:text-slate-300"
+                              >
+                                Cancelar
+                              </button>
+                            </motion.div>
+                          </AnimatePresence>
+                        ) : (
+                          <button
+                            onClick={() => setVehiculoEnConfirmacion(v.id)}
+                            disabled={isDisabled}
+                            className="text-red-400 hover:text-red-500 text-xs font-medium"
+                          >
+                            Quitar
+                          </button>
+                        )}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+
+            {/* Vehículos disponibles con búsqueda */}
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-yellow-400 mb-2">
+                Vehículos disponibles
+              </p>
+              <input
+                type="text"
+                placeholder="Buscar por marca, modelo o patente..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                disabled={isDisabled}
+                className="w-full mb-3 px-3 py-2 text-sm rounded-lg bg-slate-800 border border-slate-700 placeholder-slate-500 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <ul className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-700">
+                <AnimatePresence>
+                  {vehiculosFiltrados.length === 0 ? (
+                    <motion.li
+                      key="no-disponibles"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="text-slate-500 text-sm"
+                    >
+                      No hay vehículos disponibles
+                    </motion.li>
+                  ) : (
+                    vehiculosFiltrados.map((v) => (
+                      <motion.li
+                        key={v.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm  hover:bg-slate-700 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          className="accent-indigo-500 cursor-pointer"
+                          checked={vehiculosSeleccionados.includes(v.id)}
+                          onChange={(e) => {
+                            const seleccionados = [...vehiculosSeleccionados];
+                            if (e.target.checked) {
+                              seleccionados.push(v.id);
+                            } else {
+                              const i = seleccionados.indexOf(v.id);
+                              if (i > -1) seleccionados.splice(i, 1);
+                            }
+                            setVehiculosSeleccionados(seleccionados);
+                          }}
+                          disabled={isDisabled}
+                        />
+                        <span className="flex-1">
+                          {v.marca} {v.modelo} ·{' '}
+                          <span className="text-indigo-300 font-bold">{v.patente}</span>
+                        </span>
+                      </motion.li>
+                    ))
+                  )}
+                </AnimatePresence>
+              </ul>
+            </div>
+
+            {/* Botón asignar */}
+            <button
+              onClick={handleAsignarVehiculos}
+              disabled={vehiculosSeleccionados.length === 0 || isDisabled}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 cursor-pointer transition-colors py-2 rounded-xl text-white text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <div className="flex justify-center items-center gap-2">
+                  <LoaderCircle className="animate-spin" size={20} />
+                  Cargando...
+                </div>
+              ) : (
+                'Asignar seleccionados'
+              )}
+            </button>
           </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

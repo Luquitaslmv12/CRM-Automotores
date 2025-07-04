@@ -18,6 +18,7 @@ import {
 import { motion } from "framer-motion";
 import { TrendingUp, FileDown } from "lucide-react";
 import * as XLSX from "xlsx";
+import Spinner from "../../components/Spinner/Spinner";
 
 const meses = [
   "Enero",
@@ -48,11 +49,15 @@ export default function CardEvolucionVentas() {
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
   const [data, setData] = useState([]);
   const [hasComparison, setHasComparison] = useState(false);
+  const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     const fetchVentas = async () => {
+        setLoading(true);
       const diasDelMes = new Date(selectedYear, selectedMonth + 1, 0).getDate();
       const labels = Array.from({ length: diasDelMes }, (_, i) => i + 1);
+      
 
       // Fechas actuales
       const desde = Timestamp.fromDate(
@@ -134,6 +139,7 @@ export default function CardEvolucionVentas() {
       }
 
       setData(totales);
+       setLoading(false);
     };
 
     fetchVentas();
@@ -219,11 +225,10 @@ export default function CardEvolucionVentas() {
             onChange={(e) => setSelectedYear(Number(e.target.value))}
             className="px-2 py-1 rounded border bg-gray-700"
           >
-            {[2023, 2024, 2025].map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
+           {Array.from({ length: 5 }, (_, i) => {
+  const year = new Date().getFullYear() - 2 + i;
+  return <option key={year} value={year}>{year}</option>;
+})}
           </select>
           <button
             onClick={exportarExcel}
@@ -234,6 +239,29 @@ export default function CardEvolucionVentas() {
           </button>
         </div>
       </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-gray-300 mt-2">
+  <div>
+    <div className="font-semibold text-blue-400">Total Actual</div>
+    <div>{formatCurrency(data.reduce((a, b) => a + b.monto, 0))}</div>
+  </div>
+  <div>
+    <div className="font-semibold text-yellow-400">Total Año Anterior</div>
+    <div>{formatCurrency(data.reduce((a, b) => a + b.anterior, 0))}</div>
+  </div>
+  <div>
+    <div className="font-semibold text-green-400">Promedio Diario</div>
+    <div>{formatCurrency(data.reduce((a, b) => a + b.promedio, 0) / data.length)}</div>
+  </div>
+  <div>
+    <div className="font-semibold text-purple-400">Días con Ventas</div>
+    <div>{data.filter(d => d.monto > 0).length} días</div>
+  </div>
+</div>
+
+
+{loading ? (
+  <Spinner text="Cargando ventas..." />
+) : (
 
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
@@ -277,6 +305,9 @@ export default function CardEvolucionVentas() {
           />
         </LineChart>
       </ResponsiveContainer>
+
+      )}
     </motion.div>
+    
   );
 }

@@ -909,6 +909,8 @@ export default function Clientes() {
         setVehiculoEnConfirmacion={setVehiculoEnConfirmacion}
         quitarVehiculoAsignado={quitarVehiculoAsignado}
       />
+
+      
     </div>
   );
 }

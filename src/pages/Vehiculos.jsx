@@ -648,7 +648,7 @@ export default function Vehiculos() {
                   <strong className="text-slate-300">Tipo:</strong>
                   <span>{vehiculo.tipo || "-"}</span>
                 </div>
-                {vehiculo.monto && (
+              {vehiculo.monto && vehiculo.etiqueta === "Vendido" && (
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-green-400" />
                     <strong className="text-slate-300">Vendido a:</strong>

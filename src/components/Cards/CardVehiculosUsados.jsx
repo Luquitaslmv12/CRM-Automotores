@@ -23,6 +23,14 @@ export default function CardVehiculosUsados() {
     fetchUsados();
   }, []);
 
+  // ✅ Definí la función acá dentro
+  const formatPrice = (n) =>
+    Number(n).toLocaleString("es-AR", {
+      style: "currency",
+      currency: "ARS",
+    });
+
+  // ✅ Usala dentro del exportarPDF
   const exportarPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
@@ -30,15 +38,15 @@ export default function CardVehiculosUsados() {
     doc.setFontSize(12);
     usados.forEach((v, i) => {
       doc.text(
-        `${i + 1}. ${v.marca} ${v.modelo} - ${v.patente} - ${v.año} - ${
-          v.estado
-        } - $${v.precioVenta}`,
+        `${i + 1}. ${v.marca} ${v.modelo} - ${v.patente} - ${v.año} - ${v.estado} - ${formatPrice(v.precioVenta)}`,
         20,
         30 + i * 10
       );
     });
     doc.save("vehiculos_usados.pdf");
   };
+
+
 
   const totalPaginas = Math.ceil(usados.length / ITEMS_POR_PAGINA);
   const usadosPagina = usados.slice(
@@ -62,17 +70,19 @@ export default function CardVehiculosUsados() {
       </div>
       <p className="text-2xl font-bold mb-2">{usados.length}</p>
       <div className="space-y-1 text-sm mb-2">
-        {usadosPagina.map((v) => (
-          <div key={v.id}>
-            {v.marca} {v.modelo} ({v.año}) - {v.patente} ·{" "}
-            <span className="text-green-600 font-semibold">
-              {Number(v.precioVenta).toLocaleString("es-AR", {
-                style: "currency",
-                currency: "ARS",
-              })}
-            </span>
-          </div>
-        ))}
+         {usadosPagina.map((v) => (
+    <div key={v.id}>
+      {v.marca} {v.modelo} ({v.año}) - {v.patente} ·{" "}
+      <span className="text-green-600 font-semibold">
+        {v.precioVenta
+          ? Number(v.precioVenta).toLocaleString("es-AR", {
+              style: "currency",
+              currency: "ARS",
+            })
+          : "$ Sin Asignar "}
+      </span>
+    </div>
+  ))}
       </div>
 
       {/* Controles de paginación */}
