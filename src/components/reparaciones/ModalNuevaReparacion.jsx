@@ -10,6 +10,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
+import Spinner from "../Spinner/Spinner";
 
 export default function ModalNuevaReparacion({
   visible,
@@ -18,7 +19,7 @@ export default function ModalNuevaReparacion({
   reparacion,
 }) {
   const [descripcion, setDescripcion] = useState("");
-  const [vehiculoId, setVehiculoId] = useState("");
+  const [vehiculoId, setVehiculoId] = useState(reparacion?.vehiculoId || "");
   const [tallerId, setTallerId] = useState("");
   const [precioManoObra, setPrecioManoObra] = useState("");
   const [precioRepuestos, setPrecioRepuestos] = useState("");
@@ -30,13 +31,14 @@ export default function ModalNuevaReparacion({
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!visible) return;
 
     const fetchData = async () => {
+      setLoading(true);
       try {
-        // Query para traer solo vehículos con etiqueta distinta a "vendido" y "reparacion"
         const vehQuery = query(
           collection(db, "vehiculos"),
           where("etiqueta", "not-in", ["Vendido", "Reparación"])
@@ -47,15 +49,38 @@ export default function ModalNuevaReparacion({
           getDocs(collection(db, "proveedores")),
         ]);
 
-        setVehiculos(vehSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        let vehiculosData = vehSnap.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        }));
+
+        // Si estás editando y el vehículo asociado no está en la lista, lo traés aparte
+        if (
+          reparacion?.vehiculoId &&
+          !vehiculosData.find((v) => v.id === reparacion.vehiculoId)
+        ) {
+          const extraVehSnap = await getDocs(
+            query(
+              collection(db, "vehiculos"),
+              where("__name__", "==", reparacion.vehiculoId)
+            )
+          );
+          const extraVehiculos = extraVehSnap.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+          }));
+          vehiculosData = [...vehiculosData, ...extraVehiculos];
+        }
+
+        setVehiculos(vehiculosData);
         setTalleres(talSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setLoading(false); // <-- ACÁ VA SIEMPRE
       } catch (err) {
         console.error("Error fetching data:", err);
         setVehiculos([]);
         setTalleres([]);
       }
     };
-
     fetchData();
   }, [visible]);
 
@@ -179,179 +204,185 @@ export default function ModalNuevaReparacion({
             </h2>
 
             {error && (
-              <p className="mb-4 text-red-500 font-medium select-none">{error}</p>
+              <p className="mb-4 text-red-500 font-medium select-none">
+                {error}
+              </p>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5 text-white">
-              {/* Descripción */}
-              <div>
-                <label
-                  htmlFor="descripcion"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Descripción
-                </label>
-                <input
-                  id="descripcion"
-                  type="text"
-                  value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
-                  className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                  placeholder="Descripción de la reparación"
-                  required
-                  autoFocus
-                />
-              </div>
+            {loading ? (
+              <Spinner text="Cargando datos..." />
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5 text-white">
+                {/* Descripción */}
+                <div>
+                  <label
+                    htmlFor="descripcion"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    Descripción
+                  </label>
+                  <input
+                    id="descripcion"
+                    type="text"
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                    placeholder="Descripción de la reparación"
+                    required
+                    autoFocus
+                  />
+                </div>
 
-              {/* Vehículo */}
-              <div>
-                <label
-                  htmlFor="vehiculo"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Vehículo
-                </label>
-                <select
-                  id="vehiculo"
-                  value={vehiculoId}
-                  onChange={(e) => setVehiculoId(e.target.value)}
-                  className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                  required
-                >
-                  <option value="">Seleccione un vehículo</option>
-                  {vehiculos.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.patente} - {v.modelo}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                {/* Vehículo */}
+                <div>
+                  <label
+                    htmlFor="vehiculo"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    Vehículo
+                  </label>
+                  <select
+                    id="vehiculo"
+                    value={vehiculoId}
+                    onChange={(e) => setVehiculoId(e.target.value)}
+                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                    required
+                  >
+                    <option value="">Seleccione un vehículo</option>
+                    {vehiculos.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.patente} - {v.modelo}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Taller */}
-              <div>
-                <label
-                  htmlFor="taller"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Taller
-                </label>
-                <select
-                  id="taller"
-                  value={tallerId}
-                  onChange={(e) => setTallerId(e.target.value)}
-                  className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                  required
-                >
-                  <option value="">Seleccione un taller</option>
-                  {talleres.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                {/* Taller */}
+                <div>
+                  <label
+                    htmlFor="taller"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    Taller
+                  </label>
+                  <select
+                    id="taller"
+                    value={tallerId}
+                    onChange={(e) => setTallerId(e.target.value)}
+                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                    required
+                  >
+                    <option value="">Seleccione un taller</option>
+                    {talleres.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Precio Mano de Obra */}
-              <div>
-                <label
-                  htmlFor="precioManoObra"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Precio Mano de Obra
-                </label>
-                <input
-                  id="precioManoObra"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={precioManoObra}
-                  onChange={(e) => setPrecioManoObra(e.target.value)}
-                  className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                  placeholder="Ingrese el precio de mano de obra"
-                  required
-                />
-              </div>
+                {/* Precio Mano de Obra */}
+                <div>
+                  <label
+                    htmlFor="precioManoObra"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    Precio Mano de Obra
+                  </label>
+                  <input
+                    id="precioManoObra"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={precioManoObra}
+                    onChange={(e) => setPrecioManoObra(e.target.value)}
+                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                    placeholder="Ingrese el precio de mano de obra"
+                    required
+                  />
+                </div>
 
-              {/* Precio Repuestos */}
-              <div>
-                <label
-                  htmlFor="precioRepuestos"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Precio Repuestos
-                </label>
-                <input
-                  id="precioRepuestos"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={precioRepuestos}
-                  onChange={(e) => setPrecioRepuestos(e.target.value)}
-                  className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                  placeholder="Ingrese el precio de repuestos"
-                  required
-                />
-              </div>
+                {/* Precio Repuestos */}
+                <div>
+                  <label
+                    htmlFor="precioRepuestos"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    Precio Repuestos
+                  </label>
+                  <input
+                    id="precioRepuestos"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={precioRepuestos}
+                    onChange={(e) => setPrecioRepuestos(e.target.value)}
+                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                    placeholder="Ingrese el precio de repuestos"
+                    required
+                  />
+                </div>
 
-              {/* Teléfono */}
-              <div>
-                <label
-                  htmlFor="telefono"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Teléfono (WhatsApp)
-                </label>
-                <input
-                  id="telefono"
-                  type="tel"
-                  value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
-                  className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                  placeholder="Ej: +5491123456789"
-                />
-              </div>
+                {/* Teléfono */}
+                <div>
+                  <label
+                    htmlFor="telefono"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    Teléfono (WhatsApp)
+                  </label>
+                  <input
+                    id="telefono"
+                    type="tel"
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                    placeholder="Ej: +5491123456789"
+                  />
+                </div>
 
-              {/* Observaciones */}
-              <div>
-                <label
-                  htmlFor="observaciones"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Observaciones
-                </label>
-                <textarea
-                  id="observaciones"
-                  rows={3}
-                  value={observaciones}
-                  onChange={(e) => setObservaciones(e.target.value)}
-                  className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition resize-none"
-                  placeholder="Información adicional (opcional)"
-                />
-              </div>
+                {/* Observaciones */}
+                <div>
+                  <label
+                    htmlFor="observaciones"
+                    className="block text-sm font-medium mb-1"
+                  >
+                    Observaciones
+                  </label>
+                  <textarea
+                    id="observaciones"
+                    rows={3}
+                    value={observaciones}
+                    onChange={(e) => setObservaciones(e.target.value)}
+                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition resize-none"
+                    placeholder="Información adicional (opcional)"
+                  />
+                </div>
 
-              {/* Botones */}
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={submitting}
-                  className="px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold"
-                >
-                  {submitting
-                    ? "Guardando..."
-                    : reparacion
-                    ? "Guardar"
-                    : "Crear"}
-                </button>
-              </div>
-            </form>
+                {/* Botones */}
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={submitting}
+                    className="px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold"
+                  >
+                    {submitting
+                      ? "Guardando..."
+                      : reparacion
+                      ? "Guardar"
+                      : "Crear"}
+                  </button>
+                </div>
+              </form>
+            )}
           </motion.div>
         </motion.div>
       )}

@@ -12,9 +12,12 @@ import {
 } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { ClipboardList } from "lucide-react";
+import EstadoSelect, { estados } from "../presupuestos/EstadoSelect";
 
 export default function CardPresupuestosRecientes() {
   const ITEMS_PER_PAGE = 3;
+
+  const [estadoFiltro, setEstadoFiltro] = useState(estados[0]); // default: abierto
 
   const [presupuestos, setPresupuestos] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -23,7 +26,6 @@ export default function CardPresupuestosRecientes() {
   const [pageHistory, setPageHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [datosListos, setDatosListos] = useState(false);
-  const [estadoFiltro, setEstadoFiltro] = useState("abierto");
 
   useEffect(() => {
     const cargarClientesYVehiculos = async () => {
@@ -43,79 +45,83 @@ export default function CardPresupuestosRecientes() {
   }, []);
 
   useEffect(() => {
-  if (datosListos) {
-    // Reiniciar paginación cuando cambia el filtro
-    setLastVisible(null);
-    setPageHistory([]);
-    cargarPresupuestos(true, estadoFiltro, true); // forzar recarga desde cero
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [datosListos, estadoFiltro]);
+    if (datosListos) {
+      // Reiniciar paginación cuando cambia el filtro
+      setLastVisible(null);
+      setPageHistory([]);
+      cargarPresupuestos(true, estadoFiltro, true); // forzar recarga desde cero
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datosListos, estadoFiltro]);
 
-  const cargarPresupuestos = async (next = true, estado = estadoFiltro, reiniciar = false) => {
-  if (loading) return;
-  setLoading(true);
+  const cargarPresupuestos = async (
+    next = true,
+    estado = estadoFiltro,
+    reiniciar = false
+  ) => {
+    if (loading) return;
+    setLoading(true);
 
-  let q;
-  if (reiniciar) {
-    // Carga inicial sin cursor
-    q = query(
-      collection(db, "presupuestos"),
-      where("estado", "==", estado),
-      orderBy("fecha", "desc"),
-      limit(ITEMS_PER_PAGE)
-    );
-  } else if (next) {
-    q = lastVisible
-      ? query(
-          collection(db, "presupuestos"),
-          where("estado", "==", estado),
-          orderBy("fecha", "desc"),
-          startAfter(lastVisible),
-          limit(ITEMS_PER_PAGE)
-        )
-      : query(
+    let q;
+    if (reiniciar) {
+      // Carga inicial sin cursor
+      q = query(
+        collection(db, "presupuestos"),
+        where("estado", "==", estado.value),
+        orderBy("fecha", "desc"),
+        limit(ITEMS_PER_PAGE)
+      );
+    } else if (next) {
+      q = lastVisible
+        ? query(
+            collection(db, "presupuestos"),
+            where("estado", "==", estado),
+            orderBy("fecha", "desc"),
+            startAfter(lastVisible),
+            limit(ITEMS_PER_PAGE)
+          )
+        : query(
+            collection(db, "presupuestos"),
+            where("estado", "==", estado),
+            orderBy("fecha", "desc"),
+            limit(ITEMS_PER_PAGE)
+          );
+    } else {
+      const prevCursor =
+        pageHistory.length > 1 ? pageHistory[pageHistory.length - 2] : null;
+      if (prevCursor === null) {
+        q = query(
           collection(db, "presupuestos"),
           where("estado", "==", estado),
           orderBy("fecha", "desc"),
           limit(ITEMS_PER_PAGE)
         );
-  } else {
-    const prevCursor =
-      pageHistory.length > 1 ? pageHistory[pageHistory.length - 2] : null;
-    if (prevCursor === null) {
-      q = query(
-        collection(db, "presupuestos"),
-        where("estado", "==", estado),
-        orderBy("fecha", "desc"),
-        limit(ITEMS_PER_PAGE)
-      );
-    } else {
-      q = query(
-  collection(db, "presupuestos"),
-  where("estado", "==", estado),
-  orderBy("fecha", "desc"),
-  startAt(prevCursor),
-  limit(ITEMS_PER_PAGE)
-);
-    }
-  }
-
-  try {
-    const snap = await getDocs(q);
-    const docs = snap.docs;
-    if (docs.length === 0) {
-      setLoading(false);
-      setPresupuestos([]);
-      return;
+      } else {
+        q = query(
+          collection(db, "presupuestos"),
+          where("estado", "==", estado),
+          orderBy("fecha", "desc"),
+          startAt(prevCursor),
+          limit(ITEMS_PER_PAGE)
+        );
+      }
     }
 
-    setLastVisible(docs[docs.length - 1]);
-    if (next || reiniciar) {
-      setPageHistory((prev) => [...prev, docs[0]]);
-    } else {
-      setPageHistory((prev) => prev.slice(0, -1));
-    }
+    try {
+      const snap = await getDocs(q);
+      const docs = snap.docs;
+      if (docs.length === 0) {
+        setLoading(false);
+        setPresupuestos([]);
+        return;
+      }
+
+      setLastVisible(docs[docs.length - 1]);
+      if (next || reiniciar) {
+        setPageHistory((prev) => [...prev, docs[0]]);
+      } else {
+        setPageHistory((prev) => prev.slice(0, -1));
+      }
 
       const datos = docs.map((docPres) => {
         const data = docPres.data();
@@ -138,7 +144,9 @@ export default function CardPresupuestosRecientes() {
               : "Vehículo no encontrado",
           montoVehiculo,
           parteDePagoTexto: parte
-            ? `${parte.marca || ""} ${parte.modelo || ""} (${parte.patente || "-"})`
+            ? `${parte.marca || ""} ${parte.modelo || ""} (${
+                parte.patente || "-"
+              })`
             : null,
           montoParte,
           diferencia,
@@ -148,10 +156,10 @@ export default function CardPresupuestosRecientes() {
 
       setPresupuestos(datos);
     } catch (error) {
-    console.error(error);
-  }
+      console.error(error);
+    }
 
-  setLoading(false);
+    setLoading(false);
   };
 
   return (
@@ -166,15 +174,7 @@ export default function CardPresupuestosRecientes() {
         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
           Presupuestos recientes
         </h3>
-        <select
-          value={estadoFiltro}
-          onChange={(e) => setEstadoFiltro(e.target.value)}
-          className="ml-auto bg-slate-700 border border-indigo-500 text-white rounded px-2 py-1 text-sm"
-        >
-          <option value="abierto">Abierto</option>
-          <option value="cerrado">Cerrado</option>
-          <option value="perdido">Perdido</option>
-        </select>
+        <EstadoSelect value={estadoFiltro} onChange={setEstadoFiltro} />
       </div>
 
       {loading && <p>Cargando...</p>}
