@@ -300,8 +300,9 @@ export default function Vehiculos() {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 text-white">
-      <h1 className="text-4xl font-bold mb-6 text-center">
+    <div className="p-6 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
+      <h1 className="text-4xl font-bold mb-6 text-center flex justify-center items-center gap-2">
+        <Car className="w-10 h-10 text-yellow-500 animate-bounce" />
         Gestión de Vehículos
       </h1>
 
@@ -381,7 +382,7 @@ export default function Vehiculos() {
         }}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-indigo-700/10 backdrop-blur-md p-8 rounded-3xl shadow-xl w-full max-w-4xl mx-auto mb-10 border-2 border-slate-600"
+        className="bg-indigo-900/10 backdrop-blur-md p-8 rounded-3xl  w-full  shadow-[0_0_60px_10px_rgba(218,204,8,0.514)] max-w-4xl mx-auto mb-10 border-3 border-yellow-600"
       >
         <div className="flex items-center gap-2 mb-6">
           <PlusCircle className="text-green-400" />
@@ -446,7 +447,7 @@ export default function Vehiculos() {
             <div
               key={id}
               className="relative rounded-xl transition-shadow duration-300
-          shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70"
+          shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70 "
             >
               <input
                 id={id}
@@ -458,7 +459,7 @@ export default function Vehiculos() {
                     ? setValue(e.target.value.toUpperCase())
                     : setValue(e.target.value)
                 }
-                className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none placeholder-transparent text-white transition duration-300"
+                className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-indigo-700 focus:outline-none placeholder-transparent text-white transition duration-300"
                 autoComplete="off"
                 min={type === "number" ? 0 : undefined}
                 step={type === "number" ? "any" : undefined}

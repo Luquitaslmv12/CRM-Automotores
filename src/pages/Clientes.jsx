@@ -20,7 +20,7 @@ import {
   XCircle,
   Download,
   Search,
-  CheckCircle,
+  User,
   MessageCircle,
   AlertTriangle,
   Truck,
@@ -394,83 +394,17 @@ export default function Clientes() {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 text-white">
-      <h1 className="text-4xl font-bold mb-6 text-center">
+    <div className="p-6 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
+      <h1 className="text-4xl font-bold mb-6 text-center flex justify-center items-center gap-2">
+        <User className="w-10 h-10 text-sky-500 animate-bounce" />
         Gestión de Clientes
       </h1>
-
-      {/* Toast notificación */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -50, opacity: 0 }}
-            className={`fixed top-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg z-50 ${
-              toast.tipo === "error" ? "bg-red-600" : "bg-green-600"
-            }`}
-          >
-            {toast.mensaje}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal de confirmación */}
-      <AnimatePresence>
-        {confirmacion && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50"
-          >
-            <motion.div
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              className="bg-slate-800 p-6 rounded-xl shadow-2xl max-w-sm w-full space-y-4"
-            >
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="text-yellow-400" />
-                <h2 className="text-xl font-semibold">
-                  {confirmacion.tipo === "eliminar"
-                    ? "¿Eliminar cliente?"
-                    : "¿Exportar clientes?"}
-                </h2>
-              </div>
-              <p>
-                {confirmacion.tipo === "eliminar"
-                  ? "Esta acción no se puede deshacer."
-                  : "Se descargara listado de clientes."}
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setConfirmacion(null)}
-                  className="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={
-                    confirmacion.tipo === "eliminar"
-                      ? confirmarEliminar
-                      : confirmarExportar
-                  }
-                  className="px-4 py-2 rounded bg-red-600 hover:bg-red-700"
-                >
-                  Confirmar
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-slate-800 to-slate-700/70 backdrop-blur-sm p-8 rounded-3xl shadow-xl w-full max-w-4xl mx-auto mb-10 border border-slate-700/50"
         ref={formRef}
+        className="bg-gradient-to-br from-slate-700/80 to-slate-800/90 backdrop-blur-sm p-8 rounded-3xl shadow-[0_0_60px_10px_rgba(8,170,234,0.541)] w-full max-w-4xl mx-auto mb-10 border-3 border-blue-500"
       >
         <div className="flex items-center gap-2 mb-6">
           <UserPlus className="text-green-400" />
@@ -611,7 +545,9 @@ export default function Clientes() {
               Email
             </label>
             {errorEmail && (
-              <p className="text-red-500 text-xs mt-1">{errorEmail}</p>
+              <p className=" text-center text-red-500 text-xs mt-1">
+                {errorEmail}
+              </p>
             )}
           </div>
 
@@ -910,7 +846,72 @@ export default function Clientes() {
         quitarVehiculoAsignado={quitarVehiculoAsignado}
       />
 
-      
+      {/* Toast notificación */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -50, opacity: 0 }}
+            className={`fixed top-6 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg z-50 ${
+              toast.tipo === "error" ? "bg-red-600" : "bg-green-600"
+            }`}
+          >
+            {toast.mensaje}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de confirmación */}
+      <AnimatePresence>
+        {confirmacion && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/20 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              className="bg-slate-800 p-6 rounded-xl shadow-2xl max-w-sm w-full space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="text-yellow-400" />
+                <h2 className="text-xl font-semibold">
+                  {confirmacion.tipo === "eliminar"
+                    ? "¿Eliminar cliente?"
+                    : "¿Exportar clientes?"}
+                </h2>
+              </div>
+              <p>
+                {confirmacion.tipo === "eliminar"
+                  ? "Esta acción no se puede deshacer."
+                  : "Se descargara listado de clientes."}
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setConfirmacion(null)}
+                  className="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={
+                    confirmacion.tipo === "eliminar"
+                      ? confirmarEliminar
+                      : confirmarExportar
+                  }
+                  className="px-4 py-2 rounded bg-red-600 hover:bg-red-700"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

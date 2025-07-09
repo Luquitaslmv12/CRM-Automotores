@@ -287,15 +287,18 @@ export default function NuevaVenta() {
 
   return (
     <>
-      <div className="p-6 min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 text-white">
-        <h1 className="text-4xl font-bold mb-6 text-center">Ventas</h1>
+      <div className="p-6 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
+        <h1 className="text-4xl font-bold mb-6 text-center flex justify-center items-center gap-2">
+          <DollarSign className="w-10 h-10 text-lime-500 animate-bounce" />
+          Gestión de Ventas
+        </h1>
 
         <motion.form
           onSubmit={handleSubmit}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="bg-slate-800 p-6 rounded-2xl shadow-xl w-full max-w-2xl mx-auto mb-8 space-y-6"
+          className="bg-slate-800/80 backdrop-blur-md p-8 rounded-3xl  w-full  shadow-[0_0_60px_10px_rgba(8,234,19,0.521)] max-w-4xl mx-auto mb-10 border-3 border-lime-700"
         >
           {/* Encabezado */}
           <div className="flex items-center gap-3 mb-2">

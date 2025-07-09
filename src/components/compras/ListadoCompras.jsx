@@ -64,17 +64,41 @@ export default function ListadoCompras() {
     } else {
       // Solo texto centrado en x=14
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text("Detalle de Compra", 14, 20);
+      doc.setFontSize(22);
+      doc.text(`Detalle de Compra`, 14, 15);
     }
 
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "semi-bold");
+    doc.setFontSize(18);
+    doc.text(
+      `${compra.marca || ""} ${compra.modelo || ""} - ${compra.patente || ""}`,
+      14,
+      30
+    );
+
+    doc.setFont("helvetica", "semi-bold");
+    doc.setFontSize(18);
+    doc.text(
+      `${compra.cliente?.nombre || ""} ${compra.cliente?.apellido || ""}`,
+      14,
+      40
+    );
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "semi-bold");
     doc.setTextColor(80, 80, 80);
-    doc.text(`Fecha: ${new Date().toLocaleString()}`, 14, 30);
+    doc.text(
+      `Fecha: ${
+        compra.creadoEn
+          ? new Date(compra.creadoEn.seconds * 1000).toLocaleDateString("es-AR")
+          : "-"
+      }`,
+      14,
+      50
+    );
 
     autoTable(doc, {
-      startY: 40,
+      startY: 60,
       head: [["Campo", "Valor"]],
       body: [
         ["Marca", compra.marca || "-"],
@@ -98,25 +122,18 @@ export default function ListadoCompras() {
         ],
         ["DNI", compra.cliente?.dni || "-"],
         ["Teléfono", compra.cliente?.telefono || "-"],
-        ["Tomado por", compra.recibidoPor || "-"],
+        ["Tomado por", compra.tomadoPor || "-"],
         [
-          "Tomado en",
+          "Tomado el",
           compra.tomadoEn
             ? new Date(compra.tomadoEn.seconds * 1000).toLocaleString()
             : "-",
         ],
         ["Creado por", compra.creadoPor || "-"],
         [
-          "Creado en",
+          "Creado el",
           compra.creadoEn
             ? new Date(compra.creadoEn.seconds * 1000).toLocaleString()
-            : "-",
-        ],
-        ["Modificado por", compra.modificadoPor || "-"],
-        [
-          "Modificado en",
-          compra.modificadoEn
-            ? new Date(compra.modificadoEn.seconds * 1000).toLocaleString()
             : "-",
         ],
       ],

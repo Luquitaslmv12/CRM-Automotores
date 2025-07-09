@@ -10,7 +10,15 @@ import {
 } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 
-import { Plus, Save, Car, Trash2, Eye, Upload } from "lucide-react";
+import {
+  Plus,
+  Save,
+  Car,
+  Trash2,
+  Eye,
+  Upload,
+  CircleDollarSign,
+} from "lucide-react";
 
 import ListadoCompras from "../components/compras/ListadoCompras";
 import ModalVehiculoPartePago from "../components/ModalVehiculoPartePago";
@@ -29,9 +37,7 @@ const Boton = ({ children, className = "", icon: Icon, ...props }) => (
 
 // Componente de tarjeta reutilizable
 const Card = ({ children, className = "" }) => (
-  <div className={`bg-gray-800 rounded-2xl p-6 shadow-xl ${className}`}>
-    {children}
-  </div>
+  <div className={` ${className}`}>{children}</div>
 );
 
 export default function NuevaCompra() {
@@ -112,15 +118,17 @@ export default function NuevaCompra() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto text-white space-y-6">
-      <div className="flex flex-col items-center gap-2">
-        <Car size={36} className="animate-bounce text-lime-500" />
-        <h1 className="text-3xl font-bold tracking-tight">
-          Gestión de Compras
-        </h1>
-      </div>
+      <h1 className="text-4xl font-bold mb-6 text-center flex justify-center items-center gap-2">
+        <CircleDollarSign className="w-10 h-10 text-lime-500 animate-bounce" />
+        Gestión de Compras
+      </h1>
 
-      <div className="flex justify-end">
-        <Boton onClick={() => setModalOpen(true)} icon={Plus}>
+      <div className="flex justify-center">
+        <Boton
+          className="hover:cursor-pointer"
+          onClick={() => setModalOpen(true)}
+          icon={Plus}
+        >
           Agregar Compra
         </Boton>
       </div>
@@ -138,12 +146,12 @@ export default function NuevaCompra() {
         </Card>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex justify-center">
         <Boton
           onClick={handleGuardarVehiculo}
           disabled={!vehiculo}
           icon={Save}
-          className="bg-green-600 hover:bg-green-700"
+          className="bg-lime-600 hover:bg-lime-700 cursor-pointer"
         >
           Registrar Compra
         </Boton>

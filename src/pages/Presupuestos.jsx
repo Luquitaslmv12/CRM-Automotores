@@ -147,10 +147,10 @@ export default function NuevoPresupuesto(props) {
         fecha: Timestamp.now(),
         creadoPor: user?.email || "Desconocido",
         emitidoPor,
-         asesor: emitidoPor,
-  estado: "abierto",
-  fechaCreacion: Timestamp.now(),
-  fechaCierre: null,
+        asesor: emitidoPor,
+        estado: "abierto",
+        fechaCreacion: Timestamp.now(),
+        fechaCierre: null,
         parteDePago: parteDePago ? vehiculoPartePago : null,
       };
 
@@ -178,47 +178,58 @@ export default function NuevoPresupuesto(props) {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-      <h1 className="text-4xl font-bold mb-6 text-center">Nuevo Presupuesto</h1>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white p-6">
+      {/* Título Principal */}
+      <h1 className="text-4xl font-bold mb-10 text-center flex justify-center items-center gap-3">
+        <FileText className="w-10 h-10 text-sky-500 animate-bounce" />
+        Presupuestos
+      </h1>
 
+      {/* Formulario */}
       <motion.form
         onSubmit={handleSubmit}
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-2xl mx-auto space-y-6"
+        className="bg-gradient-to-br from-slate-700/80 to-slate-800/90 backdrop-blur-md p-10 rounded-3xl shadow-[0_0_60px_10px_rgba(255,238,0,0.637)] max-w-4xl mx-auto border-3 border-yellow-400 space-y-6"
       >
+        {/* Encabezado */}
         <div className="flex items-center gap-3">
           <FileText size={28} className="text-blue-400" />
-          <h2 className="text-2xl font-semibold">Generar Presupuesto</h2>
+          <h2 className="text-2xl font-bold text-indigo-400">
+            Generar Presupuesto
+          </h2>
         </div>
 
-        <label className="block text-sm">Emitido por:</label>
-        <select
-          value={emitidoPor}
-          onChange={(e) => setEmitidoPor(e.target.value)}
-          className="w-full p-3 rounded bg-slate-700 text-white"
-          required
-        >
-          <option value="">Seleccione un usuario</option>
-          {usuarios.map((usuario) => (
-           <option key={usuario.id} value={usuario.email}>
-  {usuario.nombre} ({usuario.email})
-</option>
-          ))}
-        </select>
+        {/* Emitido por */}
+        <div className="space-y-2">
+          <label className="text-sm block">Emitido por:</label>
+          <select
+            value={emitidoPor}
+            onChange={(e) => setEmitidoPor(e.target.value)}
+            className="w-full sm:w-1/2 p-3 rounded bg-slate-700 text-white border-2 border-indigo-600"
+            required
+          >
+            <option value="">Seleccione un usuario</option>
+            {usuarios.map((usuario) => (
+              <option key={usuario.id} value={usuario.email}>
+                {usuario.nombre} ({usuario.email})
+              </option>
+            ))}
+          </select>
+        </div>
 
+        {/* Cliente y Vehículo */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="text-sm block">Cliente</label>
+            <label className="text-sm block mb-1">Cliente</label>
             <BuscadorCliente
               value={clienteSeleccionado}
               onChange={setClienteSeleccionado}
+              placeholder={"Buscar Cliente..."}
             />
           </div>
-
           <div>
-            <label className="text-sm block">Vehículo</label>
+            <label className="text-sm block mb-1">Vehículo</label>
             <BuscadorVehiculo
               value={vehiculoId}
               onChange={setVehiculoId}
@@ -227,7 +238,8 @@ export default function NuevoPresupuesto(props) {
           </div>
         </div>
 
-        <label className="flex items-center gap-2">
+        {/* Parte de Pago */}
+        <label className="flex items-center gap-2 mt-4">
           <input
             type="checkbox"
             checked={parteDePago}
@@ -236,13 +248,23 @@ export default function NuevoPresupuesto(props) {
           Cliente entrega vehículo en parte de pago
         </label>
 
+        {/* Pagos Múltiples */}
+        <label className="flex items-center gap-2 mt-4">
+          <input
+            type="checkbox"
+            checked={pagosMultiples}
+            onChange={() => setPagosMultiples(!pagosMultiples)}
+          />
+          Usar múltiples métodos de pago
+        </label>
+
         {pagosMultiples && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {pagos.map((pago, i) => (
               <div key={i} className="flex gap-2">
                 <input
                   placeholder="Método"
-                  className="flex-1 p-2 rounded bg-slate-700 text-white"
+                  className="flex-1 p-3 rounded bg-slate-700 text-white"
                   value={pago.metodo}
                   onChange={(e) =>
                     handlePagoChange(i, "metodo", e.target.value)
@@ -255,7 +277,7 @@ export default function NuevoPresupuesto(props) {
                   }
                   thousandSeparator="."
                   decimalSeparator=","
-                  className="w-32 p-2 rounded bg-slate-700 text-white"
+                  className="w-32 p-3 rounded bg-slate-700 text-white"
                 />
                 <button
                   type="button"
@@ -269,25 +291,17 @@ export default function NuevoPresupuesto(props) {
             <button
               type="button"
               onClick={() => setPagos([...pagos, { metodo: "", monto: "" }])}
-              className="text-blue-400"
+              className="flex items-center gap-1 text-blue-400"
             >
               <Plus size={18} /> Agregar pago
             </button>
           </div>
         )}
 
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={pagosMultiples}
-            onChange={() => setPagosMultiples(!pagosMultiples)}
-          />
-          Usar múltiples métodos de pago
-        </label>
-
+        {/* Monto del Vehículo */}
         {vehiculoId && (
-          <div>
-            <label>Monto</label>
+          <div className="mt-4">
+            <label className="block mb-1">Monto</label>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-green-400" />
               <NumericFormat
@@ -302,17 +316,19 @@ export default function NuevoPresupuesto(props) {
           </div>
         )}
 
+        {/* Botón de Envío */}
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg"
+          className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg flex items-center justify-center gap-2"
         >
-          <FileText className="inline mr-2" /> Generar presupuesto
+          <FileText /> Generar presupuesto
         </button>
       </motion.form>
 
+      {/* Modal */}
       {modalOpen && clienteSeleccionado && (
         <ModalVehiculoPartePago
-          vehiculo={vehiculoPartePago} // ← esta es la clave
+          vehiculo={vehiculoPartePago}
           onClose={() => setModalOpen(false)}
           onSave={(datosVehiculo) => {
             setVehiculoPartePago(datosVehiculo);
@@ -321,7 +337,8 @@ export default function NuevoPresupuesto(props) {
         />
       )}
 
-      <div className="grid gap-4 mt-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Resúmenes */}
+      <div className="grid gap-6 mt-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <ResumenCliente
           cliente={clienteSeleccionado}
           onRemove={quitarCliente}
@@ -338,7 +355,11 @@ export default function NuevoPresupuesto(props) {
           />
         )}
       </div>
-      <ListaPresupuestos />
+
+      {/* Lista final */}
+      <div className="mt-12">
+        <ListaPresupuestos />
+      </div>
     </div>
   );
 }

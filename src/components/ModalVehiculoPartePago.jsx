@@ -68,7 +68,7 @@ export default function ModalVehiculoPartePago({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
       onClick={onClose} // click afuera cierra modal
     >
       <form
