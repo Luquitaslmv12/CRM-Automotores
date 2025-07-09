@@ -77,7 +77,7 @@ export default function ModalVehiculoPartePago({
         className="bg-slate-800 p-6 rounded-2xl shadow-xl max-w-lg w-full"
       >
         <h3 className="text-xl font-semibold mb-4 text-white">
-          Datos del vehículo entregado en parte de pago
+          Datos del vehículo de compra / parte de pago
         </h3>
 
         <label className="text-white block mb-2">Recibido por:</label>

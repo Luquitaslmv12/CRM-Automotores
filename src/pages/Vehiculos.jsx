@@ -648,7 +648,7 @@ export default function Vehiculos() {
                   <strong className="text-slate-300">Tipo:</strong>
                   <span>{vehiculo.tipo || "-"}</span>
                 </div>
-              {vehiculo.monto && vehiculo.etiqueta === "Vendido" && (
+                {vehiculo.monto && vehiculo.etiqueta === "Vendido" && (
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-green-400" />
                     <strong className="text-slate-300">Vendido a:</strong>
@@ -665,8 +665,21 @@ export default function Vehiculos() {
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-green-400" />
                     <strong className="text-slate-300">Precio Sugerido:</strong>
-                    <strong className="text-lime-400">
+                    <strong className="text-indigo-400">
                       {vehiculo.precioVenta.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "ARS",
+                        minimumFractionDigits: 0,
+                      })}
+                    </strong>
+                  </div>
+                )}
+                {vehiculo.precioCompra && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-yellow-400" />
+                    <strong className="text-slate-300">Precio Tomado:</strong>
+                    <strong className="text-yellow-400">
+                      {vehiculo.precioCompra.toLocaleString("es-AR", {
                         style: "currency",
                         currency: "ARS",
                         minimumFractionDigits: 0,

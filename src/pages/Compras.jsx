@@ -3,37 +3,57 @@ import { db, auth } from "../firebase";
 import {
   addDoc,
   collection,
-  where,
   onSnapshot,
   query,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
 import { toast } from "react-hot-toast";
+
+import { Plus, Save, Car, Trash2, Eye, Upload } from "lucide-react";
+
+import ListadoCompras from "../components/compras/ListadoCompras";
 import ModalVehiculoPartePago from "../components/ModalVehiculoPartePago";
+import ResumenVehiculoPartePago from "../components/ResumenVehiculoPartePago";
+
+// Componente de botón reutilizable
+const Boton = ({ children, className = "", icon: Icon, ...props }) => (
+  <button
+    className={`flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md disabled:opacity-50 transition-all ${className}`}
+    {...props}
+  >
+    {Icon && <Icon size={18} />}
+    {children}
+  </button>
+);
+
+// Componente de tarjeta reutilizable
+const Card = ({ children, className = "" }) => (
+  <div className={`bg-gray-800 rounded-2xl p-6 shadow-xl ${className}`}>
+    {children}
+  </div>
+);
 
 export default function NuevaCompra() {
   const [modalOpen, setModalOpen] = useState(false);
   const [vehiculo, setVehiculo] = useState(null);
+  const [vehiculoEditando, setVehiculoEditando] = useState(null);
   const [recibidoPor, setRecibidoPor] = useState("");
-  const [clienteAsignado, setClienteAsignado] = useState(null);
+  const [compras, setCompras] = useState([]);
+
   const user = auth.currentUser;
 
-  const [comprasCliente, setComprasCliente] = useState([]);
-
   useEffect(() => {
-    if (!clienteAsignado) {
-      setComprasCliente([]);
-      return;
-    }
-    const q = query(
-      collection(db, "vehiculos"),
-      where("cliente.id", "==", clienteAsignado.id)
-    );
+    const q = query(collection(db, "compras"));
     const unsub = onSnapshot(q, (snapshot) => {
-      const datos = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setComprasCliente(datos);
+      const datos = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setCompras(datos);
     });
     return () => unsub();
-  }, [clienteAsignado]);
+  }, []);
 
   const handleGuardarVehiculo = async () => {
     if (!vehiculo) {
@@ -49,7 +69,7 @@ export default function NuevaCompra() {
       año: parseInt(vehiculo.año) || null,
       color: vehiculo.color || "",
       etiqueta: "Usado",
-      tomadoPor: user?.email || "",
+      tomadoPor: vehiculo.recibidoPor || "",
       cliente: vehiculo.cliente || null,
       tomadoEn: new Date(),
       monto: parseFloat(vehiculo.monto) || 0,
@@ -58,16 +78,12 @@ export default function NuevaCompra() {
       creadoPor: user?.email || "Desconocido",
       creadoEn: new Date(),
       fechaIngreso: new Date(),
-      recibidoPor,
+      /* recibidoPor: vehiculo.recibidoPor || "Desonocido", */
     };
 
     try {
-      // Guardar en "vehiculos"
       await addDoc(collection(db, "vehiculos"), datos);
-
-      // Guardar en "compras"
       await addDoc(collection(db, "compras"), datos);
-
       toast.success("¡Vehículo ingresado al stock y registrado como compra!");
       setVehiculo(null);
     } catch (error) {
@@ -76,74 +92,83 @@ export default function NuevaCompra() {
     }
   };
 
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Registrar Compra de Vehículo</h1>
-      <button
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-        onClick={() => setModalOpen(true)}
-      >
-        Cargar Vehículo
-      </button>
+  const handleEliminarCompra = async (id) => {
+    try {
+      await deleteDoc(doc(db, "compras", id));
+      toast.success("Compra eliminada correctamente.");
+    } catch (error) {
+      console.error("Error al eliminar compra:", error);
+      toast.error("Error al eliminar la compra.");
+    }
+  };
 
-      {comprasCliente.length > 0 && (
-        <div>
-          <h2 className="mt-6 font-semibold">
-            Compras asignadas a {clienteAsignado.nombre}
-          </h2>
-          <ul>
-            {comprasCliente.map((c) => (
-              <li key={c.id}>
-                {c.marca} {c.modelo} - ${c.monto.toLocaleString()}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+  const handleVerDetalle = (compra) => {
+    toast(`Detalle de compra: ${compra.marca} ${compra.modelo}`);
+  };
+
+  const handleExportar = (compra) => {
+    toast(`Exportar compra: ${compra.marca} ${compra.modelo}`);
+  };
+
+  return (
+    <div className="p-6 max-w-4xl mx-auto text-white space-y-6">
+      <div className="flex flex-col items-center gap-2">
+        <Car size={36} className="animate-bounce text-lime-500" />
+        <h1 className="text-3xl font-bold tracking-tight">
+          Gestión de Compras
+        </h1>
+      </div>
+
+      <div className="flex justify-end">
+        <Boton onClick={() => setModalOpen(true)} icon={Plus}>
+          Agregar Compra
+        </Boton>
+      </div>
 
       {vehiculo && (
-        <div className="bg-gray-100 p-4 rounded shadow mb-4">
-          <p>
-            <strong>Marca:</strong> {vehiculo.marca}
-          </p>
-          <p>
-            <strong>Modelo:</strong> {vehiculo.modelo}
-          </p>
-          <p>
-            <strong>Patente:</strong> {vehiculo.patente}
-          </p>
-          <p>
-            <strong>Monto:</strong> ${vehiculo.monto}
-          </p>
-          {/* otros campos si querés */}
-        </div>
+        <Card>
+          <ResumenVehiculoPartePago
+            vehiculo={vehiculo}
+            onRemove={() => setVehiculo(null)}
+            onClick={() => {
+              setVehiculoEditando(vehiculo);
+              setModalOpen(true);
+            }}
+          />
+        </Card>
       )}
 
-      <label className="block mb-2">
-        Recibido por:
-        <input
-          type="text"
-          value={recibidoPor}
-          onChange={(e) => setRecibidoPor(e.target.value)}
-          className="border rounded px-2 py-1 w-full"
-        />
-      </label>
+      <div className="flex justify-end">
+        <Boton
+          onClick={handleGuardarVehiculo}
+          disabled={!vehiculo}
+          icon={Save}
+          className="bg-green-600 hover:bg-green-700"
+        >
+          Registrar Compra
+        </Boton>
+      </div>
 
-      <button
-        onClick={handleGuardarVehiculo}
-        disabled={!vehiculo}
-        className="bg-green-600 text-white px-4 py-2 rounded"
-      >
-        Registrar Compra
-      </button>
+      <ListadoCompras
+        compras={compras}
+        onVerDetalle={handleVerDetalle}
+        onEliminar={handleEliminarCompra}
+        onExportar={handleExportar}
+        iconos={{ Eye, Trash2, Upload }}
+      />
 
       {modalOpen && (
         <ModalVehiculoPartePago
           modo="compra"
-          onClose={() => setModalOpen(false)}
+          vehiculo={vehiculoEditando}
+          onClose={() => {
+            setModalOpen(false);
+            setVehiculoEditando(null);
+          }}
           onSave={(v) => {
             setVehiculo(v);
             setModalOpen(false);
+            setVehiculoEditando(null);
           }}
         />
       )}
