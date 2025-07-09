@@ -61,6 +61,9 @@ export default function Vehiculos() {
   const itemsPorPagina = 10;
   const [talleres, setTalleres] = useState([]);
 
+  const [reparaciones, setReparaciones] = useState([]);
+const [preciosPorVehiculo, setPreciosPorVehiculo] = useState({});
+
   const [clientes, setClientes] = useState([]);
   const [clienteId, setClienteId] = useState("");
   const [queryCliente, setQueryCliente] = useState("");
@@ -77,6 +80,34 @@ export default function Vehiculos() {
     setVehiculoActual(null);
     setModalVisible(false);
   };
+
+
+  useEffect(() => {
+  const unsubscribe = onSnapshot(collection(db, "reparaciones"), (snapshot) => {
+    const lista = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    setReparaciones(lista);
+
+    // Calcular totales por vehiculoId
+    const agrupado = lista.reduce((acc, reparacion) => {
+      if (!reparacion.vehiculoId || typeof reparacion.precioTotal !== "number") return acc;
+
+      if (!acc[reparacion.vehiculoId]) {
+        acc[reparacion.vehiculoId] = 0;
+      }
+
+      acc[reparacion.vehiculoId] += reparacion.precioTotal;
+      return acc;
+    }, {});
+
+    setPreciosPorVehiculo(agrupado);
+  });
+
+  return () => unsubscribe();
+}, []);
 
   useEffect(() => {
     const unsubTalleres = onSnapshot(
@@ -688,6 +719,21 @@ export default function Vehiculos() {
                     </strong>
                   </div>
                 )}
+
+                {preciosPorVehiculo[vehiculo.id] !== undefined && (
+  <div className="flex items-center gap-2">
+    <Hammer className="w-4 h-4 text-orange-400" />
+    <strong className="text-slate-300">Gastos:</strong>
+    <strong className="text-orange-600">
+      {preciosPorVehiculo[vehiculo.id].toLocaleString("es-AR", {
+        style: "currency",
+        currency: "ARS",
+        minimumFractionDigits: 0,
+      })}
+    </strong>
+  </div>
+)}
+
                 <div className="flex items-center gap-2">
                   <ScanLine className="w-4 h-4 text-orange-400" />
                   <strong className="text-slate-300">N° Chasis:</strong>

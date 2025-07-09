@@ -145,7 +145,7 @@ export default function CardClientesMorosos() {
 
       {clienteConfirmar && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-900 p-6 rounded-xl max-w-sm w-full shadow-lg">
+          <div className="bg-gray-900 p-6 rounded-xl max-w-sm w-full shadow-lg">
             <h4 className="text-lg font-semibold mb-2">¿Confirmar pago?</h4>
             <p className="text-sm mb-4">
               Estás por marcar a <strong>{clienteConfirmar.nombre}</strong> como
@@ -156,7 +156,7 @@ export default function CardClientesMorosos() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setClienteConfirmar(null)}
-                className="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-700"
               >
                 Cancelar
               </button>

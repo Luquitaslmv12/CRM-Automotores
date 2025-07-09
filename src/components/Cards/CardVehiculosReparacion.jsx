@@ -99,9 +99,9 @@ export default function CardVehiculosReparacion() {
         {reparandoPagina.map((v) => (
           <div
             key={v.id}
-            className="bg-gray-50 dark:bg-gray-700 p-2 rounded-md"
+            className="bg-gray-700 p-2 rounded-md"
           >
-            <div className="font-medium text-gray-800 dark:text-white">
+            <div className="font-medium text-white">
               {v.marca} {v.modelo} - {v.patente} ({v.año})
             </div>
             {v.tallerId && (

@@ -163,7 +163,7 @@ export default function CardInteligenciaVentas() {
         </h4>
       </div>
 
-      <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">
+      <p className="text-gray-300 text-sm sm:text-base">
         {mensaje}
         <motion.span className={`${color} font-semibold`}>
           <AnimatedNumber value={Math.abs(estado.porcentaje)} />%
@@ -173,7 +173,7 @@ export default function CardInteligenciaVentas() {
           : " por debajo del promedio. ¡Podés remontarlo!"}
       </p>
 
-      <div className="flex justify-around text-center text-gray-700 dark:text-gray-300 font-semibold text-sm sm:text-base">
+      <div className="flex justify-around text-center text-gray-300 font-semibold text-sm sm:text-base">
         <div>
           <div className="text-xl sm:text-2xl">
             ${<AnimatedNumber value={estado.ventasMesActual} />}

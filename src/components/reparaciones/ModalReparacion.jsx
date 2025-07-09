@@ -106,7 +106,7 @@ export default function ModalReparacion({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-md space-y-4">
+      <div className="bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-md space-y-4">
         <h2 className="text-xl font-bold text-center">
           {reparacion ? "Editar Reparación" : "Registrar Reparación"}
         </h2>

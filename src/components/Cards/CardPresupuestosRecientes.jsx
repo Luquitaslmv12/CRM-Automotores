@@ -171,7 +171,7 @@ export default function CardPresupuestosRecientes() {
     >
       <div className="flex items-center gap-3 mb-4">
         <ClipboardList className="text-indigo-500 w-6 h-6" />
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+        <h3 className="text-lg font-semibold text-gray-100">
           Presupuestos recientes
         </h3>
         <EstadoSelect value={estadoFiltro} onChange={setEstadoFiltro} />
@@ -180,12 +180,12 @@ export default function CardPresupuestosRecientes() {
       {loading && <p>Cargando...</p>}
 
       {presupuestos.length === 0 && !loading ? (
-        <p className="text-gray-600 dark:text-gray-300 text-sm">
+        <p className="text-gray-300 text-sm">
           Sin presupuestos recientes.
         </p>
       ) : (
         <>
-          <ul className="divide-y divide-gray-600 dark:divide-gray-700 text-sm">
+          <ul className="divide-y divide-gray-700 text-sm">
             {presupuestos.map((p) => (
               <li key={p.id} className="py-3 relative">
                 <div
@@ -193,8 +193,8 @@ export default function CardPresupuestosRecientes() {
                     px-2 py-1 rounded bg-opacity-70
                     ${
                       p.diferencia >= 0
-                        ? "bg-green-600 dark:bg-green-700 text-white"
-                        : "bg-red-600 dark:bg-red-700 text-white"
+                        ? "bg-green-700 text-white"
+                        : "bg-red-700 text-white"
                     }
                   `}
                   style={{ minWidth: "80px", textAlign: "center" }}

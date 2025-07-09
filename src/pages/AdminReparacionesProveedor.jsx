@@ -25,10 +25,14 @@ import {
   Building,
   FileDown,
   LoaderCircle,
+  Info,
+  AlertTriangle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
 import ModalNuevaReparacion from "../components/reparaciones/ModalNuevaReparacion";
+import ConfirmModal from "../components/ConfirmModal"
+import dayjs from 'dayjs';
 
 // CONSTANTES
 const ITEMS_POR_PAGINA = 5;
@@ -41,10 +45,15 @@ export default function Reparaciones() {
   const [busqueda, setBusqueda] = useState("");
   const [paginaActual, setPaginaActual] = useState(1);
 
+
+  const fecha = new Date(); // o la fecha que recibes
+const soloFecha = dayjs(fecha).format('DD/MM/YYYY');
+
+
   const [loading, setLoading] = useState(true);
   const [loadingVehEnRep, setLoadingVehEnRep] = useState(true);
   const [toast, setToast] = useState(null);
-  const [confirmModal, setConfirmModal] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [reparacionAEliminar, setReparacionAEliminar] = useState(null);
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -112,7 +121,7 @@ export default function Reparaciones() {
         setReparaciones((prev) =>
           prev.filter((p) => p.id !== reparacionAEliminar.id)
         );
-        setConfirmModal(false);
+        setConfirmModalOpen(false);
         mostrarToast("Reparación eliminada correctamente");
       } catch (error) {
         mostrarToast("Error al eliminar reparación", "error");
@@ -140,22 +149,24 @@ export default function Reparaciones() {
   };
 
   // FILTRADO
-  const reparacionesFiltradas = reparaciones.filter((r) => {
-    const textoOk = r.descripcionReparacion
-      .toLowerCase()
-      .includes(busqueda.toLowerCase());
+ const reparacionesFiltradas = reparaciones.filter((r) => {
+  if (!r || !r.descripcionReparacion) return false;
 
-    const tallerOk = !filtroTaller || r.tallerId === filtroTaller;
+  const textoOk = r.descripcionReparacion
+    .toLowerCase()
+    .includes(busqueda.toLowerCase());
 
-    const fechaCreado = r.creadoEn ? new Date(r.creadoEn.seconds * 1000) : null;
+  const tallerOk = !filtroTaller || r.tallerId === filtroTaller;
 
-    const fechaDesdeOk =
-      !fechaDesde || (fechaCreado && fechaCreado >= new Date(fechaDesde));
-    const fechaHastaOk =
-      !fechaHasta || (fechaCreado && fechaCreado <= new Date(fechaHasta));
+  const fechaCreado = r.creadoEn ? new Date(r.creadoEn.seconds * 1000) : null;
 
-    return textoOk && tallerOk && fechaDesdeOk && fechaHastaOk;
-  });
+  const fechaDesdeOk =
+    !fechaDesde || (fechaCreado && fechaCreado >= new Date(fechaDesde));
+  const fechaHastaOk =
+    !fechaHasta || (fechaCreado && fechaCreado <= new Date(fechaHasta));
+
+  return textoOk && tallerOk && fechaDesdeOk && fechaHastaOk;
+});
 
   // Paginación
   const totalPaginas = Math.ceil(
@@ -166,12 +177,22 @@ export default function Reparaciones() {
     paginaActual * ITEMS_POR_PAGINA
   );
 
-  const editarReparacion = (reparacionId) => {
-    const rep = reparaciones.find((r) => r.id === reparacionId);
-    const vehiculo = vehiculos.find((v) => v.id === rep.vehiculoId);
-    setReparacionEditar(rep);
-    setModalVisible(true); // Mostrar modal para editar
-  };
+ const editarReparacion = (reparacionId) => {
+  console.log("Reparacion ID recibido:", reparacionId);
+  console.log("Reparaciones disponibles:", reparaciones);
+  const rep = reparaciones.find((r) => r.id === reparacionId);
+
+  if (!rep) {
+    console.warn("No se encontró la reparación con id:", reparacionId);
+    return;
+  }
+
+  const vehiculo = vehiculos.find((v) => v.id === rep.vehiculoId);
+
+  setReparacionEditar(rep);
+  setModalVisible(true); // Mostrar modal para editar
+  
+};
 
   return (
     <div className="p-6 max-w-7xl mx-auto text-white">
@@ -337,20 +358,18 @@ export default function Reparaciones() {
                       Reparación
                       <span>
                         Vehículo:{" "}
-                        <strong>
+                        <strong className="text-indigo-400">
                           {vehiculo
                             ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
                             : "Desconocido"}
                         </strong>
                       </span>
                     </h3>
-                    <span className="text-sm text-slate-400">
-                      {r.creadoEn
-                        ? new Date(
-                            r.creadoEn.seconds * 1000
-                          ).toLocaleDateString("es-AR")
-                        : "—"}
-                    </span>
+                   <span className="text-l text-slate-200">
+  {r.creadoEn && typeof r.creadoEn.seconds === "number"
+    ? dayjs(r.creadoEn.toDate()).format('DD/MM/YYYY')
+    : "—"}
+</span>
                   </div>
 
                   {/* Detalles */}
@@ -428,13 +447,17 @@ export default function Reparaciones() {
                     >
                       <Hammer />
                     </button>
-                    <button
-                      onClick={() => eliminarReparacion(r.id)}
-                      className="text-red-400 hover:text-red-600"
-                      title="Eliminar reparación"
-                    >
-                      <Trash2 />
-                    </button>
+                   <button
+  onClick={() => {
+    setReparacionAEliminar(r);
+    setConfirmModalOpen(true);
+  }}
+  className="text-red-400 hover:text-red-600"
+  title="Eliminar reparación"
+>
+  <Trash2 />
+</button>
+
                   </div>
                 </motion.div>
               );
@@ -468,59 +491,40 @@ export default function Reparaciones() {
 
       {/* MODAL NUEVA REPARACIÓN */}
       {modalVisible && (
-        <ModalNuevaReparacion
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          onSuccess={(nuevaReparacion) => {
-            if (reparacionEditar) {
-              setReparaciones((prev) =>
-                prev.map((r) =>
-                  r.id === reparacionEditar.id ? nuevaReparacion : r
-                )
-              );
-            } else {
-              setReparaciones((prev) => [nuevaReparacion, ...prev]);
-            }
-            mostrarToast(
-              reparacionEditar
-                ? "Reparación actualizada"
-                : "Reparación creada correctamente"
-            );
-          }}
-          reparacion={reparacionEditar}
-          vehiculo={vehiculos.find(
-            (v) => v.id === reparacionEditar?.vehiculoId
-          )}
-        />
+       <ModalNuevaReparacion
+  visible={modalVisible}
+  onClose={() => setModalVisible(false)}
+  onSuccess={(nuevaReparacion) => {
+    if (reparacionEditar) {
+      setReparaciones((prev) =>
+        prev.map((r) =>
+          r.id === reparacionEditar.id ? nuevaReparacion : r
+        )
+      );
+    } else {
+      setReparaciones((prev) => [nuevaReparacion, ...prev]);
+    }
+    mostrarToast(
+      reparacionEditar
+        ? "Reparación actualizada"
+        : "Reparación creada correctamente"
+    );
+  }}
+  reparacion={reparacionEditar}
+  vehiculo={vehiculos.find(
+    (v) => v.id === reparacionEditar?.vehiculoId
+  )}
+/>
       )}
 
-      {/* MODAL CONFIRMAR ELIMINACIÓN */}
-      {confirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 p-6 rounded-lg max-w-sm w-full">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-red-400">
-              <AlertTriangle size={20} /> Confirmar eliminación
-            </h3>
-            <p className="mb-4">
-              ¿Estás seguro que quieres eliminar esta reparación?
-            </p>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setConfirmModal(false)}
-                className="bg-slate-600 px-4 py-2 rounded"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={eliminarReparacion}
-                className="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded"
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+  isOpen={confirmModalOpen}
+  onCancel={() => setConfirmModalOpen(false)}
+  onConfirm={eliminarReparacion}
+  title="Confirmar eliminación"
+  message="¿Estás seguro que quieres eliminar esta reparación?"
+/>
+     
     </div>
   );
 }
