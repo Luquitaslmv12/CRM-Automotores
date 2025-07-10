@@ -33,6 +33,9 @@ export default function ModalNuevaReparacion({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const vehiculoSeleccionado = vehiculos.find(v => v.id === vehiculoId);
+const patenteVehiculo = vehiculoSeleccionado?.patente || "";
+
   useEffect(() => {
     if (!visible) return;
 
@@ -147,6 +150,7 @@ export default function ModalNuevaReparacion({
         descripcionReparacion: descripcion,
         vehiculoId,
         tallerId,
+        patenteVehiculo,
         precioManoObra: Number(precioManoObra),
         precioRepuestos: Number(precioRepuestos),
         precioTotal: total,
@@ -168,6 +172,7 @@ export default function ModalNuevaReparacion({
         precioRepuestos: Number(precioRepuestos),
         precioTotal: total,
         telefono,
+        patenteVehiculo,
         observaciones,
         creadoEn: new Date(),
         saldo: total,

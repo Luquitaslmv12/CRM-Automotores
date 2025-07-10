@@ -144,40 +144,46 @@ export default function CardRendimientoVendedores() {
       ) : (
         <>
           {/* BARRAS DE RANKING */}
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                layout="vertical"
-                data={ranking}
-                margin={{ left: 60 }}
-              >
-                <XAxis type="number" domain={[0, 100]} hide />
-                <YAxis
-                  dataKey="emitidoPor"
-                  type="category"
-                  tick={{ fill: "#e5e7eb", fontSize: 13 }}
-                  width={120}
-                />
-                <Tooltip
-                  formatter={(v) => `${v.toFixed(1)}%`}
-                  labelStyle={{ color: "#93c5fd" }}
-                  itemStyle={{ color: "#f3f4f6" }}
-                />
-                <Bar dataKey="tasaConversion" fill="#34d399">
-                  {ranking.map((_, index) => (
-                    <Cell key={index} fill="#10b981" />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        <div className="h-34">
+  <ResponsiveContainer width="100%" height="100%">
+    <BarChart
+      data={ranking}
+      margin={{ top: 10, bottom: 10 }}
+    >
+      <XAxis
+        dataKey="emitidoPor"
+        tick={false} // oculta texto debajo de las barras
+        axisLine={false}
+      />
+      <YAxis
+        type="number"
+        domain={[0, 100]}
+        tick={{ fill: "#e5e7eb", fontSize: 12 }}
+        width={40}
+      />
+      <Tooltip
+        formatter={(value, name, props) =>
+          [`${value.toFixed(1)}%`, props.payload.emitidoPor]
+        }
+        labelFormatter={() => ""}
+        contentStyle={{ backgroundColor: "#1f2937", borderColor: "#10b981" }}
+        itemStyle={{ color: "#f3f4f6" }}
+      />
+      <Bar dataKey="tasaConversion" fill="#10b981" radius={[4, 4, 0, 0]}>
+        {ranking.map((_, index) => (
+          <Cell key={index} />
+        ))}
+      </Bar>
+    </BarChart>
+  </ResponsiveContainer>
+</div>
 
           {/* DETALLE DE KPIs */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-4">
             {ranking.map((v) => (
               <div
                 key={v.emitidoPor}
-                className="p-4 bg-slate-800 rounded-lg border border-slate-700"
+                className="p-2 bg-slate-800 rounded-lg border border-slate-700"
               >
                 <h4 className="font-semibold text-white mb-1">{v.emitidoPor}</h4>
                 <div className="text-sm text-gray-300">

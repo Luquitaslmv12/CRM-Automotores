@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
 import { db } from "../firebase";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import ConfirmModal from "../components/proveedores/ConfirmModal";
 import ProveedorModal from "../components/proveedores/ProveedorModal";
 import ProveedorList from "../components/proveedores/ProveedorCard";
+import EstadoCuentaModal from "../components/proveedores/EstadoCuentaModal";
 
 export default function Proveedores() {
   const [proveedores, setProveedores] = useState([]);
@@ -17,24 +18,45 @@ export default function Proveedores() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [reparacionesTaller, setReparacionesTaller] = useState([]);
+  const [estadoCuentaModalAbierto, setEstadoCuentaModalAbierto] = useState(false);
+
+  // ✅ Función reutilizable para obtener reparaciones por proveedor
+  const obtenerReparacionesPorTaller = async (tallerId) => {
+    const q = query(collection(db, "reparaciones"), where("tallerId", "==", tallerId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  };
+
+  // ✅ Cargar proveedores y agregar campo `tieneDeuda`
   useEffect(() => {
-    const fetchProveedores = async () => {
+    const fetchProveedoresConDeuda = async () => {
       try {
         const snapshot = await getDocs(collection(db, "proveedores"));
         const data = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setProveedores(data);
+
+        // Para cada proveedor, consultar sus reparaciones y calcular si tiene deuda
+        const dataConDeuda = await Promise.all(
+          data.map(async (p) => {
+            const reparaciones = await obtenerReparacionesPorTaller(p.id);
+            const tieneDeuda = reparaciones.some((r) => r.saldo > 0); // Ajusta campo si es distinto
+            return { ...p, tieneDeuda };
+          })
+        );
+
+        setProveedores(dataConDeuda);
       } catch (err) {
-        console.error("Error al obtener proveedores:", err);
+        console.error("Error al obtener proveedores o reparaciones:", err);
         setError("Error al cargar los proveedores.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProveedores();
+    fetchProveedoresConDeuda();
   }, []);
 
   const handleBusqueda = (e) => {
@@ -43,11 +65,26 @@ export default function Proveedores() {
 
   const eliminarProveedor = async () => {
     if (proveedorAEliminar) {
-      await deleteDoc(doc(db, "proveedores", proveedorAEliminar.id));
-      setProveedores((prev) =>
-        prev.filter((p) => p.id !== proveedorAEliminar.id)
-      );
-      setConfirmModal(false);
+      try {
+        await deleteDoc(doc(db, "proveedores", proveedorAEliminar.id));
+        setProveedores((prev) =>
+          prev.filter((p) => p.id !== proveedorAEliminar.id)
+        );
+        setConfirmModal(false);
+      } catch (err) {
+        console.error("Error al eliminar proveedor:", err);
+        alert("Ocurrió un error al eliminar el proveedor.");
+      }
+    }
+  };
+
+  const verEstadoCuenta = async (tallerId) => {
+    try {
+      const data = await obtenerReparacionesPorTaller(tallerId);
+      setReparacionesTaller(data);
+      setEstadoCuentaModalAbierto(true);
+    } catch (err) {
+      console.error("Error al cargar reparaciones del taller:", err);
     }
   };
 
@@ -105,6 +142,7 @@ export default function Proveedores() {
             setProveedorAEliminar(prov);
             setConfirmModal(true);
           }}
+          verEstadoCuenta={verEstadoCuenta}
         />
       )}
 
@@ -124,6 +162,14 @@ export default function Proveedores() {
               setProveedores((prev) => [...prev, nuevoProveedor]);
             }
           }}
+        />
+      )}
+
+      {estadoCuentaModalAbierto && (
+        <EstadoCuentaModal
+          abierto={estadoCuentaModalAbierto}
+          onClose={() => setEstadoCuentaModalAbierto(false)}
+          reparaciones={reparacionesTaller}
         />
       )}
 

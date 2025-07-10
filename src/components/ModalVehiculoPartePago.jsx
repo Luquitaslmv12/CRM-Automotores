@@ -21,6 +21,8 @@ export default function ModalVehiculoPartePago({
     monto: "",
     patente: "",
     tipo: "",
+    etiqueta: "Usado",
+    
   });
 
   useEffect(() => {
@@ -47,6 +49,7 @@ export default function ModalVehiculoPartePago({
         monto: vehiculo.monto || "",
         patente: vehiculo.patente || "",
         tipo: vehiculo.tipo || "",
+        etiqueta: vehiculo.etiqueta || "",
       });
       setRecibidoPor(vehiculo.recibidoPor || "");
     }
@@ -84,7 +87,7 @@ export default function ModalVehiculoPartePago({
         <select
           value={recibidoPor}
           onChange={(e) => setRecibidoPor(e.target.value)}
-          className="w-full p-3 mb-3 rounded bg-slate-700 text-white"
+          className="w-full p-3 mb-3 rounded bg-slate-700 text-white border-2 border-indigo-600"
           required
         >
           <option value="">Seleccione un usuario</option>
@@ -104,7 +107,21 @@ export default function ModalVehiculoPartePago({
               onChange={setClienteSeleccionado}
               placeholder="Dueño del vehiculo"
             />
-          </>
+          
+          <label className="text-white block mb-2">Tipo de vehículo:</label>
+    <select
+      name="etiqueta"
+      value={vehiculoState.etiqueta}
+      onChange={(e) =>
+        setVehiculoState({ ...vehiculoState, etiqueta: e.target.value })
+      }
+      className="w-full p-3 mb-3 rounded bg-slate-700 text-white border-2 border-indigo-600"
+      required
+    >
+      <option value="Usado">Usado</option>
+      <option value="0km">0km</option>
+    </select>
+    </>
         )}
 
         <input

@@ -7,6 +7,7 @@ import CardEvolucionVentas from "../components/Cards/CardEvolucionVentas";
 import CardInteligenciaVentas from "../components/Cards/CardInteligenciaVentas";
 import CardPresupuestosRecientes from "../components/Cards/CardPresupuestosRecientes";
 import CardRendimientoVendedores from "../components/Cards/CardRendimientoVendedores";
+import CardSaldosProveedores from "../components/Cards/CardSaldosProveedores";
 
 export default function Dashboard() {
   return (
@@ -26,6 +27,7 @@ export default function Dashboard() {
           <CardInteligenciaVentas />
           <CardPresupuestosRecientes />
           <CardRendimientoVendedores />
+          <CardSaldosProveedores />
         </main>
       </div>
     </div>
