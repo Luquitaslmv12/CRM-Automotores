@@ -170,6 +170,9 @@ export default function ModalNuevaReparacion({
         telefono,
         observaciones,
         creadoEn: new Date(),
+        saldo: total,
+        estadoPago: "Pendiente",
+
       };
 
       const docRef = await addDoc(collection(db, "reparaciones"), datosNuevos);

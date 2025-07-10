@@ -20,6 +20,8 @@ import {
   FilePlus,
   Trash2,
   Pencil,
+  CreditCard,
+  Wallet,
   MessageCircle,
   Car,
   Building,
@@ -33,6 +35,7 @@ import * as XLSX from "xlsx";
 import ModalNuevaReparacion from "../components/reparaciones/ModalNuevaReparacion";
 import ConfirmModal from "../components/ConfirmModal"
 import dayjs from 'dayjs';
+import ModalRegistrarPago from "../components/proveedores/ModalRegistrarPago";
 
 // CONSTANTES
 const ITEMS_POR_PAGINA = 5;
@@ -58,6 +61,19 @@ const soloFecha = dayjs(fecha).format('DD/MM/YYYY');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [reparacionEditar, setReparacionEditar] = useState(null);
+
+
+  
+
+
+const refrescarReparaciones = async () => {
+  setLoading(true);
+  // Aquí vuelves a traer las reparaciones desde Firebase o tu fuente
+  const reparacionesSnapshot = await getDocs(collection(db, "reparaciones"));
+  setReparaciones(reparacionesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  setLoading(false);
+};
+
 
   // NUEVOS filtros
   const [filtroTaller, setFiltroTaller] = useState("");
@@ -192,6 +208,15 @@ const soloFecha = dayjs(fecha).format('DD/MM/YYYY');
   setReparacionEditar(rep);
   setModalVisible(true); // Mostrar modal para editar
   
+};
+
+
+const [modalPagoVisible, setModalPagoVisible] = useState(false);
+const [reparacionParaPago, setReparacionParaPago] = useState(null);
+
+  const abrirModalPago = (reparacion, tallerId) => {
+  setReparacionParaPago(reparacion);
+  setModalPagoVisible(true);
 };
 
   return (
@@ -420,6 +445,25 @@ const soloFecha = dayjs(fecha).format('DD/MM/YYYY');
                         </p>
                       </div>
                     )}
+
+                      <div className="flex items-center gap-2">
+    <CreditCard className="w-4 h-4 text-yellow-400" /> {/* Icono de pago, por ejemplo */}
+    <strong>Estado pago:</strong>
+    <span>{r.estadoPago || "Pendiente"}</span>
+  </div>
+  <div className="flex items-center gap-2">
+    <Wallet className="w-4 h-4 text-green-400" /> {/* Icono para saldo */}
+    <strong>Saldo:</strong>
+    <span className="text-yellow-500 font-semibold">
+      {typeof r.saldo === "number"
+        ? r.saldo.toLocaleString("es-AR", {
+            style: "currency",
+            currency: "ARS",
+            minimumFractionDigits: 0,
+          })
+        : "—"}
+    </span>
+  </div>
                   </div>
 
                   {/* Taller y contacto */}
@@ -449,13 +493,22 @@ const soloFecha = dayjs(fecha).format('DD/MM/YYYY');
                     </button>
                    <button
   onClick={() => {
-    setReparacionAEliminar(r);
+    setReparacionAEliminar(r, r.tallerId);
     setConfirmModalOpen(true);
   }}
   className="text-red-400 hover:text-red-600"
   title="Eliminar reparación"
 >
   <Trash2 />
+</button>
+
+<button
+  onClick={() => abrirModalPago(r)}
+  className="text-green-400 hover:text-green-600"
+  title="Registrar pago"
+>
+  {/* Ícono que prefieras, por ejemplo un símbolo de dinero */}
+  <DollarSign />
 </button>
 
                   </div>
@@ -525,6 +578,15 @@ const soloFecha = dayjs(fecha).format('DD/MM/YYYY');
   message="¿Estás seguro que quieres eliminar esta reparación?"
 />
      
+     <ModalRegistrarPago
+  visible={modalPagoVisible}               // acá la variable correcta
+  onClose={() => setModalPagoVisible(false)}  // cerrar modal correcto
+  reparacionId={reparacionParaPago?.id}   // pasar id de la reparación seleccionada
+  onPagoRealizado={refrescarReparaciones} // la función para recargar datos
+   tallerId={reparacionParaPago?.tallerId}
+   vehiculoId={reparacionParaPago?.vehiculoId}
+/>
+
     </div>
   );
 }
