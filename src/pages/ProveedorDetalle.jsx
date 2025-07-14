@@ -1,5 +1,12 @@
 import { useParams } from "react-router-dom";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
 import { Truck, Calendar, DollarSign, Wrench } from "lucide-react";
@@ -33,8 +40,12 @@ export default function ProveedorDetalle() {
       const reparacionesData = await Promise.all(
         reparacionSnaps.docs.map(async (docSnap) => {
           const repData = docSnap.data();
-          const vehiculoSnap = await getDoc(doc(db, "vehiculos", repData.vehiculoId));
-          const vehiculoData = vehiculoSnap.exists() ? vehiculoSnap.data() : null;
+          const vehiculoSnap = await getDoc(
+            doc(db, "vehiculos", repData.vehiculoId)
+          );
+          const vehiculoData = vehiculoSnap.exists()
+            ? vehiculoSnap.data()
+            : null;
           return {
             id: docSnap.id,
             ...repData,
@@ -51,23 +62,40 @@ export default function ProveedorDetalle() {
   }, [id]);
 
   if (loading) return <div className="p-6 text-white">Cargando datos...</div>;
-  if (!proveedor) return <div className="p-6 text-white">Proveedor no encontrado.</div>;
+  if (!proveedor)
+    return <div className="p-6 text-white">Proveedor no encontrado.</div>;
 
   return (
-    <div className="p-6 text-white max-w-4xl mx-auto">
+    <div className="p-6 pt-18 text-white max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">📋 {proveedor.nombre}</h1>
 
       <div className="mb-6 space-y-1 text-sm text-gray-300">
-        <p><strong>📍 Dirección:</strong> {proveedor.direccion || "Sin especificar"}</p>
-        <p><strong>📞 Teléfono:</strong> {proveedor.telefono || "Sin especificar"}</p>
-        <p><strong>📧 Email:</strong> {proveedor.email || "Sin especificar"}</p>
-        <p><strong>🛠️ Tipo de servicio:</strong> {proveedor.tipo || "General"}</p>
-        <p><strong>📝 Notas:</strong> {proveedor.observaciones || "Sin notas"}</p>
+        <p>
+          <strong>📍 Dirección:</strong>{" "}
+          {proveedor.direccion || "Sin especificar"}
+        </p>
+        <p>
+          <strong>📞 Teléfono:</strong>{" "}
+          {proveedor.telefono || "Sin especificar"}
+        </p>
+        <p>
+          <strong>📧 Email:</strong> {proveedor.email || "Sin especificar"}
+        </p>
+        <p>
+          <strong>🛠️ Tipo de servicio:</strong> {proveedor.tipo || "General"}
+        </p>
+        <p>
+          <strong>📝 Notas:</strong> {proveedor.observaciones || "Sin notas"}
+        </p>
       </div>
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">🚗 Reparaciones realizadas</h2>
+      <h2 className="text-xl font-semibold mt-6 mb-2">
+        🚗 Reparaciones realizadas
+      </h2>
       {reparaciones.length === 0 ? (
-        <p className="text-gray-400">No hay reparaciones registradas para este proveedor.</p>
+        <p className="text-gray-400">
+          No hay reparaciones registradas para este proveedor.
+        </p>
       ) : (
         <ul className="space-y-4">
           {reparaciones.map((rep) => {
@@ -89,26 +117,34 @@ export default function ProveedorDetalle() {
                 </div>
 
                 <div className="text-sm text-gray-300 space-y-1">
-                  <p><strong>Estado:</strong> {rep.estado || "No especificado"}</p>
+                  <p>
+                    <strong>Estado:</strong> {rep.estado || "No especificado"}
+                  </p>
                   <p>
                     <DollarSign className="inline-block mr-1" size={14} />
                     <strong>Precio:</strong>{" "}
-                    {rep.precioServicio ? `$${rep.precioServicio.toLocaleString("es-AR")}` : "No ingresado"}
+                    {rep.precioServicio
+                      ? `$${rep.precioServicio.toLocaleString("es-AR")}`
+                      : "No ingresado"}
                   </p>
                   <p>
                     <Calendar className="inline-block mr-1" size={14} />
                     <strong>Ingreso:</strong>{" "}
-                    {fechaIngreso ? fechaIngreso.toLocaleDateString("es-AR") : "Sin fecha"}
+                    {fechaIngreso
+                      ? fechaIngreso.toLocaleDateString("es-AR")
+                      : "Sin fecha"}
                   </p>
                   {fechaSalida && (
                     <p>
                       <Calendar className="inline-block mr-1" size={14} />
-                      <strong>Salida:</strong> {fechaSalida.toLocaleDateString("es-AR")}
+                      <strong>Salida:</strong>{" "}
+                      {fechaSalida.toLocaleDateString("es-AR")}
                     </p>
                   )}
                   <p>
                     <Wrench className="inline-block mr-1" size={14} />
-                    <strong>Trabajo:</strong> {rep.descripcionReparacion || "Sin descripción"}
+                    <strong>Trabajo:</strong>{" "}
+                    {rep.descripcionReparacion || "Sin descripción"}
                   </p>
                 </div>
               </li>

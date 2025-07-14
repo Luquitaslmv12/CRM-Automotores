@@ -127,6 +127,7 @@ const Login = () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast.success("Inicio de sesión exitoso");
+      navigate("/dashboard"); // <- redirige justo después del login
     } catch (err) {
       console.error(err);
       toast.error("Credenciales inválidas");

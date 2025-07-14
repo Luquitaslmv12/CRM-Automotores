@@ -36,6 +36,7 @@ import {
 import AsignarVehiculosModal from "../components/AsignarVehiculosModal";
 import LocalidadAutocomplete from "../components/LocalidadAutocomplete";
 import TooltipWrapper from "../components/Tooltip/TooltipWrapper";
+import ExportarClientes from "../components/clientes/ExportarClientes";
 
 export default function Clientes() {
   const [dni, setDni] = useState("");
@@ -67,6 +68,8 @@ export default function Clientes() {
 
   const [vehiculoParaQuitar, setVehiculoParaQuitar] = useState(null);
   const [vehiculoEnConfirmacion, setVehiculoEnConfirmacion] = useState(null);
+
+  const [mostrarExportacion, setMostrarExportacion] = useState(false);
 
   const nombreRef = useRef();
 
@@ -394,7 +397,7 @@ export default function Clientes() {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
+    <div className="p-6 pt-18 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
       <h1 className="text-4xl font-bold mb-6 text-center flex justify-center items-center gap-2">
         <User className="w-10 h-10 text-sky-500 animate-bounce" />
         Gestión de Clientes
@@ -696,7 +699,7 @@ export default function Clientes() {
 
         {/* Botón exportar */}
         <button
-          onClick={exportarCSV}
+          onClick={() => setMostrarExportacion(true)}
           className="flex items-center justify-center gap-2 bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-3 rounded-lg transition w-full md:w-auto"
         >
           <Download size={18} />
@@ -912,6 +915,12 @@ export default function Clientes() {
           </motion.div>
         )}
       </AnimatePresence>
+      {mostrarExportacion && (
+        <ExportarClientes
+          clientes={clientesPaginados} // o todos los clientes
+          onClose={() => setMostrarExportacion(false)}
+        />
+      )}
     </div>
   );
 }

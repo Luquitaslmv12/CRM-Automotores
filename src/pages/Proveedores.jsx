@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { collection, getDocs, deleteDoc, doc, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+  query,
+  where,
+} from "firebase/firestore";
 import { db } from "../firebase";
 import { LoaderCircle, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
@@ -19,11 +26,15 @@ export default function Proveedores() {
   const [error, setError] = useState(null);
 
   const [reparacionesTaller, setReparacionesTaller] = useState([]);
-  const [estadoCuentaModalAbierto, setEstadoCuentaModalAbierto] = useState(false);
+  const [estadoCuentaModalAbierto, setEstadoCuentaModalAbierto] =
+    useState(false);
 
   // ✅ Función reutilizable para obtener reparaciones por proveedor
   const obtenerReparacionesPorTaller = async (tallerId) => {
-    const q = query(collection(db, "reparaciones"), where("tallerId", "==", tallerId));
+    const q = query(
+      collection(db, "reparaciones"),
+      where("tallerId", "==", tallerId)
+    );
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   };
@@ -93,7 +104,7 @@ export default function Proveedores() {
   );
 
   return (
-    <div className="p-6 text-white max-w-4xl mx-auto">
+    <div className="p-6 pt-20 text-white max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Proveedores</h1>
 
       <div className="flex justify-between items-center mb-4 gap-4">

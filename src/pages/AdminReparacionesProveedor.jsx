@@ -33,8 +33,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
 import ModalNuevaReparacion from "../components/reparaciones/ModalNuevaReparacion";
-import ConfirmModal from "../components/ConfirmModal"
-import dayjs from 'dayjs';
+import ConfirmModal from "../components/ConfirmModal";
+import dayjs from "dayjs";
 import ModalRegistrarPago from "../components/proveedores/ModalRegistrarPago";
 
 // CONSTANTES
@@ -48,10 +48,8 @@ export default function Reparaciones() {
   const [busqueda, setBusqueda] = useState("");
   const [paginaActual, setPaginaActual] = useState(1);
 
-
   const fecha = new Date(); // o la fecha que recibes
-const soloFecha = dayjs(fecha).format('DD/MM/YYYY');
-
+  const soloFecha = dayjs(fecha).format("DD/MM/YYYY");
 
   const [loading, setLoading] = useState(true);
   const [loadingVehEnRep, setLoadingVehEnRep] = useState(true);
@@ -62,18 +60,15 @@ const soloFecha = dayjs(fecha).format('DD/MM/YYYY');
   const [modalVisible, setModalVisible] = useState(false);
   const [reparacionEditar, setReparacionEditar] = useState(null);
 
-
-  
-
-
-const refrescarReparaciones = async () => {
-  setLoading(true);
-  // Aquí vuelves a traer las reparaciones desde Firebase o tu fuente
-  const reparacionesSnapshot = await getDocs(collection(db, "reparaciones"));
-  setReparaciones(reparacionesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-  setLoading(false);
-};
-
+  const refrescarReparaciones = async () => {
+    setLoading(true);
+    // Aquí vuelves a traer las reparaciones desde Firebase o tu fuente
+    const reparacionesSnapshot = await getDocs(collection(db, "reparaciones"));
+    setReparaciones(
+      reparacionesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+    );
+    setLoading(false);
+  };
 
   // NUEVOS filtros
   const [filtroTaller, setFiltroTaller] = useState("");
@@ -150,7 +145,7 @@ const refrescarReparaciones = async () => {
       Descripción: r.descripcionReparacion,
       Vehículo: obtenerVehiculo(r.vehiculoId)?.patente || "Desconocido",
       Taller: obtenerTaller(r.tallerId)?.nombre || "Desconocido",
-      Precio: r.precioServicio,
+      Precio: r.precioTotal,
       Observaciones: r.observaciones || "",
       CreadoPor: r.creadoPor || "",
       FechaCreado: r.creadoEn
@@ -165,24 +160,24 @@ const refrescarReparaciones = async () => {
   };
 
   // FILTRADO
- const reparacionesFiltradas = reparaciones.filter((r) => {
-  if (!r || !r.descripcionReparacion) return false;
+  const reparacionesFiltradas = reparaciones.filter((r) => {
+    if (!r || !r.descripcionReparacion) return false;
 
-  const textoOk = r.descripcionReparacion
-    .toLowerCase()
-    .includes(busqueda.toLowerCase());
+    const textoOk = r.descripcionReparacion
+      .toLowerCase()
+      .includes(busqueda.toLowerCase());
 
-  const tallerOk = !filtroTaller || r.tallerId === filtroTaller;
+    const tallerOk = !filtroTaller || r.tallerId === filtroTaller;
 
-  const fechaCreado = r.creadoEn ? new Date(r.creadoEn.seconds * 1000) : null;
+    const fechaCreado = r.creadoEn ? new Date(r.creadoEn.seconds * 1000) : null;
 
-  const fechaDesdeOk =
-    !fechaDesde || (fechaCreado && fechaCreado >= new Date(fechaDesde));
-  const fechaHastaOk =
-    !fechaHasta || (fechaCreado && fechaCreado <= new Date(fechaHasta));
+    const fechaDesdeOk =
+      !fechaDesde || (fechaCreado && fechaCreado >= new Date(fechaDesde));
+    const fechaHastaOk =
+      !fechaHasta || (fechaCreado && fechaCreado <= new Date(fechaHasta));
 
-  return textoOk && tallerOk && fechaDesdeOk && fechaHastaOk;
-});
+    return textoOk && tallerOk && fechaDesdeOk && fechaHastaOk;
+  });
 
   // Paginación
   const totalPaginas = Math.ceil(
@@ -193,34 +188,32 @@ const refrescarReparaciones = async () => {
     paginaActual * ITEMS_POR_PAGINA
   );
 
- const editarReparacion = (reparacionId) => {
-  console.log("Reparacion ID recibido:", reparacionId);
-  console.log("Reparaciones disponibles:", reparaciones);
-  const rep = reparaciones.find((r) => r.id === reparacionId);
+  const editarReparacion = (reparacionId) => {
+    console.log("Reparacion ID recibido:", reparacionId);
+    console.log("Reparaciones disponibles:", reparaciones);
+    const rep = reparaciones.find((r) => r.id === reparacionId);
 
-  if (!rep) {
-    console.warn("No se encontró la reparación con id:", reparacionId);
-    return;
-  }
+    if (!rep) {
+      console.warn("No se encontró la reparación con id:", reparacionId);
+      return;
+    }
 
-  const vehiculo = vehiculos.find((v) => v.id === rep.vehiculoId);
+    const vehiculo = vehiculos.find((v) => v.id === rep.vehiculoId);
 
-  setReparacionEditar(rep);
-  setModalVisible(true); // Mostrar modal para editar
-  
-};
+    setReparacionEditar(rep);
+    setModalVisible(true); // Mostrar modal para editar
+  };
 
-
-const [modalPagoVisible, setModalPagoVisible] = useState(false);
-const [reparacionParaPago, setReparacionParaPago] = useState(null);
+  const [modalPagoVisible, setModalPagoVisible] = useState(false);
+  const [reparacionParaPago, setReparacionParaPago] = useState(null);
 
   const abrirModalPago = (reparacion, tallerId) => {
-  setReparacionParaPago(reparacion);
-  setModalPagoVisible(true);
-};
+    setReparacionParaPago(reparacion);
+    setModalPagoVisible(true);
+  };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto text-white">
+    <div className="p-6 pt-18 max-w-7xl mx-auto text-white">
       <h1 className="text-3xl font-extrabold text-white mb-6 tracking-tight">
         Reparaciones
       </h1>
@@ -321,7 +314,7 @@ const [reparacionParaPago, setReparacionParaPago] = useState(null);
       </div>
 
       {/* Vehículos en reparación */}
-      <section className="mb-8 border border-indigo-500 rounded-md p-4">
+      {/*   <section className="mb-8 border border-indigo-500 rounded-md p-4">
         <h2 className="text-xl font-semibold mb-3 text-indigo-300">
           Vehículos en Reparación
         </h2>
@@ -348,7 +341,7 @@ const [reparacionParaPago, setReparacionParaPago] = useState(null);
             ))}
           </ul>
         )}
-      </section>
+      </section> */}
 
       {/* Listado de reparaciones */}
       {loading ? (
@@ -390,11 +383,11 @@ const [reparacionParaPago, setReparacionParaPago] = useState(null);
                         </strong>
                       </span>
                     </h3>
-                   <span className="text-l text-slate-200">
-  {r.creadoEn && typeof r.creadoEn.seconds === "number"
-    ? dayjs(r.creadoEn.toDate()).format('DD/MM/YYYY')
-    : "—"}
-</span>
+                    <span className="text-l text-slate-200">
+                      {r.creadoEn && typeof r.creadoEn.seconds === "number"
+                        ? dayjs(r.creadoEn.toDate()).format("DD/MM/YYYY")
+                        : "—"}
+                    </span>
                   </div>
 
                   {/* Detalles */}
@@ -446,24 +439,26 @@ const [reparacionParaPago, setReparacionParaPago] = useState(null);
                       </div>
                     )}
 
-                      <div className="flex items-center gap-2">
-    <CreditCard className="w-4 h-4 text-yellow-400" /> {/* Icono de pago, por ejemplo */}
-    <strong>Estado pago:</strong>
-    <span>{r.estadoPago || "Pendiente"}</span>
-  </div>
-  <div className="flex items-center gap-2">
-    <Wallet className="w-4 h-4 text-green-400" /> {/* Icono para saldo */}
-    <strong>Saldo:</strong>
-    <span className="text-yellow-500 font-semibold">
-      {typeof r.saldo === "number"
-        ? r.saldo.toLocaleString("es-AR", {
-            style: "currency",
-            currency: "ARS",
-            minimumFractionDigits: 0,
-          })
-        : "—"}
-    </span>
-  </div>
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-yellow-400" />{" "}
+                      {/* Icono de pago, por ejemplo */}
+                      <strong>Estado pago:</strong>
+                      <span>{r.estadoPago || "Pendiente"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-4 h-4 text-green-400" />{" "}
+                      {/* Icono para saldo */}
+                      <strong>Saldo:</strong>
+                      <span className="text-yellow-500 font-semibold">
+                        {typeof r.saldo === "number"
+                          ? r.saldo.toLocaleString("es-AR", {
+                              style: "currency",
+                              currency: "ARS",
+                              minimumFractionDigits: 0,
+                            })
+                          : "—"}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Taller y contacto */}
@@ -491,26 +486,25 @@ const [reparacionParaPago, setReparacionParaPago] = useState(null);
                     >
                       <Hammer />
                     </button>
-                   <button
-  onClick={() => {
-    setReparacionAEliminar(r, r.tallerId);
-    setConfirmModalOpen(true);
-  }}
-  className="text-red-400 hover:text-red-600"
-  title="Eliminar reparación"
->
-  <Trash2 />
-</button>
+                    <button
+                      onClick={() => {
+                        setReparacionAEliminar(r, r.tallerId);
+                        setConfirmModalOpen(true);
+                      }}
+                      className="text-red-400 hover:text-red-600"
+                      title="Eliminar reparación"
+                    >
+                      <Trash2 />
+                    </button>
 
-<button
-  onClick={() => abrirModalPago(r)}
-  className="text-green-400 hover:text-green-600"
-  title="Registrar pago"
->
-  {/* Ícono que prefieras, por ejemplo un símbolo de dinero */}
-  <DollarSign />
-</button>
-
+                    <button
+                      onClick={() => abrirModalPago(r)}
+                      className="text-green-400 hover:text-green-600"
+                      title="Registrar pago"
+                    >
+                      {/* Ícono que prefieras, por ejemplo un símbolo de dinero */}
+                      <DollarSign />
+                    </button>
                   </div>
                 </motion.div>
               );
@@ -544,49 +538,48 @@ const [reparacionParaPago, setReparacionParaPago] = useState(null);
 
       {/* MODAL NUEVA REPARACIÓN */}
       {modalVisible && (
-       <ModalNuevaReparacion
-  visible={modalVisible}
-  onClose={() => setModalVisible(false)}
-  onSuccess={(nuevaReparacion) => {
-    if (reparacionEditar) {
-      setReparaciones((prev) =>
-        prev.map((r) =>
-          r.id === reparacionEditar.id ? nuevaReparacion : r
-        )
-      );
-    } else {
-      setReparaciones((prev) => [nuevaReparacion, ...prev]);
-    }
-    mostrarToast(
-      reparacionEditar
-        ? "Reparación actualizada"
-        : "Reparación creada correctamente"
-    );
-  }}
-  reparacion={reparacionEditar}
-  vehiculo={vehiculos.find(
-    (v) => v.id === reparacionEditar?.vehiculoId
-  )}
-/>
+        <ModalNuevaReparacion
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          onSuccess={(nuevaReparacion) => {
+            if (reparacionEditar) {
+              setReparaciones((prev) =>
+                prev.map((r) =>
+                  r.id === reparacionEditar.id ? nuevaReparacion : r
+                )
+              );
+            } else {
+              setReparaciones((prev) => [nuevaReparacion, ...prev]);
+            }
+            mostrarToast(
+              reparacionEditar
+                ? "Reparación actualizada"
+                : "Reparación creada correctamente"
+            );
+          }}
+          reparacion={reparacionEditar}
+          vehiculo={vehiculos.find(
+            (v) => v.id === reparacionEditar?.vehiculoId
+          )}
+        />
       )}
 
       <ConfirmModal
-  isOpen={confirmModalOpen}
-  onCancel={() => setConfirmModalOpen(false)}
-  onConfirm={eliminarReparacion}
-  title="Confirmar eliminación"
-  message="¿Estás seguro que quieres eliminar esta reparación?"
-/>
-     
-     <ModalRegistrarPago
-  visible={modalPagoVisible}               // acá la variable correcta
-  onClose={() => setModalPagoVisible(false)}  // cerrar modal correcto
-  reparacionId={reparacionParaPago?.id}   // pasar id de la reparación seleccionada
-  onPagoRealizado={refrescarReparaciones} // la función para recargar datos
-   tallerId={reparacionParaPago?.tallerId}
-   vehiculoId={reparacionParaPago?.vehiculoId}
-/>
+        isOpen={confirmModalOpen}
+        onCancel={() => setConfirmModalOpen(false)}
+        onConfirm={eliminarReparacion}
+        title="Confirmar eliminación"
+        message="¿Estás seguro que quieres eliminar esta reparación?"
+      />
 
+      <ModalRegistrarPago
+        visible={modalPagoVisible} // acá la variable correcta
+        onClose={() => setModalPagoVisible(false)} // cerrar modal correcto
+        reparacionId={reparacionParaPago?.id} // pasar id de la reparación seleccionada
+        onPagoRealizado={refrescarReparaciones} // la función para recargar datos
+        tallerId={reparacionParaPago?.tallerId}
+        vehiculoId={reparacionParaPago?.vehiculoId}
+      />
     </div>
   );
 }

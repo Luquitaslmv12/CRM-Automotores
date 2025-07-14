@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import ModalReparacion from "../components/reparaciones/ModalReparacion";
 import TooltipWrapper from "../components/Tooltip/TooltipWrapper";
+import ExportarVehiculos from "../components/vehiculos/ExportarVehiculos";
 
 export default function Vehiculos() {
   const [marca, setMarca] = useState("");
@@ -61,8 +62,14 @@ export default function Vehiculos() {
   const itemsPorPagina = 10;
   const [talleres, setTalleres] = useState([]);
 
+  const [mostrarExportacion, setMostrarExportacion] = useState(false);
+
+  const exportarCSV = () => {
+    setMostrarExportacion(true);
+  };
+
   const [reparaciones, setReparaciones] = useState([]);
-const [preciosPorVehiculo, setPreciosPorVehiculo] = useState({});
+  const [preciosPorVehiculo, setPreciosPorVehiculo] = useState({});
 
   const [clientes, setClientes] = useState([]);
   const [clienteId, setClienteId] = useState("");
@@ -81,33 +88,39 @@ const [preciosPorVehiculo, setPreciosPorVehiculo] = useState({});
     setModalVisible(false);
   };
 
-
   useEffect(() => {
-  const unsubscribe = onSnapshot(collection(db, "reparaciones"), (snapshot) => {
-    const lista = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const unsubscribe = onSnapshot(
+      collection(db, "reparaciones"),
+      (snapshot) => {
+        const lista = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-    setReparaciones(lista);
+        setReparaciones(lista);
 
-    // Calcular totales por vehiculoId
-    const agrupado = lista.reduce((acc, reparacion) => {
-      if (!reparacion.vehiculoId || typeof reparacion.precioTotal !== "number") return acc;
+        // Calcular totales por vehiculoId
+        const agrupado = lista.reduce((acc, reparacion) => {
+          if (
+            !reparacion.vehiculoId ||
+            typeof reparacion.precioTotal !== "number"
+          )
+            return acc;
 
-      if (!acc[reparacion.vehiculoId]) {
-        acc[reparacion.vehiculoId] = 0;
+          if (!acc[reparacion.vehiculoId]) {
+            acc[reparacion.vehiculoId] = 0;
+          }
+
+          acc[reparacion.vehiculoId] += reparacion.precioTotal;
+          return acc;
+        }, {});
+
+        setPreciosPorVehiculo(agrupado);
       }
+    );
 
-      acc[reparacion.vehiculoId] += reparacion.precioTotal;
-      return acc;
-    }, {});
-
-    setPreciosPorVehiculo(agrupado);
-  });
-
-  return () => unsubscribe();
-}, []);
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const unsubTalleres = onSnapshot(
@@ -257,49 +270,6 @@ const [preciosPorVehiculo, setPreciosPorVehiculo] = useState({});
     }
   };
 
-  const exportarCSV = () => {
-    setConfirmacion({ tipo: "exportar" });
-  };
-
-  const confirmarExportar = () => {
-    const headers = [
-      "Marca",
-      "Modelo",
-      "Patente",
-      "Año",
-      "Motor",
-      "Chasis",
-      "Estado",
-      "Tipo",
-      "Precio Venta",
-      "Etiqueta",
-    ];
-    const rows = vehiculosPaginados.map((v) => [
-      v.marca,
-      v.modelo,
-      v.patente,
-      v.año,
-      v.motor,
-      v.chasis,
-      v.estado || "",
-      v.tipo || "",
-      v.precioVenta || "",
-      v.etiqueta || "",
-    ]);
-    const csvContent = [headers, ...rows].map((e) => e.join(",")).join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "vehiculos.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-
-    mostrarToast("Exportación realizada");
-    setConfirmacion(null);
-  };
-
   const resultados = vehiculos.filter((v) => {
     const matchBusqueda =
       v.marca.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -331,7 +301,7 @@ const [preciosPorVehiculo, setPreciosPorVehiculo] = useState({});
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
+    <div className="p-6 pt-20 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
       <h1 className="text-4xl font-bold mb-6 text-center flex justify-center items-center gap-2">
         <Car className="w-10 h-10 text-yellow-500 animate-bounce" />
         Gestión de Vehículos
@@ -721,18 +691,18 @@ const [preciosPorVehiculo, setPreciosPorVehiculo] = useState({});
                 )}
 
                 {preciosPorVehiculo[vehiculo.id] !== undefined && (
-  <div className="flex items-center gap-2">
-    <Hammer className="w-4 h-4 text-orange-400" />
-    <strong className="text-slate-300">Gastos:</strong>
-    <strong className="text-orange-600">
-      {preciosPorVehiculo[vehiculo.id].toLocaleString("es-AR", {
-        style: "currency",
-        currency: "ARS",
-        minimumFractionDigits: 0,
-      })}
-    </strong>
-  </div>
-)}
+                  <div className="flex items-center gap-2">
+                    <Hammer className="w-4 h-4 text-orange-400" />
+                    <strong className="text-slate-300">Gastos:</strong>
+                    <strong className="text-orange-600">
+                      {preciosPorVehiculo[vehiculo.id].toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "ARS",
+                        minimumFractionDigits: 0,
+                      })}
+                    </strong>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2">
                   <ScanLine className="w-4 h-4 text-orange-400" />
@@ -903,6 +873,12 @@ const [preciosPorVehiculo, setPreciosPorVehiculo] = useState({});
           Siguiente &gt;
         </button>
       </div>
+      {mostrarExportacion && (
+        <ExportarVehiculos
+          vehiculos={vehiculosPaginados}
+          onClose={() => setMostrarExportacion(false)}
+        />
+      )}
     </div>
   );
 }

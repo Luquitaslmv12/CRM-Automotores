@@ -178,7 +178,7 @@ export default function NuevoPresupuesto(props) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white p-6">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white p-6 pt-20">
       {/* Título Principal */}
       <h1 className="text-4xl font-bold mb-10 text-center flex justify-center items-center gap-3">
         <FileText className="w-10 h-10 text-sky-500 animate-bounce" />

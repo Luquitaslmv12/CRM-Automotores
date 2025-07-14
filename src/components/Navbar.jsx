@@ -1,16 +1,109 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getAuth, signOut } from "firebase/auth";
 import Avatar from "../components/Avatar";
+import { createPortal } from "react-dom";
+
+function OperacionesDropdown() {
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target) &&
+        !document.getElementById("operaciones-menu")?.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+      });
+    }
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center px-3 py-2 rounded-md font-medium text-indigo-200 hover:bg-indigo-500 hover:text-white"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        Operaciones <ChevronDown className="ml-1 w-4 h-4" />
+      </button>
+
+      {open &&
+        createPortal(
+          <div
+            id="operaciones-menu"
+            style={{
+              position: "absolute",
+              top: coords.top,
+              left: coords.left,
+              backgroundColor: "#3730a3", // bg-indigo-800
+              borderRadius: "0.375rem",
+              boxShadow:
+                "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+              zIndex: 9999,
+              minWidth: "180px",
+              padding: "0.5rem 0",
+            }}
+            role="menu"
+            aria-orientation="vertical"
+          >
+            <Link
+              to="/ventas"
+              className="block px-4 py-2 text-indigo-200 hover:bg-indigo-600 hover:text-white"
+              onClick={() => setOpen(false)}
+              role="menuitem"
+            >
+              Ventas
+            </Link>
+            <Link
+              to="/compras"
+              className="block px-4 py-2 text-indigo-200 hover:bg-indigo-600 hover:text-white"
+              onClick={() => setOpen(false)}
+              role="menuitem"
+            >
+              Compras
+            </Link>
+            <Link
+              to="/presupuestos"
+              className="block px-4 py-2 text-indigo-200 hover:bg-indigo-600 hover:text-white"
+              onClick={() => setOpen(false)}
+              role="menuitem"
+            >
+              Presupuestos
+            </Link>
+          </div>,
+          document.body
+        )}
+    </>
+  );
+}
 
 export default function Navbar() {
   const { usuario } = useAuth();
   const location = useLocation();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
+  const [operacionesAbierto, setOperacionesAbierto] = useState(false);
 
   const userMenuRef = useRef(null);
 
@@ -30,20 +123,17 @@ export default function Navbar() {
     };
   }, [menuUsuarioAbierto]);
 
-  // Para cerrar menú al navegar
   const handleLinkClick = () => {
     setMenuAbierto(false);
     setMenuUsuarioAbierto(false);
   };
 
-  // Función logout Firebase
   const logout = async () => {
     const auth = getAuth();
     await signOut(auth);
     setMenuUsuarioAbierto(false);
   };
 
-  // Clases para link activo
   const linkClase = (ruta) =>
     `block px-3 py-2 rounded-md font-medium ${
       location.pathname === ruta
@@ -68,7 +158,7 @@ export default function Navbar() {
             </div>
 
             {/* Menú Desktop */}
-            <div className="hidden md:flex space-x-4 items-center">
+            <div className="hidden md:flex space-x-2 items-center">
               <Link to="/dashboard" className={linkClase("/dashboard")}>
                 Dashboard
               </Link>
@@ -78,25 +168,19 @@ export default function Navbar() {
               <Link to="/vehiculos" className={linkClase("/vehiculos")}>
                 Vehículos
               </Link>
-              <Link to="/ventas" className={linkClase("/ventas")}>
-                Ventas
-              </Link>
-              <Link to="/compras" className={linkClase("/compras")}>
-                Compras
-              </Link>
-              <Link to="/presupuestos" className={linkClase("/presupuestos")}>
-                Presupuestos
-              </Link>
+
+              {/* Dropdown Operaciones */}
+              <OperacionesDropdown />
+
               <Link to="/proveedores" className={linkClase("/proveedores")}>
-                proveedores
+                Proveedores
               </Link>
               <Link to="/reparaciones" className={linkClase("/reparaciones")}>
-                reparaciones
+                Reparaciones
               </Link>
               <Link to="/caja" className={linkClase("/caja")}>
                 Caja
               </Link>
-
               {usuario?.rol === "admin" && (
                 <Link to="/admin" className={linkClase("/admin")}>
                   Admin
@@ -234,12 +318,10 @@ export default function Navbar() {
                 </div>
               )}
 
-              {/* Botón menú hamburguesa móvil */}
               <button
                 onClick={() => setMenuAbierto((v) => !v)}
-                className="text-indigo-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white rounded-md"
+                className="text-indigo-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-md"
                 aria-label="Abrir menú"
-                aria-expanded={menuAbierto}
               >
                 {menuAbierto ? <X size={24} /> : <Menu size={24} />}
               </button>
@@ -247,104 +329,118 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Menú móvil desplegable */}
-        {menuAbierto && (
-          <div className="md:hidden border-t border-indigo-700">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link
-                to="/dashboard"
-                className={linkClase("/dashboard")}
-                onClick={handleLinkClick}
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/clientes"
-                className={linkClase("/clientes")}
-                onClick={handleLinkClick}
-              >
-                Clientes
-              </Link>
-              <Link
-                to="/vehiculos"
-                className={linkClase("/vehiculos")}
-                onClick={handleLinkClick}
-              >
-                Vehículos
-              </Link>
-              <Link
-                to="/ventas"
-                className={linkClase("/ventas")}
-                onClick={handleLinkClick}
-              >
-                Ventas
-              </Link>
-              <Link
-                to="/presupuestos"
-                className={linkClase("/presupuestos")}
-                onClick={handleLinkClick}
-              >
-                Presupuestos
-              </Link>
-              <Link
-                to="/proveedores"
-                className={linkClase("/proveedores")}
-                onClick={handleLinkClick}
-              >
-                Presupuestos
-              </Link>
-              <Link
-                to="/reparaciones"
-                className={linkClase("/reparaciones")}
-                onClick={handleLinkClick}
-              >
-                reparaciones
-              </Link>
-              <Link
-                to="/caja"
-                className={linkClase("/caja")}
-                onClick={handleLinkClick}
-              >
-                Caja
-              </Link>
-              {usuario?.rol === "admin" && (
+        {/* Menú móvil */}
+        <AnimatePresence>
+          {menuAbierto && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="md:hidden bg-indigo-700/95"
+            >
+              <nav className="px-2 pt-2 pb-4 space-y-1">
                 <Link
-                  to="/admin"
-                  className={linkClase("/admin")}
+                  to="/dashboard"
+                  className={linkClase("/dashboard")}
                   onClick={handleLinkClick}
                 >
-                  Admin
+                  Dashboard
                 </Link>
-              )}
+                <Link
+                  to="/clientes"
+                  className={linkClase("/clientes")}
+                  onClick={handleLinkClick}
+                >
+                  Clientes
+                </Link>
+                <Link
+                  to="/vehiculos"
+                  className={linkClase("/vehiculos")}
+                  onClick={handleLinkClick}
+                >
+                  Vehículos
+                </Link>
 
-              {/* Opciones usuario móvil */}
-              {usuario && (
-                <>
+                {/* Para móvil, dropdown simple */}
+                <div>
+                  <button
+                    onClick={() => setOperacionesAbierto((v) => !v)}
+                    className="w-full text-left px-3 py-2 rounded-md font-medium text-indigo-200 hover:bg-indigo-500 hover:text-white flex justify-between items-center"
+                  >
+                    Operaciones <ChevronDown className="ml-1 w-4 h-4" />
+                  </button>
+                  {operacionesAbierto && (
+                    <div className="pl-4 space-y-1">
+                      <Link
+                        to="/ventas"
+                        className={linkClase("/ventas")}
+                        onClick={() => {
+                          handleLinkClick();
+                          setOperacionesAbierto(false);
+                        }}
+                      >
+                        Ventas
+                      </Link>
+                      <Link
+                        to="/compras"
+                        className={linkClase("/compras")}
+                        onClick={() => {
+                          handleLinkClick();
+                          setOperacionesAbierto(false);
+                        }}
+                      >
+                        Compras
+                      </Link>
+                      <Link
+                        to="/presupuestos"
+                        className={linkClase("/presupuestos")}
+                        onClick={() => {
+                          handleLinkClick();
+                          setOperacionesAbierto(false);
+                        }}
+                      >
+                        Presupuestos
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                <Link
+                  to="/proveedores"
+                  className={linkClase("/proveedores")}
+                  onClick={handleLinkClick}
+                >
+                  Proveedores
+                </Link>
+                <Link
+                  to="/reparaciones"
+                  className={linkClase("/reparaciones")}
+                  onClick={handleLinkClick}
+                >
+                  Reparaciones
+                </Link>
+                <Link
+                  to="/caja"
+                  className={linkClase("/caja")}
+                  onClick={handleLinkClick}
+                >
+                  Caja
+                </Link>
+                {usuario?.rol === "admin" && (
                   <Link
-                    to="/perfil"
-                    className="block px-3 py-2 rounded-md text-indigo-200 hover:bg-indigo-500 hover:text-white"
+                    to="/admin"
+                    className={linkClase("/admin")}
                     onClick={handleLinkClick}
                   >
-                    Perfil
+                    Admin
                   </Link>
-                  <button
-                    onClick={() => {
-                      logout();
-                      setMenuAbierto(false);
-                    }}
-                    className="block w-full text-left px-3 py-2 rounded-md text-indigo-200 hover:bg-indigo-500 hover:text-white"
-                  >
-                    Cerrar sesión
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        )}
+                )}
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
-
-      {/* Espacio para evitar que el contenido quede tapado por el navbar fijo */}
-      <div className="h-14 md:h-14"></div>
     </>
   );
 }

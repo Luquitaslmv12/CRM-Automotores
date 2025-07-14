@@ -117,7 +117,7 @@ export default function NuevaCompra() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto text-white space-y-6">
+    <div className="p-6 pt-18 max-w-4xl mx-auto text-white space-y-6">
       <h1 className="text-4xl font-bold mb-6 text-center flex justify-center items-center gap-2">
         <CircleDollarSign className="w-10 h-10 text-lime-500 animate-bounce" />
         Gestión de Compras
