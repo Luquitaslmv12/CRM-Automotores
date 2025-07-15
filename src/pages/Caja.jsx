@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
 import { collection, getDocs, getDoc, doc } from "firebase/firestore";
 import dayjs from "dayjs";
@@ -19,6 +19,9 @@ export default function Caja() {
   const [egresos, setEgresos] = useState([]);
   const [mesSeleccionado, setMesSeleccionado] = useState(dayjs().format("YYYY-MM"));
   const [loading, setLoading] = useState(false);
+
+  const inputMesRef = useRef();
+
 
   function parseNumber(value) {
   if (typeof value === "number") return value;
@@ -104,18 +107,38 @@ const getResumenVehiculo = async (vehiculoId) => {
     dayjs(p.fecha?.toDate?.() || p.fecha).isSame(mes, "month")
   );
 
+  const getDescripcionReparacion = async (reparacionId) => {
+  if (!reparacionId) return null;
+  try {
+    const docRef = doc(db, "reparaciones", reparacionId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data().descripcionReparacion || null;
+    }
+  } catch (error) {
+    console.error("Error obteniendo descripción de reparación:", error);
+  }
+  return null;
+};
+
+
 // Ahora obtenemos el nombre del proveedor para cada pago:
 const egresosPagos = await Promise.all(
   egresosPagosRaw.map(async (pago) => {
     const nombreProveedor = await getNombreProveedor(pago.tallerId);
     const resumenVehiculo = await getResumenVehiculo(pago.vehiculoId);
+    const descripcionReparacion = await getDescripcionReparacion(pago.reparacionId); // <-- acá
     return {
       ...pago,
       nombreProveedor,
       resumenVehiculo,
+      descripcionReparacion,  // <-- la agregás aquí
     };
   })
 );
+
+
+
 
         // Filtrar egresosPagos por mes
         const egresosPagosFiltrados = egresosPagos.filter((p) =>
@@ -170,42 +193,47 @@ console.log("Saldo:", saldo);
 
   return (
     
-    <div className="pt-14">
-      <motion.div
-        className="p-4  md:p-6 max-w-6xl mx-auto"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-              <Wallet className="text-blue-600 w-8 h-8" />
-              <span>Resumen de Caja</span>
-            </h1>
-            <p className="text-gray-500 mt-1">
-              Resumen financiero del mes seleccionado
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 bg-white rounded-lg shadow-sm border p-2">
-            <CalendarIcon className="w-5 h-5 text-gray-500" />
-            <input
-              type="month"
-              value={mesSeleccionado}
-              onChange={(e) => setMesSeleccionado(e.target.value)}
-              className="border-none bg-transparent focus:outline-none focus:ring-0 text-gray-700 font-medium"
-            />
-          </div>
+     
+  <div className="min-h-screen pt-20 px-4 bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
+    <motion.div
+      className="bg-gradient-to-br from-slate-700/80 to-slate-800/90 backdrop-blur-sm p-8 rounded-3xl shadow-[0_0_60px_10px_rgba(8,170,234,0.4)] w-full max-w-6xl mx-auto border-2 border-blue-500"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3 text-sky-400">
+            <Wallet className="w-10 h-10 text-sky-500 animate-bounce" />
+            Resumen de Caja
+          </h1>
+          <p className="text-gray-300 mt-2">
+            Resumen financiero del mes seleccionado
+          </p>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        ) : (
+      <div className="flex items-center gap-3 bg-white/60 text-gray-800 rounded-lg shadow-md border-3 border-indigo-700 p-2">
+  <CalendarIcon
+    className="w-5 h-5 text-lime-700 cursor-pointer"
+    onClick={() => inputMesRef.current?.showPicker?.()} // ← Esto abre el selector si el navegador lo soporta
+  />
+  <input
+    ref={inputMesRef}
+    type="month"
+    value={mesSeleccionado}
+    onChange={(e) => setMesSeleccionado(e.target.value)}
+    className="border-none bg-transparent focus:outline-none focus:ring-0 font-medium cursor-pointer"
+  />
+</div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
+        </div>
+      ) : (
           <>
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-2">
+              <h2 className="text-xl font-semibold text-indigo-300 mb-2">
                 Resumen de{" "}
                 {mesMostrado.charAt(0).toUpperCase() + mesMostrado.slice(1)}
               </h2>
@@ -406,8 +434,8 @@ console.log("Saldo:", saldo);
   {v.tipo === "pago" ? (
     <>
       <span className="font-semibold text-red-700">Pago a proveedor:</span>{" "}
-      <span className="font-medium text-blue-700">{v.nombreProveedor || "Sin nombre"}</span>{" "}
-      <span>por vehículo </span>
+      <span className="font-medium text-blue-700">{v.nombreProveedor || "Sin nombre"}-</span>{" "}
+       <span className="font-medium text-blue-700">POR: "{v.descripcionReparacion || "Sin nombre"}"</span>{" "}
       <span className="font-semibold text-green-700">{v.resumenVehiculo || "No especificado"}</span>{" "}
       {v.dominio && (
         <span className="text-gray-500">- Dominio: {v.dominio}</span>

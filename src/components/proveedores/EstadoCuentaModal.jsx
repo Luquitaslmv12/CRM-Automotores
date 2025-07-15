@@ -21,9 +21,8 @@ const formatoPesoArg = new Intl.NumberFormat("es-AR", {
 });
 
 
-function obtenerVehiculo(id) {
-  return vehiculos.find(v => v.id === id) || {};
-}
+const obtenerVehiculo = (vehiculoId) =>
+  vehiculos?.find((v) => v.id === vehiculoId);
 
   return (
     <AnimatePresence>
