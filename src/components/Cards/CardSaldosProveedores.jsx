@@ -16,14 +16,18 @@ export default function CardSaldosProveedores() {
   const [paginaActual, setPaginaActual] = useState(1);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [reparacionesModal, setReparacionesModal] = useState([]);
+  const [vehiculos, setVehiculos] = useState([]);
 
   const ITEMS_POR_PAGINA = 3;
 
   useEffect(() => {
-    const fetchSaldos = async () => {
-      const q = query(collection(db, "reparaciones"), where("saldo", ">", 0));
-      const snapshot = await getDocs(q);
-      const reparaciones = snapshot.docs.map((doc) => ({
+    const fetchDatos = async () => {
+      const qReparaciones = query(
+        collection(db, "reparaciones"),
+        where("saldo", ">", 0)
+      );
+      const snapshotReparaciones = await getDocs(qReparaciones);
+      const reparaciones = snapshotReparaciones.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
@@ -37,7 +41,9 @@ export default function CardSaldosProveedores() {
       for (const id of proveedorIds) {
         const ref = doc(db, "proveedores", id);
         const snap = await getDoc(ref);
-        const nombre = snap.exists() ? snap.data().nombre : "Proveedor desconocido";
+        const nombre = snap.exists()
+          ? snap.data().nombre
+          : "Proveedor desconocido";
 
         const saldoTotal = reparaciones
           .filter((r) => r.tallerId === id)
@@ -47,9 +53,17 @@ export default function CardSaldosProveedores() {
       }
 
       setSaldos(saldosPorProveedor);
+
+      // 🔽 Cargar vehículos
+      const snapshotVehiculos = await getDocs(collection(db, "vehiculos"));
+      const listaVehiculos = snapshotVehiculos.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setVehiculos(listaVehiculos);
     };
 
-    fetchSaldos();
+    fetchDatos();
   }, []);
 
   const totalPaginas = Math.ceil(saldos.length / ITEMS_POR_PAGINA);
@@ -86,11 +100,13 @@ export default function CardSaldosProveedores() {
       <div className="bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow border-l-4 border-green-500">
         <div className="flex items-center gap-4 mb-2">
           <CreditCard className="text-green-500 w-8 h-8" />
-          <h3 className="text-xl font-semibold flex-grow">Saldos Proveedores</h3>
+          <h3 className="text-xl font-semibold flex-grow">
+            Saldos Proveedores
+          </h3>
         </div>
 
         <p className="text-2xl font-bold mb-2">
-          {saldos.length} proveedor{(saldos.length !== 1) ? "es" : ""}
+          {saldos.length} proveedor{saldos.length !== 1 ? "es" : ""}
         </p>
 
         <div className="space-y-3 text-sm mb-2">
@@ -138,6 +154,7 @@ export default function CardSaldosProveedores() {
         abierto={modalAbierto}
         onClose={() => setModalAbierto(false)}
         reparaciones={reparacionesModal}
+        vehiculos={vehiculos}
       />
     </>
   );
