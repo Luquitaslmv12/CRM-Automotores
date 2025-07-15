@@ -373,12 +373,13 @@ export default function ListaVentas() {
                       <UserCircle className="text-blue-500" size={16} />
                       <span>
                         <strong className="text-blue-500">Tomado por:</strong>{" "}
-                        {venta.vehiculoPartePago?.recibidoPor || "—"} ·{" "}
-                        {venta.creadoEn
-                          ? new Date(
-                              venta.creadoEn.seconds * 1000
-                            ).toLocaleString()
-                          : "—"}
+                        {venta.vehiculoPartePago?.recibidoPor
+  ? `${venta.vehiculoPartePago.recibidoPor} · ${
+      venta.creadoEn
+        ? new Date(venta.creadoEn.seconds * 1000).toLocaleString()
+        : "—"
+    }`
+  : "—"}
                       </span>
                     </div>
 

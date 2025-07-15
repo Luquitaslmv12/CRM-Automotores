@@ -30,6 +30,7 @@ import { NumericFormat } from "react-number-format";
 import Listaventas from "../components/ListaVentas";
 import ModalVehiculoPartePago from "../components/ModalVehiculoPartePago";
 import exportarBoletoDOCX from "../components/boletos/exportarBoletoDOCX";
+import Spinner from "../components/Spinner/Spinner";
 
 export default function NuevaVenta() {
   const [usuarios, setUsuarios] = useState([]);
@@ -60,6 +61,8 @@ export default function NuevaVenta() {
   const [vehiculoPartePagoId, setVehiculoPartePagoId] = useState(null);
   const [vehiculoPartePago, setVehiculoPartePago] = useState(null);
   const user = auth.currentUser;
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchUsuarios = async () => {
@@ -131,7 +134,8 @@ export default function NuevaVenta() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+       e.preventDefault();
+    setIsSubmitting(true);
 
     const pagosProcesados = convertirPagosAFloat(pagos);
     const nuevosErrores = {};
@@ -198,6 +202,7 @@ export default function NuevaVenta() {
             creadoEn: new Date(),
             recibidoPor: vehiculoPartePago.recibidoPor || "No especificado",
             vendidoPor,
+            fecha: Timestamp.fromDate(new Date(fechaVenta)),
           }
         );
         console.log("Vehículo parte de pago:", vehiculoPartePago);
@@ -227,8 +232,31 @@ export default function NuevaVenta() {
             estado: "Disponible",
             creadoPor: user?.email || "Desconocido",
             creadoEn: new Date(),
-            fechaIngreso: new Date(),
+             fecha: Timestamp.fromDate(new Date(fechaVenta)),
           });
+
+          await addDoc(collection(db, "compras"), {
+  marca: vehiculoPartePago.marca?.trim() || "No especificado",
+    modelo: vehiculoPartePago.modelo?.trim() || "No especificado",
+    tipo: vehiculoPartePago.tipo?.trim() || "No especificado",
+    patente:
+      vehiculoPartePago.patente?.trim().toUpperCase() || "No especificado",
+    año: parseInt(vehiculoPartePago.año) || null,
+    color: vehiculoPartePago.color || "",
+    etiqueta: "Usado",
+    tomadoPor: user?.displayName || user?.email || "",
+    tomadoEn: new Date(),
+    monto: parseFloat(vehiculoPartePago.monto) || 0,
+    clienteNombre: clienteSeleccionado?.nombre || "",
+    clienteApellido: clienteSeleccionado?.apellido || "",
+    precioCompra: parseFloat(vehiculoPartePago.monto) || 0,
+    estado: "Disponible",
+    creadoPor: user?.email || "Desconocido",
+    creadoEn: new Date(),
+    fecha: Timestamp.fromDate(new Date(fechaVenta)),
+  
+});
+
 
           await updateDoc(doc(db, "ventas", ventaRef.id), {
             vehiculoPartePagoId: vehiculoPartePagoRef.id,
@@ -268,6 +296,8 @@ export default function NuevaVenta() {
     } catch (error) {
       console.error("Error al registrar la venta:", error);
       toast.error("Error al registrar la venta.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -287,7 +317,7 @@ export default function NuevaVenta() {
 
   return (
     <>
-      <div className="p-6 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
+      <div className="p-6 pt-20 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
         <h1 className="text-4xl font-bold mb-6 text-center flex justify-center items-center gap-2">
           <DollarSign className="w-10 h-10 text-lime-500 animate-bounce" />
           Gestión de Ventas
@@ -363,7 +393,7 @@ export default function NuevaVenta() {
           </section>
 
           {/* Parte de pago */}
-          <label className="flex items-center gap-2 p-2 text-white">
+          <label className="flex items-center gap-2 p-6 text-white">
             <input
               type="checkbox"
               checked={parteDePago}
@@ -373,10 +403,8 @@ export default function NuevaVenta() {
           </label>
 
           {/* Sección: Monto */}
-          <div>
-            <label className="block mb-1 text-sm font-medium text-white">
-              Monto de la venta
-            </label>
+         
+            <div className="pt-2">
             <div className="relative">
               <DollarSign
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-500"
@@ -393,7 +421,7 @@ export default function NuevaVenta() {
                 decimalScale={2}
                 fixedDecimalScale
                 allowNegative={false}
-                placeholder="Monto total de la venta"
+                placeholder="Monto del vehiculo a vender"
                 className={`w-full pl-10 p-3 rounded bg-slate-700 text-white ${
                   errores.monto
                     ? "border-2 border-red-500"
@@ -401,10 +429,11 @@ export default function NuevaVenta() {
                 }`}
               />
             </div>
-          </div>
+            </div>
+         
 
           {/* Métodos de pago */}
-          <div className="space-y-2">
+          <div className="space-y-2 p-6">
             <label className="flex items-center gap-2 text-white">
               <input
                 type="checkbox"
@@ -460,13 +489,15 @@ export default function NuevaVenta() {
             )}
           </div>
 
-          {/* Botón */}
-          <button
-            type="submit"
-            className="w-full flex items-center justify-center gap-2 text-white px-4 py-3 rounded-lg transition flex-1 bg-indigo-700 hover:bg-indigo-800"
-          >
-            <BadgeDollarSign size={28} /> Registrar venta
-          </button>
+         <button
+        type="submit"
+        disabled={isSubmitting}
+        className={`w-full flex items-center justify-center gap-2 text-white px-4 py-3 rounded-lg transition flex-1 ${
+          isSubmitting ? "bg-green-400 cursor-not-allowed" : "bg-indigo-700 hover:bg-indigo-800"
+        }`}
+      >
+        {isSubmitting ? <Spinner size={24} /> : <><BadgeDollarSign size={28} /> Registrar venta</>}
+      </button>
         </motion.form>
 
         {modalOpen && clienteSeleccionado && (

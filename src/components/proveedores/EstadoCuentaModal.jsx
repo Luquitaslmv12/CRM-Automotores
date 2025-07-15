@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
-export default function sEstadoCuentaModal({ abierto, onClose, reparaciones }) {
+export default function sEstadoCuentaModal({ abierto, onClose, reparaciones, vehiculos }) {
   const reparacionesFiltradas = reparaciones.filter(r => r.saldo > 0);
   const total = reparacionesFiltradas.reduce((acc, r) => acc + r.saldo, 0);
   
@@ -19,6 +19,10 @@ const formatoPesoArg = new Intl.NumberFormat("es-AR", {
   style: "currency",
   currency: "ARS",
 });
+
+
+const obtenerVehiculo = (vehiculoId) =>
+  vehiculos?.find((v) => v.id === vehiculoId);
 
   return (
     <AnimatePresence>
@@ -50,22 +54,28 @@ const formatoPesoArg = new Intl.NumberFormat("es-AR", {
             </h2>
 
             <ul className="max-h-60 overflow-auto space-y-3">
-              {reparacionesFiltradas.map((r) => (
-                <li key={r.id} className="border-b border-gray-200 dark:border-gray-700 pb-2">
-                    <p className="text-gray-700 dark:text-gray-300">
-  <strong>Fecha:</strong> {formatearFecha(r.creadoEn)}
-</p>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    <strong>Reparación:</strong> {r.descripcionReparacion}
-                  </p>
-                  <p className="text-green-600 dark:text-green-400">
-  <strong>Precio total:</strong> {formatoPesoArg.format(r.saldo)}
-</p>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    <strong>Dominio:</strong> {r.patenteVehiculo}
-                  </p>
-                </li>
-              ))}
+              {reparacionesFiltradas.map((r) => {
+  const vehiculo = obtenerVehiculo(r.vehiculoId);
+  return (
+    <li key={r.id} className="border-b border-gray-200 dark:border-gray-700 pb-2">
+      <p className="text-gray-700 dark:text-gray-300">
+        <strong>Fecha:</strong> {formatearFecha(r.creadoEn)}
+      </p>
+      <p className="text-gray-700 dark:text-gray-300">
+        <strong>Reparación:</strong> {r.descripcionReparacion}
+      </p>
+      <p className="text-green-600 dark:text-green-400">
+        <strong>Precio total:</strong> {formatoPesoArg.format(r.saldo)}
+      </p>
+      <p className="text-gray-700 dark:text-gray-300">
+        <strong>Dominio:</strong> {r.patenteVehiculo}
+      </p>
+      <p className="text-gray-700 dark:text-gray-300">
+        <strong>Vehículo:</strong> {vehiculo.marca || "—"} {vehiculo.modelo || ""}
+      </p>
+    </li>
+  );
+})}
             </ul>
 
             <div className="mt-4 font-semibold text-indigo-400">

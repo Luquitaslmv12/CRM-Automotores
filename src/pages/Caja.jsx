@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc } from "firebase/firestore";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import {
@@ -14,41 +14,143 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Caja() {
+  const [pagos, setPagos] = useState([]);
   const [ingresos, setIngresos] = useState([]);
   const [egresos, setEgresos] = useState([]);
-  const [mesSeleccionado, setMesSeleccionado] = useState(
-    dayjs().format("YYYY-MM")
-  );
+  const [mesSeleccionado, setMesSeleccionado] = useState(dayjs().format("YYYY-MM"));
   const [loading, setLoading] = useState(false);
+
+  const inputMesRef = useRef();
+
+
+  function parseNumber(value) {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    // Reemplazar coma por punto y eliminar otros caracteres no numéricos salvo punto
+    const cleaned = value.replace(/\./g, "").replace(",", ".");
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
+
+  // Función para traer nombre de proveedor por ID
+  const getNombreProveedor = async (idTaller) => {
+  if (!idTaller) return null;
+  try {
+    const docRef = doc(db, "proveedores", idTaller);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data().nombre; // El campo que tiene el nombre
+    }
+  } catch (error) {
+    console.error("Error obteniendo proveedor:", error);
+  }
+  return null;
+};
+
+
+const getResumenVehiculo = async (vehiculoId) => {
+  if (!vehiculoId) return null;
+  try {
+    const docRef = doc(db, "vehiculos", vehiculoId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return `${data.marca || "Marca"} ${data.modelo || "Modelo"} - Dominio: ${data.patente || "No especificado"}`;
+    }
+  } catch (error) {
+    console.error("Error obteniendo vehículo:", error);
+  }
+  return null;
+};
+
 
   useEffect(() => {
     const fetchMovimientos = async () => {
       setLoading(true);
       try {
-        const [ventasSnap, comprasSnap] = await Promise.all([
+        const [ventasSnap, comprasSnap, pagosSnap ] = await Promise.all([
+          
           getDocs(collection(db, "ventas")),
           getDocs(collection(db, "compras")),
+          getDocs(collection(db, "pagos")),
         ]);
+        
 
         const mes = dayjs(mesSeleccionado);
 
+        // Ingresos de ventas
         const ingresosFiltrados = ventasSnap.docs
           .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((v) => dayjs(v.fecha?.toDate?.() || v.fecha).isSame(mes, "month"));
+
+        // Egresos de compras
+        const egresosCompras = comprasSnap.docs
+          .map((doc) => ({
+            id: doc.id,
+            tipo: "compra",
+            ...doc.data(),
+          }))
           .filter((v) =>
             dayjs(v.fecha?.toDate?.() || v.fecha).isSame(mes, "month")
           );
 
-        const egresosFiltrados = comprasSnap.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .filter((v) =>
-            dayjs(v.fechaIngreso?.toDate?.() || v.fechaIngreso).isSame(
-              mes,
-              "month"
-            )
-          );
+        // Egresos de pagos con nombre de proveedor
+       const egresosPagosRaw = pagosSnap.docs
+  .map((doc) => ({
+    id: doc.id,
+    tipo: "pago",
+    ...doc.data(),
+  }))
+  .filter((p) =>
+    dayjs(p.fecha?.toDate?.() || p.fecha).isSame(mes, "month")
+  );
+
+  const getDescripcionReparacion = async (reparacionId) => {
+  if (!reparacionId) return null;
+  try {
+    const docRef = doc(db, "reparaciones", reparacionId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data().descripcionReparacion || null;
+    }
+  } catch (error) {
+    console.error("Error obteniendo descripción de reparación:", error);
+  }
+  return null;
+};
+
+
+// Ahora obtenemos el nombre del proveedor para cada pago:
+const egresosPagos = await Promise.all(
+  egresosPagosRaw.map(async (pago) => {
+    const nombreProveedor = await getNombreProveedor(pago.tallerId);
+    const resumenVehiculo = await getResumenVehiculo(pago.vehiculoId);
+    const descripcionReparacion = await getDescripcionReparacion(pago.reparacionId); // <-- acá
+    return {
+      ...pago,
+      nombreProveedor,
+      resumenVehiculo,
+      descripcionReparacion,  // <-- la agregás aquí
+    };
+  })
+);
+
+
+
+
+        // Filtrar egresosPagos por mes
+        const egresosPagosFiltrados = egresosPagos.filter((p) =>
+          dayjs(p.fecha?.toDate?.() || p.fecha).isSame(mes, "month")
+        );
+
+        // Unir egresos
+        const todosLosEgresos = [...egresosCompras, ...egresosPagosFiltrados];
 
         setIngresos(ingresosFiltrados);
-        setEgresos(egresosFiltrados);
+        setEgresos(todosLosEgresos);
+        setPagos(egresosPagosFiltrados); // opcional
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -60,55 +162,78 @@ export default function Caja() {
   }, [mesSeleccionado]);
 
   const totalIngresos = ingresos.reduce(
-    (acc, v) => acc + Number(v.monto || 0),
-    0
-  );
-  const totalEgresos = egresos.reduce(
-    (acc, v) => acc + Number(v.precioCompra || v.monto || 0),
-    0
-  );
-  const saldo = totalIngresos - totalEgresos;
+  (acc, v) => acc + parseNumber(v.monto),
+  0
+);
+
+const egresosCompras = egresos.filter(e => e.tipo === "compra");
+const egresosPagos = egresos.filter(e => e.tipo === "pago");
+
+const totalCompras = egresosCompras.reduce(
+  (acc, e) => acc + parseNumber(e.monto ?? e.precioCompra ?? 0),
+  0
+);
+
+const totalPagos = egresosPagos.reduce(
+  (acc, e) => acc + parseNumber(e.monto ?? 0),
+  0
+);
+
+const totalEgresos = egresos.reduce((acc, e) => acc + parseNumber(e.monto), 0);
+
+const saldo = totalIngresos - totalEgresos;
 
   // Formatear fecha para mostrar
   const mesMostrado = dayjs(mesSeleccionado).locale("es").format("MMMM YYYY");
 
-  return (
-    <div className="pt-14">
-      <motion.div
-        className="p-4  md:p-6 max-w-6xl mx-auto"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-              <Wallet className="text-blue-600 w-8 h-8" />
-              <span>Resumen de Caja</span>
-            </h1>
-            <p className="text-gray-500 mt-1">
-              Resumen financiero del mes seleccionado
-            </p>
-          </div>
+  console.log("Ingresos:", totalIngresos);
+console.log("Egresos total:", totalEgresos);
 
-          <div className="flex items-center gap-3 bg-white rounded-lg shadow-sm border p-2">
-            <CalendarIcon className="w-5 h-5 text-gray-500" />
-            <input
-              type="month"
-              value={mesSeleccionado}
-              onChange={(e) => setMesSeleccionado(e.target.value)}
-              className="border-none bg-transparent focus:outline-none focus:ring-0 text-gray-700 font-medium"
-            />
-          </div>
+console.log("Saldo:", saldo);
+
+  return (
+    
+     
+  <div className="min-h-screen pt-20 px-4 bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
+    <motion.div
+      className="bg-gradient-to-br from-slate-700/80 to-slate-800/90 backdrop-blur-sm p-8 rounded-3xl shadow-[0_0_60px_10px_rgba(8,170,234,0.4)] w-full max-w-6xl mx-auto border-2 border-blue-500"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3 text-sky-400">
+            <Wallet className="w-10 h-10 text-sky-500 animate-bounce" />
+            Resumen de Caja
+          </h1>
+          <p className="text-gray-300 mt-2">
+            Resumen financiero del mes seleccionado
+          </p>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        ) : (
+      <div className="flex items-center gap-3 bg-white/60 text-gray-800 rounded-lg shadow-md border-3 border-indigo-700 p-2">
+  <CalendarIcon
+    className="w-5 h-5 text-lime-700 cursor-pointer"
+    onClick={() => inputMesRef.current?.showPicker?.()} // ← Esto abre el selector si el navegador lo soporta
+  />
+  <input
+    ref={inputMesRef}
+    type="month"
+    value={mesSeleccionado}
+    onChange={(e) => setMesSeleccionado(e.target.value)}
+    className="border-none bg-transparent focus:outline-none focus:ring-0 font-medium cursor-pointer"
+  />
+</div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
+        </div>
+      ) : (
           <>
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-700 mb-2">
+              <h2 className="text-xl font-semibold text-indigo-300 mb-2">
                 Resumen de{" "}
                 {mesMostrado.charAt(0).toUpperCase() + mesMostrado.slice(1)}
               </h2>
@@ -125,9 +250,7 @@ export default function Caja() {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm text-gray-600 font-medium">
-                        Ingresos
-                      </p>
+                      <p className="text-sm text-gray-600 font-medium">Ingresos</p>
                       <p className="text-2xl font-bold text-green-800 mt-1">
                         {totalIngresos.toLocaleString("es-AR", {
                           style: "currency",
@@ -151,9 +274,7 @@ export default function Caja() {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm text-gray-600 font-medium">
-                        Egresos
-                      </p>
+                      <p className="text-sm text-gray-600 font-medium">Egresos</p>
                       <p className="text-2xl font-bold text-red-800 mt-1">
                         {totalEgresos.toLocaleString("es-AR", {
                           style: "currency",
@@ -181,9 +302,7 @@ export default function Caja() {
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-sm text-gray-600 font-medium">
-                        Saldo neto
-                      </p>
+                      <p className="text-sm text-gray-600 font-medium">Saldo neto</p>
                       <p
                         className={`text-2xl font-bold mt-1 ${
                           saldo >= 0 ? "text-blue-800" : "text-orange-800"
@@ -299,7 +418,11 @@ export default function Caja() {
                       egresos.map((v) => (
                         <motion.div
                           key={v.id}
-                          className="bg-red-50 rounded-lg p-3 border border-red-100"
+                          className={`${
+                            v.tipo === "pago"
+                              ? "bg-yellow-100 border-yellow-200"
+                              : "bg-red-50 border-red-100"
+                          } rounded-lg p-3 border`}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0 }}
@@ -307,24 +430,35 @@ export default function Caja() {
                         >
                           <div className="flex justify-between items-start">
                             <div>
-                              <p className="font-medium text-gray-800">
-                                {v.marca || "Producto"}{" "}
-                                {v.modelo || "no especificado"}
-                              </p>
+                           <p className="text-gray-800">
+  {v.tipo === "pago" ? (
+    <>
+      <span className="font-semibold text-red-700">Pago a proveedor:</span>{" "}
+      <span className="font-medium text-blue-700">{v.nombreProveedor || "Sin nombre"}-</span>{" "}
+       <span className="font-medium text-blue-700">POR: "{v.descripcionReparacion || "Sin nombre"}"</span>{" "}
+      <span className="font-semibold text-green-700">{v.resumenVehiculo || "No especificado"}</span>{" "}
+      {v.dominio && (
+        <span className="text-gray-500">- Dominio: {v.dominio}</span>
+      )}
+    </>
+  ) : (
+    <>
+      <span className="font-semibold">{v.marca || "Producto"}</span>{" "}
+      <span>{v.modelo || ""}</span>
+    </>
+  )}
+</p>
                               <p className="text-xs text-gray-500 mt-1">
-                                {dayjs(
-                                  v.fechaIngreso?.toDate?.() || v.fechaIngreso
-                                ).format("DD/MM/YYYY")}
+                                {dayjs(v.fecha?.toDate?.() || v.fecha).format(
+                                  "DD/MM/YYYY"
+                                )}
                               </p>
                             </div>
                             <p className="font-bold text-red-700">
-                              {Number(v.precioCompra || v.monto).toLocaleString(
-                                "es-AR",
-                                {
-                                  style: "currency",
-                                  currency: "ARS",
-                                }
-                              )}
+                              {Number(v.monto || v.precioCompra).toLocaleString("es-AR", {
+                                style: "currency",
+                                currency: "ARS",
+                              })}
                             </p>
                           </div>
                         </motion.div>

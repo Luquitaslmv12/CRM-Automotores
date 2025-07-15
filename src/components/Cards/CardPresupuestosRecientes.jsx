@@ -75,14 +75,14 @@ export default function CardPresupuestosRecientes() {
       q = lastVisible
         ? query(
             collection(db, "presupuestos"),
-            where("estado", "==", estado),
+            where("estado", "==", estado.value),
             orderBy("fecha", "desc"),
             startAfter(lastVisible),
             limit(ITEMS_PER_PAGE)
           )
         : query(
             collection(db, "presupuestos"),
-            where("estado", "==", estado),
+            where("estado", "==", estado.value),
             orderBy("fecha", "desc"),
             limit(ITEMS_PER_PAGE)
           );
@@ -92,14 +92,14 @@ export default function CardPresupuestosRecientes() {
       if (prevCursor === null) {
         q = query(
           collection(db, "presupuestos"),
-          where("estado", "==", estado),
+          where("estado", "==", estado.value),
           orderBy("fecha", "desc"),
           limit(ITEMS_PER_PAGE)
         );
       } else {
         q = query(
           collection(db, "presupuestos"),
-          where("estado", "==", estado),
+          where("estado", "==", estado.value),
           orderBy("fecha", "desc"),
           startAt(prevCursor),
           limit(ITEMS_PER_PAGE)
