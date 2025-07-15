@@ -33,8 +33,8 @@ export default function ModalNuevaReparacion({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const vehiculoSeleccionado = vehiculos.find(v => v.id === vehiculoId);
-const patenteVehiculo = vehiculoSeleccionado?.patente || "";
+  const vehiculoSeleccionado = vehiculos.find((v) => v.id === vehiculoId);
+  const patenteVehiculo = vehiculoSeleccionado?.patente || "";
 
   useEffect(() => {
     if (!visible) return;
@@ -132,80 +132,79 @@ const patenteVehiculo = vehiculoSeleccionado?.patente || "";
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  const errMsg = validar();
-  if (errMsg) {
-    setError(errMsg);
-    return;
-  }
-
-  setSubmitting(true);
-  try {
-    const total = Number(precioManoObra) + Number(precioRepuestos);
-
-    if (reparacion) {
-      // Actualizar reparación existente
-      const ref = doc(db, "reparaciones", reparacion.id);
-      const datosActualizados = {
-        descripcionReparacion: descripcion,
-        vehiculoId,
-        tallerId,
-        patenteVehiculo,
-        precioManoObra: Number(precioManoObra),
-        precioRepuestos: Number(precioRepuestos),
-        precioTotal: total,
-        telefono,
-        observaciones,
-        modificadoEn: new Date(),
-      };
-      await updateDoc(ref, datosActualizados);
-
-      // Llamar a onSuccess con el objeto actualizado incluyendo id
-      onSuccess({ id: reparacion.id, ...datosActualizados });
-    } else {
-      // Crear nueva reparación
-      const datosNuevos = {
-        descripcionReparacion: descripcion,
-        vehiculoId,
-        tallerId,
-        precioManoObra: Number(precioManoObra),
-        precioRepuestos: Number(precioRepuestos),
-        precioTotal: total,
-        telefono,
-        patenteVehiculo,
-        observaciones,
-        creadoEn: new Date(),
-        saldo: total,
-        estadoPago: "Pendiente",
-
-      };
-
-      const docRef = await addDoc(collection(db, "reparaciones"), datosNuevos);
-
-      // Actualizar etiqueta del vehículo a "Reparación"
-      const vehRef = doc(db, "vehiculos", vehiculoId);
-      await updateDoc(vehRef, { etiqueta: "Reparación" });
-
-      // Llamar a onSuccess con objeto que incluye el nuevo id
-      onSuccess({ id: docRef.id, ...datosNuevos });
+    e.preventDefault();
+    const errMsg = validar();
+    if (errMsg) {
+      setError(errMsg);
+      return;
     }
 
-    onClose();
-  } catch (error) {
-    setError("Error al guardar la reparación.");
-  } finally {
-    setSubmitting(false);
-  }
-};
+    setSubmitting(true);
+    try {
+      const total = Number(precioManoObra) + Number(precioRepuestos);
 
+      if (reparacion) {
+        // Actualizar reparación existente
+        const ref = doc(db, "reparaciones", reparacion.id);
+        const datosActualizados = {
+          descripcionReparacion: descripcion,
+          vehiculoId,
+          tallerId,
+          patenteVehiculo,
+          precioManoObra: Number(precioManoObra),
+          precioRepuestos: Number(precioRepuestos),
+          precioTotal: total,
+          telefono,
+          observaciones,
+          modificadoEn: new Date(),
+        };
+        await updateDoc(ref, datosActualizados);
+
+        // Llamar a onSuccess con el objeto actualizado incluyendo id
+        onSuccess({ id: reparacion.id, ...datosActualizados });
+      } else {
+        // Crear nueva reparación
+        const datosNuevos = {
+          descripcionReparacion: descripcion,
+          vehiculoId,
+          tallerId,
+          precioManoObra: Number(precioManoObra),
+          precioRepuestos: Number(precioRepuestos),
+          precioTotal: total,
+          telefono,
+          patenteVehiculo,
+          observaciones,
+          creadoEn: new Date(),
+          saldo: total,
+          estadoPago: "Pendiente",
+        };
+
+        const docRef = await addDoc(
+          collection(db, "reparaciones"),
+          datosNuevos
+        );
+
+        // Actualizar etiqueta del vehículo a "Reparación"
+        const vehRef = doc(db, "vehiculos", vehiculoId);
+        await updateDoc(vehRef, { etiqueta: "Reparación" });
+
+        // Llamar a onSuccess con objeto que incluye el nuevo id
+        onSuccess({ id: docRef.id, ...datosNuevos });
+      }
+
+      onClose();
+    } catch (error) {
+      setError("Error al guardar la reparación.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (!visible) return null;
 
-
   const refrescarReparaciones = async () => {
-  await fetchData();
-};
-
+    await fetchData();
+  };
 
   return (
     <AnimatePresence>
