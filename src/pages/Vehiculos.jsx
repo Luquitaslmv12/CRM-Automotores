@@ -62,6 +62,8 @@ export default function Vehiculos() {
   const itemsPorPagina = 10;
   const [talleres, setTalleres] = useState([]);
 
+  const estadoFinal = ["Usado", "Nuevo", ""].includes(etiqueta) ? "Disponible" : "No Disponible";
+
   const [mostrarExportacion, setMostrarExportacion] = useState(false);
 
   const exportarCSV = () => {
@@ -189,22 +191,24 @@ export default function Vehiculos() {
     }
 
     try {
-      if (modoEdicion) {
-        await updateDoc(doc(db, "vehiculos", idEditar), {
-          marca,
-          modelo,
-          patente,
-          año,
-          motor,
-          chasis,
-          estado,
-          tipo,
-          precioVenta: Number(precioVenta) || 0,
-          etiqueta,
-          clienteId: clienteId || null,
-          modificadoPor: user?.email || "Desconocido",
-          modificadoEn: new Date(),
-        });
+
+
+  if (modoEdicion) {
+    await updateDoc(doc(db, "vehiculos", idEditar), {
+      marca,
+      modelo,
+      patente,
+      año,
+      motor,
+      chasis,
+       estado: estadoFinal,
+      tipo,
+      precioVenta: Number(precioVenta) || 0,
+      etiqueta,
+      clienteId: clienteId || null,
+      modificadoPor: user?.email || "Desconocido",
+      modificadoEn: new Date(),
+    });
         mostrarToast("Vehículo actualizado");
       } else {
         await addDoc(collection(db, "vehiculos"), {
@@ -214,7 +218,7 @@ export default function Vehiculos() {
           año,
           motor,
           chasis,
-          estado,
+          estado: estadoFinal,
           tipo,
           precioVenta: Number(precioVenta) || 0,
           etiqueta,
@@ -397,6 +401,7 @@ export default function Vehiculos() {
           Información básica
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ">
+          
           {[
             { id: "marca", label: "Marca", value: marca, setValue: setMarca },
             {
@@ -430,12 +435,7 @@ export default function Vehiculos() {
               value: chasis,
               setValue: setChasis,
             },
-            {
-              id: "estado",
-              label: "Estado",
-              value: estado,
-              setValue: setEstado,
-            },
+           
             { id: "tipo", label: "Tipo", value: tipo, setValue: setTipo },
             {
               id: "precioVenta",
@@ -467,6 +467,8 @@ export default function Vehiculos() {
                 required={["marca", "modelo", "patente", "año"].includes(id)}
               />
 
+              
+
               <label
                 htmlFor={id}
                 className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
@@ -476,7 +478,7 @@ export default function Vehiculos() {
               </label>
             </div>
           ))}
-
+        
           {/* Selector etiqueta */}
           <select
             className={`w-full p-3 rounded-xl bg-slate-800  text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/70 transition duration-300

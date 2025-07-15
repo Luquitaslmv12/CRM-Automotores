@@ -34,7 +34,15 @@ function AnimatedNumber({ value, duration = 1.2 }) {
     <motion.span
       initial={{ val: 0 }}
       animate={controls}
-      onUpdate={(latest) => setDisplay(latest.val.toFixed(2))}
+      onUpdate={(latest) =>
+        setDisplay(
+          Math.floor(latest.val).toLocaleString("es-AR", {
+            style: "currency",
+            currency: "ARS",
+            maximumFractionDigits: 0,
+          })
+        )
+      }
       className="tabular-nums"
     >
       {display}
@@ -169,20 +177,20 @@ export default function CardInteligenciaVentas() {
           <AnimatedNumber value={Math.abs(estado.porcentaje)} />%
         </motion.span>
         {estado.arriba
-          ? " arriba del promedio de los últimos 3 meses. ¡Buen trabajo!"
+          ? " arriba del promedio de los últimos 3 meses."
           : " por debajo del promedio. ¡Podés remontarlo!"}
       </p>
 
       <div className="flex justify-around text-center text-gray-300 font-semibold text-sm sm:text-base">
         <div>
-          <div className="text-xl sm:text-2xl">
-            ${<AnimatedNumber value={estado.ventasMesActual} />}
+          <div className="text-xl sm:text-2xl text-indigo-400">
+            {<AnimatedNumber value={estado.ventasMesActual} />}
           </div>
           <div>Ventas este mes</div>
         </div>
         <div>
-          <div className="text-xl sm:text-2xl">
-            ${<AnimatedNumber value={estado.promedio} />}
+          <div className="text-xl sm:text-2xl text-yellow-600">
+            {<AnimatedNumber value={estado.promedio} />}
           </div>
           <div>Promedio últimos 3 meses</div>
         </div>

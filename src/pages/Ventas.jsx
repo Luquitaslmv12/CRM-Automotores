@@ -198,6 +198,7 @@ export default function NuevaVenta() {
             creadoEn: new Date(),
             recibidoPor: vehiculoPartePago.recibidoPor || "No especificado",
             vendidoPor,
+            fecha: Timestamp.fromDate(new Date(fechaVenta)),
           }
         );
         console.log("Vehículo parte de pago:", vehiculoPartePago);
@@ -227,8 +228,31 @@ export default function NuevaVenta() {
             estado: "Disponible",
             creadoPor: user?.email || "Desconocido",
             creadoEn: new Date(),
-            fechaIngreso: new Date(),
+             fecha: Timestamp.fromDate(new Date(fechaVenta)),
           });
+
+          await addDoc(collection(db, "compras"), {
+  marca: vehiculoPartePago.marca?.trim() || "No especificado",
+    modelo: vehiculoPartePago.modelo?.trim() || "No especificado",
+    tipo: vehiculoPartePago.tipo?.trim() || "No especificado",
+    patente:
+      vehiculoPartePago.patente?.trim().toUpperCase() || "No especificado",
+    año: parseInt(vehiculoPartePago.año) || null,
+    color: vehiculoPartePago.color || "",
+    etiqueta: "Usado",
+    tomadoPor: user?.displayName || user?.email || "",
+    tomadoEn: new Date(),
+    monto: parseFloat(vehiculoPartePago.monto) || 0,
+    clienteNombre: clienteSeleccionado?.nombre || "",
+    clienteApellido: clienteSeleccionado?.apellido || "",
+    precioCompra: parseFloat(vehiculoPartePago.monto) || 0,
+    estado: "Disponible",
+    creadoPor: user?.email || "Desconocido",
+    creadoEn: new Date(),
+    fecha: Timestamp.fromDate(new Date(fechaVenta)),
+  
+});
+
 
           await updateDoc(doc(db, "ventas", ventaRef.id), {
             vehiculoPartePagoId: vehiculoPartePagoRef.id,
@@ -287,7 +311,7 @@ export default function NuevaVenta() {
 
   return (
     <>
-      <div className="p-6 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
+      <div className="p-6 pt-20 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
         <h1 className="text-4xl font-bold mb-6 text-center flex justify-center items-center gap-2">
           <DollarSign className="w-10 h-10 text-lime-500 animate-bounce" />
           Gestión de Ventas

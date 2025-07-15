@@ -24,6 +24,7 @@ export default function Proveedores() {
   const [proveedorAEliminar, setProveedorAEliminar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [vehiculos, setVehiculos] = useState([]);
 
   const [reparacionesTaller, setReparacionesTaller] = useState([]);
   const [estadoCuentaModalAbierto, setEstadoCuentaModalAbierto] =
@@ -67,8 +68,23 @@ export default function Proveedores() {
       }
     };
 
-    fetchProveedoresConDeuda();
-  }, []);
+     // ✅ DEFINIR fetchVehiculos
+  const fetchVehiculos = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "vehiculos"));
+      const vehiculosData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setVehiculos(vehiculosData);
+    } catch (err) {
+      console.error("Error al obtener vehículos:", err);
+    }
+  };
+
+  fetchProveedoresConDeuda();
+  fetchVehiculos(); // ✅ ahora sí está definida
+}, []);
 
   const handleBusqueda = (e) => {
     setBusqueda(e.target.value.toLowerCase());
@@ -181,6 +197,7 @@ export default function Proveedores() {
           abierto={estadoCuentaModalAbierto}
           onClose={() => setEstadoCuentaModalAbierto(false)}
           reparaciones={reparacionesTaller}
+          vehiculos={vehiculos}
         />
       )}
 

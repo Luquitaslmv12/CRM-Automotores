@@ -13,7 +13,7 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 min-h-screen overflow-x-hidden text-gray-100 transition-colors">
       <div className="flex flex-col flex-1">
-        <main className="p-6 pt-18 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <main className="p-6 pt-18 grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-6">
           <CardClientesMorosos />
           <CardVehiculosNuevos />
           <CardVehiculosUsados />

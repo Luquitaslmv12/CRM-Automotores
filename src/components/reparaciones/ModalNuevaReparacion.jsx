@@ -25,6 +25,7 @@ export default function ModalNuevaReparacion({
   const [precioRepuestos, setPrecioRepuestos] = useState("");
   const [telefono, setTelefono] = useState("");
   const [observaciones, setObservaciones] = useState("");
+  const [fechaReparacion, setFechaReparacion] = useState("");
 
   const [vehiculos, setVehiculos] = useState([]);
   const [talleres, setTalleres] = useState([]);
@@ -73,8 +74,10 @@ const patenteVehiculo = vehiculoSeleccionado?.patente || "";
             ...d.data(),
           }));
           vehiculosData = [...vehiculosData, ...extraVehiculos];
+          
         }
 
+        
         setVehiculos(vehiculosData);
         setTalleres(talSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
         setLoading(false); // <-- ACÁ VA SIEMPRE
@@ -89,6 +92,11 @@ const patenteVehiculo = vehiculoSeleccionado?.patente || "";
 
   useEffect(() => {
     if (reparacion) {
+      setFechaReparacion(
+  reparacion?.fecha
+    ? new Date(reparacion.fecha.seconds * 1000).toISOString().split("T")[0]
+    : ""
+);
       setDescripcion(reparacion.descripcionReparacion || "");
       setVehiculoId(reparacion.vehiculoId || "");
       setTallerId(reparacion.tallerId || "");
@@ -147,6 +155,7 @@ const patenteVehiculo = vehiculoSeleccionado?.patente || "";
       // Actualizar reparación existente
       const ref = doc(db, "reparaciones", reparacion.id);
       const datosActualizados = {
+        fecha: new Date(fechaReparacion),
         descripcionReparacion: descripcion,
         vehiculoId,
         tallerId,
@@ -165,6 +174,7 @@ const patenteVehiculo = vehiculoSeleccionado?.patente || "";
     } else {
       // Crear nueva reparación
       const datosNuevos = {
+        fecha: new Date(fechaReparacion),
         descripcionReparacion: descripcion,
         vehiculoId,
         tallerId,
@@ -257,6 +267,24 @@ const patenteVehiculo = vehiculoSeleccionado?.patente || "";
                   />
                 </div>
 
+                {/* Fecha de Reparación */}
+<div>
+  <label
+    htmlFor="fechaReparacion"
+    className="block text-sm font-medium mb-1"
+  >
+    Fecha de Reparación
+  </label>
+  <input
+    id="fechaReparacion"
+    type="date"
+    value={fechaReparacion}
+    onChange={(e) => setFechaReparacion(e.target.value)}
+    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+    required
+  />
+</div>
+
                 {/* Vehículo */}
                 <div>
                   <label
@@ -347,24 +375,7 @@ const patenteVehiculo = vehiculoSeleccionado?.patente || "";
                   />
                 </div>
 
-                {/* Teléfono */}
-                <div>
-                  <label
-                    htmlFor="telefono"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Teléfono (WhatsApp)
-                  </label>
-                  <input
-                    id="telefono"
-                    type="tel"
-                    value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
-                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                    placeholder="Ej: +5491123456789"
-                  />
-                </div>
-
+               
                 {/* Observaciones */}
                 <div>
                   <label
