@@ -31,6 +31,7 @@ import Listaventas from "../components/ListaVentas";
 import ModalVehiculoPartePago from "../components/ModalVehiculoPartePago";
 import exportarBoletoDOCX from "../components/boletos/exportarBoletoDOCX";
 import Spinner from "../components/Spinner/Spinner";
+import ListaDeudas from "../components/Deudas/ListaDeudas";
 
 export default function NuevaVenta() {
   const [usuarios, setUsuarios] = useState([]);
@@ -47,7 +48,7 @@ export default function NuevaVenta() {
 
   const [monto, setMonto] = useState("");
   const [pagosMultiples, setPagosMultiples] = useState(false);
-  const [pagos, setPagos] = useState([{ metodo: "", monto: "" }]);
+  const [pagos, setPagos] = useState([{ metodo: "",  monto: "",  incluirEnCaja: true, fechaVencimiento: null }]);
   const [errores, setErrores] = useState({});
 
   const [fechaVenta, setFechaVenta] = useState(() => {
@@ -63,6 +64,10 @@ export default function NuevaVenta() {
   const user = auth.currentUser;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [deudas, setDeudas] = useState([]);
+
+  
 
   useEffect(() => {
     const fetchUsuarios = async () => {
@@ -133,183 +138,238 @@ export default function NuevaVenta() {
     });
   };
 
-  const handleSubmit = async (e) => {
-       e.preventDefault();
-    setIsSubmitting(true);
 
-    const pagosProcesados = convertirPagosAFloat(pagos);
-    const nuevosErrores = {};
+  const registrarEnCajaDiaria = async (descripcion, monto, tipo, fecha) => {
+  try {
+    await addDoc(collection(db, "caja_diaria"), {
+      descripcion,
+      monto: parseFloat(monto),
+      tipo,
+      fecha: Timestamp.fromDate(fecha ? new Date(fecha) : new Date()),
+      createdAt: Timestamp.now(),
+      creadoPor: user?.email || "Desconocido",
+      relacionadoCon: "venta" // Puedes añadir más metadata
+    });
+  } catch (error) {
+    console.error("Error registrando en caja diaria:", error);
+    throw error;
+  }
+};
 
-    // Validaciones básicas
-    if (!clienteSeleccionado) {
-      toast.error("Selecciona un cliente");
-      return;
-    }
-    if (!vehiculoId) nuevosErrores.vehiculoId = true;
-    if (!monto) nuevosErrores.monto = true;
-    if (parteDePago && !vehiculoPartePago) {
-      toast.error(
-        "Debes completar los datos del vehículo entregado en parte de pago."
-      );
-      return;
-    }
 
-    setErrores(nuevosErrores);
-    if (Object.keys(nuevosErrores).length > 0) {
-      toast.error("Por favor completa todos los campos.");
-      return;
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    try {
-      const resumenVehiculo = vehiculoSeleccionado
-        ? {
-            marca: vehiculoSeleccionado.marca || "",
-            modelo: vehiculoSeleccionado.modelo || "",
-            patente: vehiculoSeleccionado.patente || "",
-            año: vehiculoSeleccionado.año || "",
-            color: vehiculoSeleccionado.color || "",
-            numeroChasis: vehiculoSeleccionado.chasis || "",
-            numeroMotor: vehiculoSeleccionado.motor || "",
-            precioVenta: vehiculoSeleccionado.precioVenta || 0,
-          }
-        : null;
+  // 1. Procesar los pagos
+  const pagosProcesados = convertirPagosAFloat(pagos);
+  
+  // Definir pagosParaCaja y deudasRegistrar aquí
+  const pagosParaCaja = pagosProcesados.filter(p => p.incluirEnCaja);
+  const deudasRegistrar = pagosProcesados.filter(p => !p.incluirEnCaja);
 
-      // 1. Crear la venta
-      const ventaRef = await addDoc(collection(db, "ventas"), {
+
+  // Validaciones básicas
+  if (!clienteSeleccionado) {
+    toast.error("Selecciona un cliente");
+    setIsSubmitting(false);
+    return;
+  }
+
+  if (!vehiculoId) {
+    toast.error("Selecciona un vehículo");
+    setIsSubmitting(false);
+    return;
+  }
+
+  if (!monto || parseFloat(monto) <= 0) {
+    toast.error("Ingresa un monto válido");
+    setIsSubmitting(false);
+    return;
+  }
+
+  if (pagosParaCaja.length > 0) {
+  for (const pago of pagosParaCaja) {
+    await registrarEnCajaDiaria(
+      `Venta vehículo (${pago.metodo})`,
+      pago.monto,
+      "ingreso",
+      fechaVenta
+    );
+  }
+}
+
+  if (parteDePago && !vehiculoPartePago) {
+    toast.error("Debes completar los datos del vehículo entregado en parte de pago.");
+    setIsSubmitting(false);
+    return;
+  }
+
+  try {
+  
+    // Crear resumen del vehículo
+    const resumenVehiculo = {
+      marca: vehiculoSeleccionado.marca || "",
+      modelo: vehiculoSeleccionado.modelo || "",
+      patente: vehiculoSeleccionado.patente || "",
+      año: vehiculoSeleccionado.año || "",
+      color: vehiculoSeleccionado.color || "",
+      numeroChasis: vehiculoSeleccionado.chasis || "",
+      numeroMotor: vehiculoSeleccionado.motor || "",
+      precioVenta: vehiculoSeleccionado.precioVenta || 0,
+    };
+
+    // 1. Crear la venta principal
+    const ventaRef = await addDoc(collection(db, "ventas"), {
+      clienteId: clienteSeleccionado.id,
+      vehiculoId,
+      vehiculoResumen: resumenVehiculo,
+      monto: parseFloat(monto),
+      pagos: pagosMultiples ? pagosParaCaja : [],
+      deudas: deudasRegistrar,
+      fecha: Timestamp.fromDate(new Date(fechaVenta)),
+      creadoPor: user?.email || "Desconocido",
+      creadoEn: new Date(),
+      vendidoPor,
+      estado: deudasRegistrar.length > 0 ? "Pendiente" : "Completado"
+    });
+
+    // 2. Procesar parte de pago si corresponde
+    if (parteDePago && vehiculoPartePago) {
+      const vehiculoPartePagoRef = await addDoc(collection(db, "vehiculosPartePago"), {
+        ...vehiculoPartePago,
         clienteId: clienteSeleccionado.id,
-        vehiculoId,
-        vehiculoResumen: resumenVehiculo,
-        monto: parseFloat(monto),
-        pagos: pagosMultiples ? pagosProcesados : [],
-        fecha: Timestamp.fromDate(new Date(fechaVenta)),
+        clienteNombre: `${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}`,
+        ventaId: ventaRef.id,
+        fechaEntrega: new Date(),
         creadoPor: user?.email || "Desconocido",
         creadoEn: new Date(),
+        recibidoPor: vehiculoPartePago.recibidoPor || "No especificado",
         vendidoPor,
+        fecha: Timestamp.fromDate(new Date(fechaVenta)),
       });
 
-      // 2. Procesar parte de pago si corresponde
-      if (parteDePago && vehiculoPartePago) {
-        const vehiculoPartePagoRef = await addDoc(
-          collection(db, "vehiculosPartePago"),
-          {
-            ...vehiculoPartePago,
-            clienteId: clienteSeleccionado.id,
-            clienteNombre: clienteSeleccionado.nombre,
-            clienteApellido: clienteSeleccionado.apellido,
-            ventaId: ventaRef.id,
-            fechaEntrega: new Date(),
-            creadoPor: user?.email || "Desconocido",
-            creadoEn: new Date(),
-            recibidoPor: vehiculoPartePago.recibidoPor || "No especificado",
-            vendidoPor,
-            fecha: Timestamp.fromDate(new Date(fechaVenta)),
-          }
-        );
-        console.log("Vehículo parte de pago:", vehiculoPartePago);
+      // Validación y registro del vehículo en parte de pago
+      const vehiculoValido = vehiculoPartePago.marca || vehiculoPartePago.modelo || vehiculoPartePago.patente;
+      if (vehiculoValido) {
+        // Registrar en la colección de vehículos
+        await addDoc(collection(db, "vehiculos"), {
+          marca: vehiculoPartePago.marca?.trim() || "No especificado",
+          modelo: vehiculoPartePago.modelo?.trim() || "No especificado",
+          tipo: vehiculoPartePago.tipo?.trim() || "No especificado",
+          patente: vehiculoPartePago.patente?.trim().toUpperCase() || "No especificado",
+          año: parseInt(vehiculoPartePago.año) || null,
+          color: vehiculoPartePago.color || "",
+          etiqueta: "Usado",
+          tomadoPor: user?.email || "",
+          tomadoEn: new Date(),
+          monto: parseFloat(vehiculoPartePago.monto) || 0,
+          clienteNombre: clienteSeleccionado?.nombre || "",
+          clienteApellido: clienteSeleccionado?.apellido || "",
+          precioCompra: parseFloat(vehiculoPartePago.monto) || 0,
+          estado: "Disponible",
+          creadoPor: user?.email || "Desconocido",
+          creadoEn: new Date(),
+          fecha: Timestamp.fromDate(new Date(fechaVenta)),
+        });
 
-        // Validación mínima antes de guardar en "vehiculos"
-        const vehiculoValido =
-          vehiculoPartePago.marca ||
-          vehiculoPartePago.modelo ||
-          vehiculoPartePago.patente;
-        if (vehiculoValido) {
-          await addDoc(collection(db, "vehiculos"), {
-            marca: vehiculoPartePago.marca?.trim() || "No especificado",
-            modelo: vehiculoPartePago.modelo?.trim() || "No especificado",
-            tipo: vehiculoPartePago.tipo?.trim() || "No especificado",
-            patente:
-              vehiculoPartePago.patente?.trim().toUpperCase() ||
-              "No especificado",
-            año: parseInt(vehiculoPartePago.año) || null,
-            color: vehiculoPartePago.color || "",
-            etiqueta: "Usado",
-            tomadoPor: user?.email || "",
-            tomadoEn: new Date(),
-            monto: parseFloat(vehiculoPartePago.monto) || 0,
-            clienteNombre: clienteSeleccionado?.nombre || "",
-            clienteApellido: clienteSeleccionado?.apellido || "",
-            precioCompra: parseFloat(vehiculoPartePago.monto) || 0,
-            estado: "Disponible",
-            creadoPor: user?.email || "Desconocido",
-            creadoEn: new Date(),
-             fecha: Timestamp.fromDate(new Date(fechaVenta)),
-          });
+        // Registrar en la colección de compras
+        await addDoc(collection(db, "compras"), {
+          marca: vehiculoPartePago.marca?.trim() || "No especificado",
+          modelo: vehiculoPartePago.modelo?.trim() || "No especificado",
+          tipo: vehiculoPartePago.tipo?.trim() || "No especificado",
+          patente: vehiculoPartePago.patente?.trim().toUpperCase() || "No especificado",
+          año: parseInt(vehiculoPartePago.año) || null,
+          color: vehiculoPartePago.color || "",
+          etiqueta: "Usado",
+          tomadoPor: user?.displayName || user?.email || "",
+          tomadoEn: new Date(),
+          monto: parseFloat(vehiculoPartePago.monto) || 0,
+          clienteNombre: clienteSeleccionado?.nombre || "",
+          clienteApellido: clienteSeleccionado?.apellido || "",
+          precioCompra: parseFloat(vehiculoPartePago.monto) || 0,
+          estado: "Disponible",
+          creadoPor: user?.email || "Desconocido",
+          creadoEn: new Date(),
+          fecha: Timestamp.fromDate(new Date(fechaVenta)),
+        });
 
-          await addDoc(collection(db, "compras"), {
-  marca: vehiculoPartePago.marca?.trim() || "No especificado",
-    modelo: vehiculoPartePago.modelo?.trim() || "No especificado",
-    tipo: vehiculoPartePago.tipo?.trim() || "No especificado",
-    patente:
-      vehiculoPartePago.patente?.trim().toUpperCase() || "No especificado",
-    año: parseInt(vehiculoPartePago.año) || null,
-    color: vehiculoPartePago.color || "",
-    etiqueta: "Usado",
-    tomadoPor: user?.displayName || user?.email || "",
-    tomadoEn: new Date(),
-    monto: parseFloat(vehiculoPartePago.monto) || 0,
-    clienteNombre: clienteSeleccionado?.nombre || "",
-    clienteApellido: clienteSeleccionado?.apellido || "",
-    precioCompra: parseFloat(vehiculoPartePago.monto) || 0,
-    estado: "Disponible",
-    creadoPor: user?.email || "Desconocido",
-    creadoEn: new Date(),
-    fecha: Timestamp.fromDate(new Date(fechaVenta)),
-  
-});
-
-
-          await updateDoc(doc(db, "ventas", ventaRef.id), {
-            vehiculoPartePagoId: vehiculoPartePagoRef.id,
-          });
-        } else {
-          console.warn(
-            "Vehículo parte de pago con datos insuficientes. No se guardó en 'vehiculos'."
-          );
-        }
+        await updateDoc(doc(db, "ventas", ventaRef.id), {
+          vehiculoPartePagoId: vehiculoPartePagoRef.id,
+        });
+      } else {
+        console.warn("Vehículo parte de pago con datos insuficientes. No se guardó en 'vehiculos'.");
       }
-
-      // 3. Actualizar vehículo vendido
-      await updateDoc(doc(db, "vehiculos", vehiculoId), {
-        estado: "Vendido",
-        clienteId: clienteSeleccionado.id,
-        clienteNombre: clienteSeleccionado.nombre,
-        clienteApellido: clienteSeleccionado.apellido,
-        etiqueta: "Vendido",
-        modificadoPor: user?.email || "",
-        vendidoEn: new Date(),
-        vendidoPor,
-        monto: parseFloat(monto),
-      });
-
-      toast.success("¡Venta registrada con éxito!");
-
-      // 4. Resetear formulario
-      setClienteId("");
-      setVehiculoId("");
-      setMonto("");
-      setClienteSeleccionado(null);
-      setPagos([{ metodo: "", monto: "" }]);
-      setPagosMultiples(false);
-      setErrores({});
-      setParteDePago(false);
-      setVehiculoPartePago(null);
-    } catch (error) {
-      console.error("Error al registrar la venta:", error);
-      toast.error("Error al registrar la venta.");
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+
+    // 3. Actualizar vehículo vendido
+    await updateDoc(doc(db, "vehiculos", vehiculoId), {
+      estado: "Vendido",
+      clienteId: clienteSeleccionado.id,
+      clienteNombre: clienteSeleccionado.nombre,
+      clienteApellido: clienteSeleccionado.apellido,
+      etiqueta: "Vendido",
+      modificadoPor: user?.email || "",
+      vendidoEn: new Date(),
+      vendidoPor,
+      monto: parseFloat(monto),
+    });
+
+    // 4. Registrar deudas si existen
+    if (deudasRegistrar.length > 0) {
+      await addDoc(collection(db, "deudas"), {
+        ventaId: ventaRef.id,
+        clienteId: clienteSeleccionado.id,
+        clienteNombre: `${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}`,
+        vehiculoId,
+        vehiculoInfo: resumenVehiculo,
+        deudas: deudasRegistrar,
+        montoTotal: deudasRegistrar.reduce((sum, d) => sum + d.monto, 0),
+        fechaVenta: Timestamp.fromDate(new Date(fechaVenta)),
+        fechaCreacion: Timestamp.now(),
+        estado: "Pendiente",
+        creadoPor: user?.email || "Desconocido"
+      });
+    }
+
+    toast.success("¡Venta registrada con éxito!");
+
+    // Resetear formulario
+    setClienteId("");
+    setVehiculoId("");
+    setMonto("");
+    setClienteSeleccionado(null);
+    setPagos([{ metodo: "", monto: "", incluirEnCaja: true }]);
+    setPagosMultiples(false);
+    setErrores({});
+    setParteDePago(false);
+    setVehiculoPartePago(null);
+
+  } catch (error) {
+    console.error("Error al registrar la venta:", error);
+    toast.error("Error al registrar la venta. Por favor, inténtalo de nuevo.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   const handlePagoChange = (index, campo, valor) => {
-    const nuevosPagos = [...pagos];
-    nuevosPagos[index][campo] = valor;
-    setPagos(nuevosPagos);
-  };
+  const nuevosPagos = [...pagos];
+  nuevosPagos[index][campo] = valor;
+  setPagos(nuevosPagos);
+};
 
-  const agregarPago = () => {
-    setPagos([...pagos, { metodo: "", monto: "" }]);
-  };
+
+ const agregarPago = () => {
+  setPagos([...pagos, { 
+    metodo: "", 
+    monto: "", 
+    incluirEnCaja: true,
+    fechaVencimiento: null 
+  }]);
+};
+
 
   const quitarPago = (index) => {
     setPagos(pagos.filter((_, i) => i !== index));
@@ -443,50 +503,77 @@ export default function NuevaVenta() {
               Usar múltiples métodos de pago
             </label>
 
-            {pagosMultiples && (
-              <div className="space-y-3">
-                {pagos.map((pago, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="Método"
-                      value={pago.metodo}
-                      onChange={(e) =>
-                        handlePagoChange(index, "metodo", e.target.value)
-                      }
-                      className="flex-1 p-2 rounded bg-slate-700 text-white"
-                    />
-                    <NumericFormat
-                      value={pago.monto}
-                      onValueChange={({ formattedValue }) =>
-                        handlePagoChange(index, "monto", formattedValue)
-                      }
-                      thousandSeparator="."
-                      decimalSeparator=","
-                      decimalScale={2}
-                      fixedDecimalScale
-                      allowNegative={false}
-                      placeholder="Monto"
-                      className="w-28 p-2 rounded bg-slate-700 text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => quitarPago(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash size={18} />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={agregarPago}
-                  className="flex items-center text-sm text-blue-400 hover:underline"
-                >
-                  <Plus size={18} className="mr-1" /> Agregar otro método
-                </button>
-              </div>
+          {pagosMultiples && (
+  <div className="space-y-3">
+    {pagos.map((pago, index) => (
+      <div key={index} className="flex flex-col gap-2 p-3  rounded-lg">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={pago.incluirEnCaja}
+            onChange={(e) => handlePagoChange(
+              index, 
+              "incluirEnCaja", 
+              e.target.checked
             )}
+            className="h-4 w-4 text-indigo-600 rounded"
+          />
+          <input
+            type="text"
+            placeholder="Método (ej: Efectivo, Transferencia)"
+            value={pago.metodo}
+            onChange={(e) =>
+              handlePagoChange(index, "metodo", e.target.value)
+            }
+            className="flex-1 p-2 rounded border"
+          />
+          <NumericFormat
+            value={pago.monto}
+            onValueChange={({ formattedValue }) =>
+              handlePagoChange(index, "monto", formattedValue)
+            }
+            thousandSeparator="."
+            decimalSeparator=","
+            decimalScale={2}
+            fixedDecimalScale
+            allowNegative={false}
+            placeholder="Monto"
+            className="w-28 p-2 rounded border"
+          />
+          <button
+            type="button"
+            onClick={() => quitarPago(index)}
+            className="text-red-500 hover:text-red-700"
+          >
+            <Trash size={18} />
+          </button>
+        </div>
+        
+        {!pago.incluirEnCaja && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-700">Vencimiento:</label>
+            <input
+              type="date"
+              value={pago.fechaVencimiento || ""}
+              onChange={(e) => 
+                handlePagoChange(index, "fechaVencimiento", e.target.value)
+              }
+              className="p-2 rounded border"
+              required={!pago.incluirEnCaja}
+            />
+          </div>
+        )}
+      </div>
+    ))}
+    <button
+      type="button"
+      onClick={agregarPago}
+      className="flex items-center text-sm text-blue-600 hover:underline"
+    >
+      <Plus size={18} className="mr-1" /> Agregar otro método
+    </button>
+  </div>
+)}
           </div>
 
          <button
@@ -530,6 +617,9 @@ export default function NuevaVenta() {
 
         <Listaventas />
       </div>
+      <div className="max-w-screen-xl mx-auto mt-8">
+  <ListaDeudas />
+</div>
     </>
   );
 }
