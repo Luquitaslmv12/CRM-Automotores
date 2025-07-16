@@ -12,6 +12,7 @@ import {
   MinusCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import CajaDiaria from "./CajaDiaria";
 
 export default function Caja() {
   const [pagos, setPagos] = useState([]);
@@ -475,6 +476,7 @@ console.log("Saldo:", saldo);
           </>
         )}
       </motion.div>
+      <CajaDiaria />
     </div>
   );
 }
