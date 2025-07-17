@@ -1,63 +1,77 @@
 import { useEffect, useState } from "react";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
-import { Users, Phone, Mail, CheckCircle, MessageCircle } from "lucide-react";
-import { toast } from "react-hot-toast";
+import {
+  Users,
+  Phone,
+  Mail,
+  MessageCircle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { jsPDF } from "jspdf";
+import * as XLSX from "xlsx";
 
 export default function CardClientesMorosos() {
   const [morosos, setMorosos] = useState([]);
-  const [clienteConfirmar, setClienteConfirmar] = useState(null); // Nuevo estado
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(3); // Puedes ajustar este número
+  const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchMorosos = async () => {
-      const q = query(
-        collection(db, "clientes"),
-        where("etiqueta", "==", "Moroso")
-      );
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setMorosos(data);
+      setLoading(true);
+      try {
+        const q = query(
+          collection(db, "clientes"),
+          where("etiqueta", "==", "Moroso")
+        );
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setMorosos(data);
+        setTotalItems(data.length);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchMorosos();
   }, []);
 
-  const marcarPagado = async (id) => {
-    try {
-      await updateDoc(doc(db, "clientes", id), { etiqueta: "Potencial" });
-      setMorosos((prev) => prev.filter((c) => c.id !== id));
-      toast.success("Cliente pagó la totalidad de la deuda");
-      setClienteConfirmar(null); // Cerrar modal
-    } catch (error) {
-      console.error(error);
-      toast.error("Error al actualizar estado");
-    }
-  };
+  // Calcular páginas totales
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  const exportarCSV = () => {
-    const headers = ["Nombre", "Teléfono", "Email", "Etiqueta"];
-    const rows = morosos.map((c) => [
-      c.nombre,
-      c.telefono,
-      c.email || "",
-      c.etiqueta,
-    ]);
-    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
-    rows.forEach((r) => (csvContent += r.join(",") + "\n"));
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "clientes_morosos.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // Obtener items para la página actual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = morosos.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Cambiar página
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const nextPage = () =>
+    currentPage < totalPages && setCurrentPage(currentPage + 1);
+  const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
+
+  const exportarXLSX = () => {
+    const data = morosos.map((c) => ({
+      Nombre: c.nombre,
+      Apellido: c.apellido || "",
+      Teléfono: c.telefono,
+      Email: c.email || "",
+      Etiqueta: c.etiqueta,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Clientes Morosos");
+
+    // Generar archivo XLSX
+    XLSX.writeFile(workbook, "clientes_morosos.xlsx", { compression: true });
   };
 
   const exportarPDF = () => {
@@ -67,7 +81,9 @@ export default function CardClientesMorosos() {
     doc.setFontSize(12);
     morosos.forEach((c, i) => {
       doc.text(
-        `${i + 1}. ${c.nombre} - ${c.telefono} - ${c.email || "Sin email"}`,
+        `${i + 1}. ${c.nombre} ${c.apellido || ""} - ${c.telefono} - ${
+          c.email || "Sin email"
+        }`,
         20,
         30 + i * 10
       );
@@ -76,99 +92,152 @@ export default function CardClientesMorosos() {
   };
 
   return (
-    <div className="relative bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow border-l-4 border-red-500">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-2">
-        <Users className="text-red-600 w-6 h-6 sm:w-8 sm:h-8" />
-        <h3 className="text-lg sm:text-xl font-semibold flex-grow text-center">
-          Clientes Morosos
-        </h3>
-
-        <button
-          onClick={exportarCSV}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-        >
-          Exportar CSV
-        </button>
-
-        <button
-          onClick={exportarPDF}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-        >
-          Exportar PDF
-        </button>
-      </div>
-      <p className="text-2xl font-bold mb-2">{morosos.length}</p>
-
-      <div className="space-y-1 text-sm">
-        {morosos.slice(0, 3).map((c) => (
-          <div key={c.id} className="flex justify-between items-center">
-            <span>
-              {c.nombre} {c.apellido}
-            </span>
-            <div className="flex gap-2">
-              <a
-                href={`tel:${c.telefono}`}
-                className="text-blue-600"
-                title="Llamar"
-              >
-                <Phone size={16} />
-              </a>
-              {c.email && (
-                <a
-                  href={`mailto:${c.email}`}
-                  className="text-green-600"
-                  title="Email"
-                >
-                  <Mail size={16} />
-                </a>
-              )}
-              <button
-                onClick={() => setClienteConfirmar(c)}
-                className="text-gray-600 hover:text-green-600"
-                title="Marcar como pagado"
-              >
-                <CheckCircle size={16} />
-              </button>
-              <a
-                href={`https://wa.me/${c.telefono}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-green-600"
-                title="WhatsApp"
-              >
-                <MessageCircle size={16} />
-              </a>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {clienteConfirmar && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-gray-900 p-6 rounded-xl max-w-sm w-full shadow-lg">
-            <h4 className="text-lg font-semibold mb-2">¿Confirmar pago?</h4>
-            <p className="text-sm mb-4">
-              Estás por marcar a <strong>{clienteConfirmar.nombre}</strong> como
-              cliente sin deuda. Esto significa que abonó la{" "}
-              <strong>totalidad</strong> de la deuda y su estado cambiará a{" "}
-              <em>Potencial</em>.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setClienteConfirmar(null)}
-                className="px-3 py-1 text-sm rounded border border-gray-300 hover:bg-gray-700"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => marcarPagado(clienteConfirmar.id)}
-                className="px-3 py-1 text-sm rounded bg-green-600 text-white hover:bg-green-700"
-              >
-                Confirmar
-              </button>
-            </div>
-          </div>
+    <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow-lg border-l-4 border-red-500">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+        <div className="flex items-center gap-3">
+          <Users className="text-red-400 w-8 h-8" />
+          <h3 className="text-xl font-semibold">Clientes Morosos</h3>
         </div>
+
+        <div className="flex items-center gap-2 ml-auto">
+          <span className="text-3xl font-bold text-white bg-red-500/20 px-3 py-1 rounded-full">
+            {totalItems}
+          </span>
+
+          <button
+            onClick={exportarXLSX}
+            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+          >
+            Excel
+          </button>
+
+          <button
+            onClick={exportarPDF}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
+          >
+            PDF
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-red-500"></div>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-3 text-sm mb-4">
+            {currentItems.map((c) => (
+              <div
+                key={c.id}
+                className="flex justify-between items-center p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700/70 transition-colors"
+              >
+                <div>
+                  <span className="font-medium">
+                    {c.nombre} {c.apellido}
+                  </span>
+                  {c.email && (
+                    <p className="text-xs text-gray-400 truncate max-w-[180px]">
+                      {c.email}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-3">
+                  <a
+                    href={`tel:${c.telefono}`}
+                    className="text-blue-400 hover:text-blue-300 transition-colors"
+                    title="Llamar"
+                  >
+                    <Phone size={18} />
+                  </a>
+
+                  {c.email && (
+                    <a
+                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${c.email}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-green-400 hover:text-green-300 transition-colors"
+                      title="Enviar email (Gmail)"
+                    >
+                      <Mail size={18} />
+                    </a>
+                  )}
+
+                  <a
+                    href={`https://wa.me/${c.telefono}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green-500 hover:text-green-400 transition-colors"
+                    title="WhatsApp"
+                  >
+                    <MessageCircle size={18} />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Controles de paginación */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <button
+                onClick={prevPage}
+                disabled={currentPage === 1}
+                className={`flex items-center gap-1 px-3 py-1 rounded ${
+                  currentPage === 1
+                    ? "text-gray-500 cursor-not-allowed"
+                    : "text-blue-400 hover:text-blue-300"
+                }`}
+              >
+                <ChevronLeft size={18} />
+                Anterior
+              </button>
+
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNumber;
+                  if (totalPages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNumber = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNumber = totalPages - 4 + i;
+                  } else {
+                    pageNumber = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => paginate(pageNumber)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        currentPage === pageNumber
+                          ? "bg-blue-600 text-white"
+                          : "text-blue-400 hover:bg-slate-700"
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={nextPage}
+                disabled={currentPage === totalPages}
+                className={`flex items-center gap-1 px-3 py-1 rounded ${
+                  currentPage === totalPages
+                    ? "text-gray-500 cursor-not-allowed"
+                    : "text-blue-400 hover:text-blue-300"
+                }`}
+              >
+                Siguiente
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -7,8 +7,14 @@ import {
   query,
   Timestamp,
 } from "firebase/firestore";
-import { motion, useAnimation } from "framer-motion";
-import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowUpCircle,
+  ArrowDownCircle,
+  TrendingUp,
+  TrendingDown,
+  Loader2,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -17,38 +23,52 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  LabelList,
+  Cell,
 } from "recharts";
 
-function AnimatedNumber({ value, duration = 1.2 }) {
-  const controls = useAnimation();
-  const [display, setDisplay] = useState(0);
+const AnimatedNumber = ({
+  value,
+  duration = 1.2,
+  prefix = "$",
+  className = "",
+}) => {
+  const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
-    controls.start({
-      val: value,
-      transition: { duration, ease: "easeOut" },
-    });
+    const startTime = Date.now();
+    const startValue = displayValue;
+    const endValue = value;
+    const range = endValue - startValue;
+
+    if (range === 0) return;
+
+    const animation = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / (duration * 1000), 1);
+      const easedProgress =
+        progress < 0.5
+          ? 2 * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 2) / 2; // easeInOutQuad
+
+      const currentValue = startValue + easedProgress * range;
+      setDisplayValue(Math.floor(currentValue));
+
+      if (progress < 1) {
+        requestAnimationFrame(animation);
+      }
+    };
+
+    requestAnimationFrame(animation);
   }, [value]);
 
   return (
-    <motion.span
-      initial={{ val: 0 }}
-      animate={controls}
-      onUpdate={(latest) =>
-        setDisplay(
-          Math.floor(latest.val).toLocaleString("es-AR", {
-            style: "currency",
-            currency: "ARS",
-            maximumFractionDigits: 0,
-          })
-        )
-      }
-      className="tabular-nums"
-    >
-      {display}
-    </motion.span>
+    <span className={`tabular-nums ${className}`}>
+      {prefix}
+      {displayValue.toLocaleString("es-AR", { maximumFractionDigits: 0 })}
+    </span>
   );
-}
+};
 
 const obtenerUltimosMeses = (cantidad = 4) => {
   const ahora = new Date();
@@ -61,6 +81,10 @@ const obtenerUltimosMeses = (cantidad = 4) => {
       mes: fecha.getMonth(),
       anio: fecha.getFullYear(),
       nombre: fecha.toLocaleString("es-AR", { month: "short" }),
+      nombreCompleto: fecha.toLocaleString("es-AR", {
+        month: "long",
+        year: "numeric",
+      }),
     });
   }
 
@@ -70,161 +94,244 @@ const obtenerUltimosMeses = (cantidad = 4) => {
 export default function CardInteligenciaVentas() {
   const [estado, setEstado] = useState(null);
   const [dataGrafico, setDataGrafico] = useState([]);
-  const [chartHeight, setChartHeight] = useState(150);
-
-  useEffect(() => {
-    function ajustarAltura() {
-      const width = window.innerWidth;
-      if (width < 640) setChartHeight(120);
-      else if (width < 1024) setChartHeight(140);
-      else setChartHeight(180);
-    }
-    ajustarAltura();
-    window.addEventListener("resize", ajustarAltura);
-    return () => window.removeEventListener("resize", ajustarAltura);
-  }, []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     const analizar = async () => {
-      const meses = obtenerUltimosMeses(4);
+      try {
+        setLoading(true);
+        setError(null);
 
-      const desde = new Date(meses[0].anio, meses[0].mes, 1);
-      const hasta = new Date(meses[3].anio, meses[3].mes + 1, 1);
+        const meses = obtenerUltimosMeses(4);
 
-      const q = query(
-        collection(db, "ventas"),
-        where("fecha", ">=", Timestamp.fromDate(desde)),
-        where("fecha", "<", Timestamp.fromDate(hasta))
-      );
+        const desde = new Date(meses[0].anio, meses[0].mes, 1);
+        const hasta = new Date(meses[3].anio, meses[3].mes + 1, 1);
 
-      const snap = await getDocs(q);
+        const q = query(
+          collection(db, "ventas"),
+          where("fecha", ">=", Timestamp.fromDate(desde)),
+          where("fecha", "<", Timestamp.fromDate(hasta))
+        );
 
-      const ventasPorMes = Object.fromEntries(
-        meses.map((m) => [`${m.anio}-${m.mes}`, 0])
-      );
+        const snap = await getDocs(q);
 
-      snap.forEach((doc) => {
-        const { fecha, monto } = doc.data();
-        if (fecha?.toDate && monto) {
-          const f = fecha.toDate();
-          const clave = `${f.getFullYear()}-${f.getMonth()}`;
-          if (ventasPorMes[clave] !== undefined) {
-            ventasPorMes[clave] += monto;
+        const ventasPorMes = Object.fromEntries(
+          meses.map((m) => [`${m.anio}-${m.mes}`, 0])
+        );
+
+        snap.forEach((doc) => {
+          const { fecha, monto } = doc.data();
+          if (fecha?.toDate && monto) {
+            const f = fecha.toDate();
+            const clave = `${f.getFullYear()}-${f.getMonth()}`;
+            if (ventasPorMes[clave] !== undefined) {
+              ventasPorMes[clave] += monto;
+            }
           }
-        }
-      });
+        });
 
-      const claves = Object.keys(ventasPorMes);
-      const actualKey = claves[claves.length - 1];
-      const montoActual = ventasPorMes[actualKey];
-      const anteriores = claves.slice(0, -1).map((k) => ventasPorMes[k]);
-      const promedio =
-        anteriores.reduce((acc, val) => acc + val, 0) / anteriores.length;
+        const claves = Object.keys(ventasPorMes);
+        const actualKey = claves[claves.length - 1];
+        const montoActual = ventasPorMes[actualKey];
+        const anteriores = claves.slice(0, -1).map((k) => ventasPorMes[k]);
+        const promedio =
+          anteriores.reduce((acc, val) => acc + val, 0) / anteriores.length;
 
-      const diferencia = montoActual - promedio;
-      const porcentaje = promedio ? (diferencia / promedio) * 100 : 0;
+        const diferencia = montoActual - promedio;
+        const porcentaje = promedio ? (diferencia / promedio) * 100 : 0;
 
-      setEstado({
-        ventasMesActual: montoActual,
-        promedio,
-        porcentaje,
-        arriba: diferencia >= 0,
-      });
+        setEstado({
+          ventasMesActual: montoActual,
+          promedio,
+          porcentaje,
+          arriba: diferencia >= 0,
+        });
 
-      setDataGrafico(
-        meses.map((m) => ({
-          nombre: m.nombre.toUpperCase(),
-          original: ventasPorMes[`${m.anio}-${m.mes}`],
-        }))
-      );
+        setDataGrafico(
+          meses.map((m) => ({
+            ...m,
+            original: ventasPorMes[`${m.anio}-${m.mes}`],
+          }))
+        );
+      } catch (err) {
+        console.error("Error en análisis de ventas:", err);
+        setError("Error al cargar el análisis de ventas");
+      } finally {
+        setLoading(false);
+      }
     };
 
     analizar();
   }, []);
 
-  if (!estado) return null;
+  if (loading && !estado) {
+    return (
+      <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl shadow-lg flex items-center justify-center h-full min-h-[300px]">
+        <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+      </div>
+    );
+  }
 
-  const color = estado.arriba ? "text-green-600" : "text-red-600";
+  if (error) {
+    return (
+      <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl shadow-lg border-l-4 border-red-500 flex flex-col items-center justify-center h-full min-h-[300px] text-red-400">
+        <TrendingDown className="w-10 h-10 mb-2" />
+        <p className="text-center">{error}</p>
+      </div>
+    );
+  }
+
+  const colorPrincipal = estado.arriba ? "emerald" : "rose";
+  const colorBarra = estado.arriba ? "#10b981" : "#f43f5e";
   const Icon = estado.arriba ? ArrowUpCircle : ArrowDownCircle;
-  const mensaje = estado.arriba ? `📈 ¡Buen trabajo! Estás ` : `📉 Estás `;
+  const mensaje = estado.arriba
+    ? "¡Excelente rendimiento! Estás "
+    : "Oportunidad de mejora, estás ";
 
+  // Calcular el valor máximo para la normalización
   const maxValor = Math.max(...dataGrafico.map((d) => d.original), 1);
-  const dataNormalizada = dataGrafico.map((d) => ({
-    nombre: d.nombre,
+  const dataConPorcentaje = dataGrafico.map((d) => ({
+    ...d,
     porcentaje: Math.round((d.original / maxValor) * 100),
-    original: d.original,
   }));
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className={`bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-5 rounded-xl shadow border-l-4 ${
-        estado.arriba ? "border-green-500" : "border-red-500"
-      } flex flex-col gap-4`}
+      transition={{ duration: 0.4 }}
+      className={`bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm p-5 rounded-xl shadow-lg border-l-4 border-${colorPrincipal}-500 hover:shadow-${colorPrincipal}-500/10 transition-all h-full flex flex-col`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="flex items-center gap-4">
-        <Icon className={`${color} w-8 h-8`} />
-        <h4 className={`text-lg font-medium ${color} sm:text-xl`}>
-          Análisis de Rendimiento
-        </h4>
-      </div>
-
-      <p className="text-gray-300 text-sm sm:text-base">
-        {mensaje}
-        <motion.span className={`${color} font-semibold`}>
-          <AnimatedNumber value={Math.abs(estado.porcentaje)} />%
-        </motion.span>
-        {estado.arriba
-          ? " arriba del promedio de los últimos 3 meses."
-          : " por debajo del promedio. ¡Podés remontarlo!"}
-      </p>
-
-      <div className="flex justify-around text-center text-gray-300 font-semibold text-sm sm:text-base">
+      <div className="flex items-start justify-between mb-4">
         <div>
-          <div className="text-xl sm:text-2xl text-indigo-400">
-            {<AnimatedNumber value={estado.ventasMesActual} />}
+          <div className="flex items-center gap-3 mb-2">
+            <div className={`p-2 bg-${colorPrincipal}-500/20 rounded-lg`}>
+              {estado.arriba ? (
+                <TrendingUp className={`text-${colorPrincipal}-400 w-8 h-8`} />
+              ) : (
+                <TrendingDown
+                  className={`text-${colorPrincipal}-400 w-8 h-8`}
+                />
+              )}
+            </div>
+            <h3 className="text-lg font-semibold text-white">
+              Rendimiento de Ventas
+            </h3>
           </div>
-          <div>Ventas este mes</div>
-        </div>
-        <div>
-          <div className="text-xl sm:text-2xl text-yellow-600">
-            {<AnimatedNumber value={estado.promedio} />}
-          </div>
-          <div>Promedio últimos 3 meses</div>
-        </div>
-      </div>
 
-      <ResponsiveContainer width="100%" height={chartHeight}>
-        <BarChart
-          data={dataNormalizada}
-          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+          <p className="text-gray-300 text-sm">
+            {mensaje}
+            <span className={`text-${colorPrincipal}-400 font-medium`}>
+              <AnimatedNumber
+                value={Math.abs(estado.porcentaje)}
+                prefix=""
+                className={`text-${colorPrincipal}-400`}
+              />
+              %
+            </span>
+            {estado.arriba ? " sobre el promedio" : " bajo el promedio"}
+          </p>
+        </div>
+
+        <motion.div
+          animate={{
+            scale: isHovered ? 1.1 : 1,
+            rotate: isHovered ? (estado.arriba ? 5 : -5) : 0,
+          }}
+          className={`p-2 rounded-full bg-${colorPrincipal}-500/10`}
         >
-          <XAxis dataKey="nombre" />
-          <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "#1f293790",
-              border: "none",
-              borderRadius: 6,
-            }}
-            formatter={(value, name, props) =>
-              `$${props.payload.original.toLocaleString("es-AR")}`
-            }
-          />
-          <Bar
-            contentStyle={{
-              backgroundColor: "#1f293724",
-              border: "none",
-              borderRadius: 6,
-            }}
-            dataKey="porcentaje"
-            fill={estado.arriba ? "#22c55e" : "#ef4444"}
-            animationDuration={800}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+          <Icon className={`text-${colorPrincipal}-400 w-6 h-6`} />
+        </motion.div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 my-4">
+        <div className="bg-slate-700/30 p-3 rounded-lg">
+          <p className="text-gray-400 text-sm">Este mes</p>
+          <p className="text-xl font-bold text-white">
+            <AnimatedNumber value={estado.ventasMesActual} />
+          </p>
+        </div>
+        <div className="bg-slate-700/30 p-3 rounded-lg">
+          <p className="text-gray-400 text-sm">Promedio últimos 3 meses</p>
+          <p className="text-xl font-bold text-amber-400">
+            <AnimatedNumber value={estado.promedio} />
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-auto h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={dataConPorcentaje}
+            margin={{ top: 20, right: 10, left: 0, bottom: 5 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={false}
+              stroke="#334155"
+            />
+            <XAxis
+              dataKey="nombre"
+              tick={{ fill: "#94a3b8", fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fill: "#94a3b8", fontSize: 12 }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(value) => `${value}%`}
+            />
+            <Tooltip
+              contentStyle={{
+                background: "#757d8d8d",
+                borderColor: "#1e293b",
+                borderRadius: "0.5rem",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+              }}
+              formatter={(value, name, props) => [
+                `$${props.payload.original.toLocaleString("es-AR")}`,
+                props.payload.nombreCompleto,
+              ]}
+              cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
+            />
+            <Bar
+              dataKey="porcentaje"
+              animationDuration={1500}
+              radius={[4, 4, 0, 0]}
+            >
+              {dataConPorcentaje.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={
+                    index === dataConPorcentaje.length - 1
+                      ? colorBarra
+                      : "#475569"
+                  }
+                />
+              ))}
+              <LabelList
+                dataKey="original"
+                position="top"
+                formatter={(value) => `$${Math.round(value / 1000)}K`}
+                fill="#e2e8f0"
+                fontSize={10}
+              />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="flex justify-between items-center mt-2 text-xs text-slate-400">
+        <span>Últimos 4 meses</span>
+        <span className={`text-${colorPrincipal}-400 font-medium`}>
+          {estado.arriba ? "Tendencia positiva" : "Tendencia a mejorar"}
+        </span>
+      </div>
     </motion.div>
   );
 }

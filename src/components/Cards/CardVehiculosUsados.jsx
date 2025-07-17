@@ -1,113 +1,389 @@
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { db } from "../../firebase";
-import { Truck, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Truck,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Search,
+  Filter,
+} from "lucide-react";
 import { jsPDF } from "jspdf";
+import * as XLSX from "xlsx";
 
 export default function CardVehiculosUsados() {
-  const [usados, setUsados] = useState([]);
-  const [paginaActual, setPaginaActual] = useState(1);
-  const ITEMS_POR_PAGINA = 3;
+  const [vehiculos, setVehiculos] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(3);
+  const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: "precioVenta",
+    direction: "desc",
+  });
 
   useEffect(() => {
-    const fetchUsados = async () => {
-      const q = query(
-        collection(db, "vehiculos"),
-        where("etiqueta", "==", "Usado"),
-        where("estado", "==", "Disponible")
-      );
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setUsados(data);
+    const fetchVehiculos = async () => {
+      setLoading(true);
+      try {
+        const q = query(
+          collection(db, "vehiculos"),
+          where("etiqueta", "==", "Usado"),
+          where("estado", "==", "Disponible"),
+          orderBy(
+            sortConfig.key,
+            sortConfig.direction === "asc" ? "asc" : "desc"
+          )
+        );
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setVehiculos(data);
+        setTotalItems(data.length);
+      } catch (error) {
+        console.error("Error fetching vehicles:", error);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchUsados();
-  }, []);
+    fetchVehiculos();
+  }, [sortConfig]);
 
-  // ✅ Definí la función acá dentro
-  const formatPrice = (n) =>
-    Number(n).toLocaleString("es-AR", {
+  // Filtrado y búsqueda
+  const filteredVehiculos = vehiculos.filter((vehiculo) => {
+    const searchTermLower = searchTerm.toLowerCase();
+    return (
+      vehiculo.marca.toLowerCase().includes(searchTermLower) ||
+      vehiculo.modelo.toLowerCase().includes(searchTermLower) ||
+      vehiculo.patente.toLowerCase().includes(searchTermLower) ||
+      vehiculo.año.toString().includes(searchTerm)
+    );
+  });
+
+  // Paginación
+  const totalPages = Math.ceil(filteredVehiculos.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredVehiculos.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
+  const nextPage = () =>
+    currentPage < totalPages && setCurrentPage(currentPage + 1);
+  const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  // Ordenamiento
+  const requestSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Formateador de moneda
+  const formatPesosArgentinos = (amount) => {
+    if (amount === null || amount === undefined) return "$ 0,00";
+    return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
-    });
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
-  // ✅ Usala dentro del exportarPDF
+  // Exportar a PDF
   const exportarPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
     doc.text("Vehículos Usados Disponibles", 20, 20);
-    doc.setFontSize(12);
-    usados.forEach((v, i) => {
+    doc.setFontSize(10);
+
+    filteredVehiculos.forEach((v, i) => {
+      const yPos = 30 + i * 10;
+      if (yPos > 280) {
+        doc.addPage();
+        doc.text("Vehículos Usados Disponibles (cont.)", 20, 20);
+        return 30;
+      }
+
       doc.text(
-        `${i + 1}. ${v.marca} ${v.modelo} - ${v.patente} - ${v.año} - ${v.estado} - ${formatPrice(v.precioVenta)}`,
+        `${i + 1}. ${v.marca} ${v.modelo} (${v.año}) - ${
+          v.patente
+        } - ${formatPesosArgentinos(v.precioVenta)} - ${v.kilometros || 0} km`,
         20,
-        30 + i * 10
+        yPos
       );
     });
+
     doc.save("vehiculos_usados.pdf");
   };
 
+  // Exportar a XLSX
+  const exportarXLSX = () => {
+    const data = filteredVehiculos.map((v) => ({
+      Marca: v.marca,
+      Modelo: v.modelo,
+      Año: v.año,
+      Patente: v.patente,
+      Precio: v.precioVenta,
+      Kilómetros: v.kilometros || 0,
+      Estado: v.estado,
+      Fecha_Ingreso: v.fechaIngreso || "N/A",
+    }));
 
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Vehículos Usados");
 
-  const totalPaginas = Math.ceil(usados.length / ITEMS_POR_PAGINA);
-  const usadosPagina = usados.slice(
-    (paginaActual - 1) * ITEMS_POR_PAGINA,
-    paginaActual * ITEMS_POR_PAGINA
-  );
+    // Ajustar el ancho de las columnas
+    worksheet["!cols"] = [
+      { width: 15 }, // Marca
+      { width: 20 }, // Modelo
+      { width: 8 }, // Año
+      { width: 12 }, // Patente
+      { width: 15 }, // Precio
+      { width: 12 }, // Kilómetros
+      { width: 12 }, // Estado
+      { width: 15 }, // Fecha Ingreso
+    ];
+
+    XLSX.writeFile(workbook, "vehiculos_usados.xlsx");
+  };
 
   return (
-    <div className="bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow border-l-4 border-yellow-500">
-      <div className="flex items-center gap-4 mb-2">
-        <Truck className="text-yellow-600 w-8 h-8" />
-        <h3 className="text-xl font-semibold flex-grow">
-          Vehículos Usados Disponibles
-        </h3>
-        <button
-          onClick={exportarPDF}
-          className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm"
-        >
-          Exportar PDF
-        </button>
-      </div>
-      <p className="text-2xl font-bold mb-2">{usados.length}</p>
-      <div className="space-y-1 text-sm mb-2">
-         {usadosPagina.map((v) => (
-    <div key={v.id}>
-      {v.marca} {v.modelo} ({v.año}) - {v.patente} ·{" "}
-      <span className="text-green-600 font-semibold">
-        {v.precioVenta
-          ? Number(v.precioVenta).toLocaleString("es-AR", {
-              style: "currency",
-              currency: "ARS",
-            })
-          : "$ Sin Asignar "}
-      </span>
-    </div>
-  ))}
-      </div>
+    <div className="bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow-lg border-l-4 border-yellow-500">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+        <div className="flex items-center gap-3">
+          <Truck className="text-yellow-400 w-8 h-8" />
+          <h3 className="text-xl font-semibold">
+            Vehículos Usados Disponibles
+          </h3>
+        </div>
 
-      {/* Controles de paginación */}
-      {totalPaginas > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-2">
-          <button
-            onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
-            disabled={paginaActual === 1}
-            className="p-1 text-gray-600 hover:text-black disabled:opacity-40"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <span className="text-sm">
-            Página {paginaActual} de {totalPaginas}
+        <div className="flex items-center gap-2 ml-auto">
+          <span className="text-3xl font-bold text-white bg-yellow-500/20 px-3 py-1 rounded-full">
+            {filteredVehiculos.length}
           </span>
+
           <button
-            onClick={() =>
-              setPaginaActual((p) => Math.min(totalPaginas, p + 1))
-            }
-            disabled={paginaActual === totalPaginas}
-            className="p-1 text-gray-600 hover:text-black disabled:opacity-40"
+            onClick={exportarXLSX}
+            className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center gap-1"
+            title="Exportar a Excel"
           >
-            <ChevronRight size={18} />
+            <Download size={16} />
+            Excel
+          </button>
+
+          <button
+            onClick={exportarPDF}
+            className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center gap-1"
+            title="Exportar a PDF"
+          >
+            <Download size={16} />
+            PDF
           </button>
         </div>
+      </div>
+
+      <div className="relative mb-4">
+        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Buscar..."
+          className="pl-8 pr-3 py-1 bg-slate-700/50 rounded text-sm text-white focus:outline-none focus:ring-1 focus:ring-yellow-500 w-full"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+        />
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-yellow-500"></div>
+        </div>
+      ) : (
+        <>
+          {/* Tabla de vehículos */}
+          <div className="overflow-x-auto mb-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-700 text-left text-gray-400">
+                  <th
+                    className="pb-2 pl-2 pr-4 cursor-pointer hover:text-white"
+                    onClick={() => requestSort("marca")}
+                  >
+                    <div className="flex items-center gap-1">
+                      Marca
+                      <Filter
+                        size={14}
+                        className={
+                          sortConfig.key === "marca"
+                            ? "text-yellow-400"
+                            : "opacity-0"
+                        }
+                      />
+                    </div>
+                  </th>
+                  <th
+                    className="pb-2 px-4 cursor-pointer hover:text-white"
+                    onClick={() => requestSort("modelo")}
+                  >
+                    <div className="flex items-center gap-1">
+                      Modelo
+                      <Filter
+                        size={14}
+                        className={
+                          sortConfig.key === "modelo"
+                            ? "text-yellow-400"
+                            : "opacity-0"
+                        }
+                      />
+                    </div>
+                  </th>
+                  <th
+                    className="pb-2 px-4 cursor-pointer hover:text-white"
+                    onClick={() => requestSort("año")}
+                  >
+                    <div className="flex items-center gap-1">
+                      Año
+                      <Filter
+                        size={14}
+                        className={
+                          sortConfig.key === "año"
+                            ? "text-yellow-400"
+                            : "opacity-0"
+                        }
+                      />
+                    </div>
+                  </th>
+                  <th className="pb-2 px-4">Patente</th>
+                  <th
+                    className="pb-2 px-4 cursor-pointer hover:text-white"
+                    onClick={() => requestSort("kilometros")}
+                  >
+                    <div className="flex items-center gap-1">
+                      KM
+                      <Filter
+                        size={14}
+                        className={
+                          sortConfig.key === "kilometros"
+                            ? "text-yellow-400"
+                            : "opacity-0"
+                        }
+                      />
+                    </div>
+                  </th>
+                  <th
+                    className="pb-2 px-4 cursor-pointer hover:text-white text-right"
+                    onClick={() => requestSort("precioVenta")}
+                  >
+                    <div className="flex items-center  gap-1">
+                      Precio
+                      <Filter
+                        size={14}
+                        className={
+                          sortConfig.key === "precioVenta"
+                            ? "text-yellow-400"
+                            : "opacity-0"
+                        }
+                      />
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentItems.map((v) => (
+                  <tr
+                    key={v.id}
+                    className="border-b border-slate-700/50 hover:bg-slate-700/30"
+                  >
+                    <td className="py-3 pl-2 pr-4 font-medium">{v.marca}</td>
+                    <td className="py-3 px-4">{v.modelo}</td>
+                    <td className="py-3 px-4">{v.año}</td>
+                    <td className="py-3 px-4 font-mono">{v.patente}</td>
+                    <td className="py-3 px-4">
+                      {v.kilometros
+                        ? `${v.kilometros.toLocaleString()} km`
+                        : "0 km"}
+                    </td>
+                    <td className="py-3 px-4 text-right font-semibold text-green-400">
+                      {formatPesosArgentinos(v.precioVenta)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <button
+                onClick={prevPage}
+                disabled={currentPage === 1}
+                className={`flex items-center gap-1 px-3 py-1 rounded ${
+                  currentPage === 1
+                    ? "text-gray-500 cursor-not-allowed"
+                    : "text-yellow-400 hover:text-yellow-300"
+                }`}
+              >
+                <ChevronLeft size={18} />
+                Anterior
+              </button>
+
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNumber;
+                  if (totalPages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNumber = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNumber = totalPages - 4 + i;
+                  } else {
+                    pageNumber = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => paginate(pageNumber)}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        currentPage === pageNumber
+                          ? "bg-yellow-600 text-white"
+                          : "text-yellow-400 hover:bg-slate-700"
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={nextPage}
+                disabled={currentPage === totalPages}
+                className={`flex items-center gap-1 px-3 py-1 rounded ${
+                  currentPage === totalPages
+                    ? "text-gray-500 cursor-not-allowed"
+                    : "text-yellow-400 hover:text-yellow-300"
+                }`}
+              >
+                Siguiente
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
