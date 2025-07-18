@@ -10,9 +10,8 @@ import CardRendimientoVendedores from "../components/Cards/CardRendimientoVended
 import CardSaldosProveedores from "../components/Cards/CardSaldosProveedores";
 import CardDeudasPendientes from "../components/Cards/CardDeudasPendientes";
 import CardDeudasVencidas from "../components/Cards/CardDeudasVencidas";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Info } from "lucide-react";
 
 // Componente Skeleton Loading
 const CardSkeleton = () => (
@@ -29,104 +28,36 @@ const CardSkeleton = () => (
   </motion.div>
 );
 
-// Tooltip Component
-const Tooltip = ({ content, position = "right" }) => {
-  const positionClasses = {
-    right: "left-full ml-2 top-1/2 transform -translate-y-1/2",
-    bottom: "top-full mt-2 left-1/2 transform -translate-x-1/2",
-    left: "right-full mr-2 top-1/2 transform -translate-y-1/2",
-  };
-
-  return (
-    <div className="relative inline-block group">
-      <Info className="h-5 w-5 text-slate-500 hover:text-indigo-300 cursor-pointer transition-colors" />
-      <div
-        className={`absolute z-20 hidden group-hover:block ${positionClasses[position]} bg-slate-800 p-3 rounded-lg text-sm w-64 shadow-lg border border-slate-700`}
-      >
-        {content}
-      </div>
-    </div>
-  );
-};
-
 // Datos de los Tabs
 const tabsData = [
   {
     id: "vehiculos",
     label: "Vehículos",
     cards: [
-      {
-        id: "v1",
-        component: <CardVehiculosNuevos />,
-        tooltip: "Inventario actual de vehículos nuevos disponibles",
-      },
-      {
-        id: "v2",
-        component: <CardVehiculosUsados />,
-        tooltip: "Vehículos usados actualmente en stock",
-      },
-      {
-        id: "v3",
-        component: <CardVehiculosReparacion />,
-        tooltip: "Vehículos en proceso de reparación en el taller",
-      },
-      {
-        id: "v4",
-        component: <CardPresupuestosRecientes />,
-        tooltip: "Últimos presupuestos generados para clientes",
-      },
+      { id: "v1", component: <CardVehiculosNuevos /> },
+      { id: "v2", component: <CardVehiculosUsados /> },
+      { id: "v3", component: <CardVehiculosReparacion /> },
+      { id: "v4", component: <CardPresupuestosRecientes /> },
     ],
   },
   {
     id: "ventas",
     label: "Ventas",
     cards: [
-      {
-        id: "s1",
-        component: <CardVentasDelMes />,
-        tooltip: "Total de ventas acumuladas en el mes actual",
-      },
-      {
-        id: "s2",
-        component: <CardEvolucionVentas />,
-        tooltip: "Comparativo de ventas últimos 6 meses",
-      },
-      {
-        id: "s3",
-        component: <CardInteligenciaVentas />,
-        tooltip: "Análisis predictivo basado en historial de ventas",
-      },
-      {
-        id: "s4",
-        component: <CardRendimientoVendedores />,
-        tooltip: "Métricas de desempeño por vendedor",
-      },
+      { id: "s1", component: <CardVentasDelMes /> },
+      { id: "s2", component: <CardEvolucionVentas /> },
+      { id: "s3", component: <CardInteligenciaVentas /> },
+      { id: "s4", component: <CardRendimientoVendedores /> },
     ],
   },
   {
     id: "finanzas",
     label: "Finanzas",
     cards: [
-      {
-        id: "f1",
-        component: <CardClientesMorosos />,
-        tooltip: "Clientes con pagos pendientes y días de mora",
-      },
-      {
-        id: "f2",
-        component: <CardSaldosProveedores />,
-        tooltip: "Estado de cuentas con proveedores y fabricantes",
-      },
-      {
-        id: "f3",
-        component: <CardDeudasPendientes />,
-        tooltip: "Obligaciones financieras por fecha de vencimiento",
-      },
-      {
-        id: "f4",
-        component: <CardDeudasVencidas />,
-        tooltip: "Deudas vencidas clasificadas por antigüedad",
-      },
+      { id: "f1", component: <CardClientesMorosos /> },
+      { id: "f2", component: <CardSaldosProveedores /> },
+      { id: "f3", component: <CardDeudasPendientes /> },
+      { id: "f4", component: <CardDeudasVencidas /> },
     ],
   },
 ];
@@ -151,7 +82,7 @@ export default function Dashboard() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-white">Panel de Control</h1>
+          <h1 className="text-3xl font-bold text-white">Menu Principal</h1>
           <p className="text-slate-400">Visualización integral de métricas</p>
         </motion.header>
 
@@ -162,9 +93,7 @@ export default function Dashboard() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`px-6 py-3 text-sm font-medium relative rounded-md transition-colors ${
-                activeTab === tab.id
-                  ? "text-white"
-                  : "text-slate-400 hover:text-white"
+                activeTab === tab.id ? "text-white" : "text-slate-400"
               }`}
             >
               {tab.label}
@@ -195,16 +124,7 @@ export default function Dashboard() {
                 {tabsData
                   .find((tab) => tab.id === activeTab)
                   ?.cards.map((card) => (
-                    <motion.div
-                      key={card.id}
-                      whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                      className="relative group"
-                    >
-                      {card.component}
-                      <div className="absolute top-3 right-3">
-                        <Tooltip content={card.tooltip} position="bottom" />
-                      </div>
-                    </motion.div>
+                    <div key={card.id}>{card.component}</div>
                   ))}
               </div>
             )}

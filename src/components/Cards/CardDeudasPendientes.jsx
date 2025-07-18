@@ -117,7 +117,7 @@ export default function CardDeudasPendientes() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow border-l-4 border-red-500"
+      className="bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow border-l-4 border-red-500 min-h-80"
     >
       {/* Encabezado */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">

@@ -126,7 +126,7 @@ export default function CardDeudasVencidas() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow border-l-4 border-red-700"
+      className="bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow border-l-4 border-red-700 min-h-120"
     >
       {/* Encabezado */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">

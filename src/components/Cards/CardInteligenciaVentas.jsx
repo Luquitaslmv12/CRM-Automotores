@@ -202,7 +202,7 @@ export default function CardInteligenciaVentas() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className={`bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm p-5 rounded-xl shadow-lg border-l-4 border-${colorPrincipal}-500 hover:shadow-${colorPrincipal}-500/10 transition-all h-full flex flex-col`}
+      className={`bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm p-5 rounded-xl shadow-lg border-l-4 border-${colorPrincipal}-500 hover:shadow-${colorPrincipal}-500/10 transition-all h-full flex flex-col min-h-80`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

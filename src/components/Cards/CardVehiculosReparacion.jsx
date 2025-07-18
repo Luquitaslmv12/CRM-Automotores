@@ -127,7 +127,7 @@ export default function CardVehiculosReparacion() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-lg border-l-4 border-indigo-500 hover:shadow-indigo-500/20 transition-shadow w-full"
+      className="bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm p-4 sm:p-6 rounded-xl shadow-lg border-l-4 border-indigo-500 hover:shadow-indigo-500/20 transition-shadow w-full min-h-80"
     >
       <div className="flex flex-col gap-4 mb-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">

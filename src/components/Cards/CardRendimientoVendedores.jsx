@@ -21,8 +21,18 @@ import {
 } from "recharts";
 
 const meses = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
 ];
 
 function calcularDias(inicio, fin) {
@@ -40,8 +50,12 @@ export default function CardRendimientoVendedores() {
     const fetchData = async () => {
       setLoading(true);
 
-      const desde = Timestamp.fromDate(new Date(selectedYear, selectedMonth, 1));
-      const hasta = Timestamp.fromDate(new Date(selectedYear, selectedMonth + 1, 1));
+      const desde = Timestamp.fromDate(
+        new Date(selectedYear, selectedMonth, 1)
+      );
+      const hasta = Timestamp.fromDate(
+        new Date(selectedYear, selectedMonth + 1, 1)
+      );
 
       const q = query(
         collection(db, "presupuestos"),
@@ -103,7 +117,7 @@ export default function CardRendimientoVendedores() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-gradient-to-br from-slate-700 to-slate-900 p-6 rounded-xl shadow border-l-4 border-green-500"
+      className="bg-gradient-to-br from-slate-700 to-slate-900 p-6 rounded-xl shadow border-l-4 border-green-500 min-h-80"
     >
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2 items-center">
@@ -131,7 +145,11 @@ export default function CardRendimientoVendedores() {
           >
             {Array.from({ length: 5 }, (_, i) => {
               const year = new Date().getFullYear() - 2 + i;
-              return <option key={year} value={year}>{year}</option>;
+              return (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              );
             })}
           </select>
         </div>
@@ -144,39 +162,44 @@ export default function CardRendimientoVendedores() {
       ) : (
         <>
           {/* BARRAS DE RANKING */}
-        <div className="h-34">
-  <ResponsiveContainer width="100%" height="100%">
-    <BarChart
-      data={ranking}
-      margin={{ top: 10, bottom: 10 }}
-    >
-      <XAxis
-        dataKey="emitidoPor"
-        tick={false} // oculta texto debajo de las barras
-        axisLine={false}
-      />
-      <YAxis
-        type="number"
-        domain={[0, 100]}
-        tick={{ fill: "#e5e7eb", fontSize: 12 }}
-        width={40}
-      />
-      <Tooltip
-        formatter={(value, name, props) =>
-          [`${value.toFixed(1)}%`, props.payload.emitidoPor]
-        }
-        labelFormatter={() => ""}
-        contentStyle={{ backgroundColor: "#1f2937", borderColor: "#10b981" }}
-        itemStyle={{ color: "#f3f4f6" }}
-      />
-      <Bar dataKey="tasaConversion" fill="#10b981" radius={[4, 4, 0, 0]}>
-        {ranking.map((_, index) => (
-          <Cell key={index} />
-        ))}
-      </Bar>
-    </BarChart>
-  </ResponsiveContainer>
-</div>
+          <div className="h-34">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={ranking} margin={{ top: 10, bottom: 10 }}>
+                <XAxis
+                  dataKey="emitidoPor"
+                  tick={false} // oculta texto debajo de las barras
+                  axisLine={false}
+                />
+                <YAxis
+                  type="number"
+                  domain={[0, 100]}
+                  tick={{ fill: "#e5e7eb", fontSize: 12 }}
+                  width={40}
+                />
+                <Tooltip
+                  formatter={(value, name, props) => [
+                    `${value.toFixed(1)}%`,
+                    props.payload.emitidoPor,
+                  ]}
+                  labelFormatter={() => ""}
+                  contentStyle={{
+                    backgroundColor: "#1f2937",
+                    borderColor: "#10b981",
+                  }}
+                  itemStyle={{ color: "#f3f4f6" }}
+                />
+                <Bar
+                  dataKey="tasaConversion"
+                  fill="#10b981"
+                  radius={[4, 4, 0, 0]}
+                >
+                  {ranking.map((_, index) => (
+                    <Cell key={index} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
           {/* DETALLE DE KPIs */}
           <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -185,7 +208,9 @@ export default function CardRendimientoVendedores() {
                 key={v.emitidoPor}
                 className="p-2 bg-slate-800 rounded-lg border border-slate-700"
               >
-                <h4 className="font-semibold text-white mb-1">{v.emitidoPor}</h4>
+                <h4 className="font-semibold text-white mb-1">
+                  {v.emitidoPor}
+                </h4>
                 <div className="text-sm text-gray-300">
                   Presupuestos: <strong>{v.presupuestos}</strong>
                 </div>
