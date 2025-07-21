@@ -16,6 +16,8 @@ import AdminReparacionesProveedor from "./pages/AdminReparacionesProveedor";
 import Caja from "./pages/Caja";
 import ForgotPassword from "./pages/ForgotPassword";
 import Compras from "./pages/Compras";
+import CajaDiaria from "./pages/CajaDiaria";
+import ListaDeudas from "./pages/ListaDeudas";
 
 function PrivateRoute({ children, role }) {
   const { usuario, loading } = useAuth();
@@ -51,7 +53,9 @@ export default function App() {
                       <Route path="ventas" element={<Ventas />} />
                       <Route path="perfil" element={<Perfil />} />
                       <Route path="caja" element={<Caja />} />
+                      <Route path="cajadiaria" element={<CajaDiaria />} />
                       <Route path="compras" element={<Compras />} />
+                      <Route path="ListaDeudas" element={<ListaDeudas />} />
                       <Route
                         path="presupuestos"
                         element={<NuevoPresupuesto />}

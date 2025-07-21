@@ -73,7 +73,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 text-gray-100 pt-25">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 text-gray-100 pt-20">
       <div className="w-full max-w-7xl mx-auto">
         {/* Header del Dashboard */}
         <motion.header

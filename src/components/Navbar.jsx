@@ -7,6 +7,99 @@ import { getAuth, signOut } from "firebase/auth";
 import Avatar from "../components/Avatar";
 import { createPortal } from "react-dom";
 
+
+function MovimientosDropdown() {
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target) &&
+        !document.getElementById("movimientos-menu")?.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+      });
+    }
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center px-3 py-2 rounded-md font-medium text-indigo-200 hover:bg-indigo-500 hover:text-white"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        Movimientos <ChevronDown className="ml-1 w-4 h-4" />
+      </button>
+
+      {open &&
+        createPortal(
+          <div
+            id="movimientos-menu"
+            style={{
+              position: "absolute",
+              top: coords.top,
+              left: coords.left,
+              backgroundColor: "#3730a3", // bg-indigo-800
+              borderRadius: "0.375rem",
+              boxShadow:
+                "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+              zIndex: 9999,
+              minWidth: "180px",
+              padding: "0.5rem 0",
+            }}
+            role="menu"
+            aria-orientation="vertical"
+          >
+            <Link
+              to="/cajadiaria"
+              className="block px-4 py-2 text-indigo-200 hover:bg-indigo-600 hover:text-white"
+              onClick={() => setOpen(false)}
+              role="menuitem"
+            >
+              Caja Diaria
+            </Link>
+            <Link
+              to="/caja"
+              className="block px-4 py-2 text-indigo-200 hover:bg-indigo-600 hover:text-white"
+              onClick={() => setOpen(false)}
+              role="menuitem"
+            >
+              Movimientos Vehiculos
+            </Link>
+            <Link
+              to="/lista-deudas"
+              className="block px-4 py-2 text-indigo-200 hover:bg-indigo-600 hover:text-white"
+              onClick={() => setOpen(false)}
+              role="menuitem"
+            >
+              Lista de Deudas
+            </Link>
+          </div>,
+          document.body
+        )}
+    </>
+  );
+}
+
+
 function OperacionesDropdown() {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef(null);
@@ -104,6 +197,7 @@ export default function Navbar() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
   const [operacionesAbierto, setOperacionesAbierto] = useState(false);
+  const [movimientosAbierto, setMovimientosAbierto] = useState(false);
 
   const userMenuRef = useRef(null);
 
@@ -157,36 +251,39 @@ export default function Navbar() {
               </Link>
             </div>
 
+
+            
+
             {/* Menú Desktop */}
             <div className="hidden md:flex space-x-2 items-center">
-              <Link to="/dashboard" className={linkClase("/dashboard")}>
-                Dashboard
-              </Link>
-              <Link to="/clientes" className={linkClase("/clientes")}>
-                Clientes
-              </Link>
-              <Link to="/vehiculos" className={linkClase("/vehiculos")}>
-                Vehículos
-              </Link>
+  <Link to="/dashboard" className={linkClase("/dashboard")}>
+    Dashboard
+  </Link>
+  <Link to="/clientes" className={linkClase("/clientes")}>
+    Clientes
+  </Link>
+  <Link to="/vehiculos" className={linkClase("/vehiculos")}>
+    Vehículos
+  </Link>
 
-              {/* Dropdown Operaciones */}
-              <OperacionesDropdown />
+  {/* Dropdown Operaciones */}
+  <OperacionesDropdown />
+  
+  {/* Nuevo Dropdown Movimientos */}
+  <MovimientosDropdown />
 
-              <Link to="/proveedores" className={linkClase("/proveedores")}>
-                Proveedores
-              </Link>
-              <Link to="/reparaciones" className={linkClase("/reparaciones")}>
-                Reparaciones
-              </Link>
-              <Link to="/caja" className={linkClase("/caja")}>
-                Caja
-              </Link>
-              {usuario?.rol === "admin" && (
-                <Link to="/admin" className={linkClase("/admin")}>
-                  Admin
-                </Link>
-              )}
-            </div>
+  <Link to="/proveedores" className={linkClase("/proveedores")}>
+    Proveedores
+  </Link>
+  <Link to="/reparaciones" className={linkClase("/reparaciones")}>
+    Reparaciones
+  </Link>
+  {usuario?.rol === "admin" && (
+    <Link to="/admin" className={linkClase("/admin")}>
+      Admin
+    </Link>
+  )}
+</div>
 
             {/* Usuario Desktop */}
             {usuario && (
@@ -255,6 +352,8 @@ export default function Navbar() {
             )}
 
             {/* Usuario + Botón hamburguesa móvil */}
+
+          
             <div className="flex md:hidden items-center space-x-4">
               {usuario && (
                 <div className="relative" ref={userMenuRef}>

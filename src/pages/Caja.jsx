@@ -205,7 +205,7 @@ console.log("Saldo:", saldo);
         <div>
           <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3 text-sky-400">
             <Wallet className="w-10 h-10 text-sky-500 animate-bounce" />
-            Resumen de Caja
+            Resumen Movimiento Vehiculos
           </h1>
           <p className="text-gray-300 mt-2">
             Resumen financiero del mes seleccionado
@@ -476,7 +476,6 @@ console.log("Saldo:", saldo);
           </>
         )}
       </motion.div>
-      <CajaDiaria />
     </div>
   );
 }

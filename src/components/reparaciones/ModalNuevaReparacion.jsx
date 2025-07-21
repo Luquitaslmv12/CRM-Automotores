@@ -1,15 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "../../firebase";
-import {
-  collection,
-  addDoc,
-  updateDoc,
-  doc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+import { collection, addDoc, updateDoc, doc, getDocs, query, where } from "firebase/firestore";
+import { X, Car, Wrench, Calendar, ClipboardList, DollarSign, AlertCircle,CheckCircle2  } from "lucide-react";
+import { NumericFormat } from "react-number-format";
+import toast from "react-hot-toast";
 import Spinner from "../Spinner/Spinner";
 
 export default function ModalNuevaReparacion({
@@ -18,23 +13,24 @@ export default function ModalNuevaReparacion({
   onSuccess,
   reparacion,
 }) {
-  const [descripcion, setDescripcion] = useState("");
-  const [vehiculoId, setVehiculoId] = useState(reparacion?.vehiculoId || "");
-  const [tallerId, setTallerId] = useState("");
-  const [precioManoObra, setPrecioManoObra] = useState("");
-  const [precioRepuestos, setPrecioRepuestos] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [observaciones, setObservaciones] = useState("");
-  const [fechaReparacion, setFechaReparacion] = useState("");
+  const [formData, setFormData] = useState({
+    descripcion: "",
+    vehiculoId: reparacion?.vehiculoId || "",
+    tallerId: "",
+    precioManoObra: "",
+    precioRepuestos: "",
+    telefono: "",
+    observaciones: "",
+    fechaReparacion: "",
+  });
 
   const [vehiculos, setVehiculos] = useState([]);
   const [talleres, setTalleres] = useState([]);
-
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const vehiculoSeleccionado = vehiculos.find((v) => v.id === vehiculoId);
+  const vehiculoSeleccionado = vehiculos.find((v) => v.id === formData.vehiculoId);
   const patenteVehiculo = vehiculoSeleccionado?.patente || "";
 
   useEffect(() => {
@@ -58,7 +54,6 @@ export default function ModalNuevaReparacion({
           ...d.data(),
         }));
 
-        // Si estás editando y el vehículo asociado no está en la lista, lo traés aparte
         if (
           reparacion?.vehiculoId &&
           !vehiculosData.find((v) => v.id === reparacion.vehiculoId)
@@ -78,61 +73,72 @@ export default function ModalNuevaReparacion({
 
         setVehiculos(vehiculosData);
         setTalleres(talSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
-        setLoading(false); // <-- ACÁ VA SIEMPRE
       } catch (err) {
         console.error("Error fetching data:", err);
+        toast.error("Error al cargar datos");
         setVehiculos([]);
         setTalleres([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
-  }, [visible]);
+  }, [visible, reparacion?.vehiculoId]);
 
   useEffect(() => {
     if (reparacion) {
-      setFechaReparacion(
-        reparacion?.fecha
-          ? new Date(reparacion.fecha.seconds * 1000)
-              .toISOString()
-              .split("T")[0]
-          : ""
-      );
-      setDescripcion(reparacion.descripcionReparacion || "");
-      setVehiculoId(reparacion.vehiculoId || "");
-      setTallerId(reparacion.tallerId || "");
-      setPrecioManoObra(reparacion.precioManoObra || "");
-      setPrecioRepuestos(reparacion.precioRepuestos || "");
-      setTelefono(reparacion.telefono || "");
-      setObservaciones(reparacion.observaciones || "");
-      setError("");
+      setFormData({
+        descripcion: reparacion.descripcionReparacion || "",
+        vehiculoId: reparacion.vehiculoId || "",
+        tallerId: reparacion.tallerId || "",
+        precioManoObra: reparacion.precioManoObra || "",
+        precioRepuestos: reparacion.precioRepuestos || "",
+        telefono: reparacion.telefono || "",
+        observaciones: reparacion.observaciones || "",
+        fechaReparacion: reparacion?.fecha
+          ? new Date(reparacion.fecha.seconds * 1000).toISOString().split("T")[0]
+          : "",
+      });
     } else {
-      setDescripcion("");
-      setVehiculoId("");
-      setTallerId("");
-      setPrecioManoObra("");
-      setPrecioRepuestos("");
-      setTelefono("");
-      setObservaciones("");
-      setError("");
+      setFormData({
+        descripcion: "",
+        vehiculoId: "",
+        tallerId: "",
+        precioManoObra: "",
+        precioRepuestos: "",
+        telefono: "",
+        observaciones: "",
+        fechaReparacion: new Date().toISOString().split("T")[0],
+      });
     }
+    setError("");
   }, [reparacion, visible]);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleNumericChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
   const validar = () => {
-    if (!descripcion.trim()) return "La descripción es obligatoria.";
-    if (!vehiculoId) return "Debe seleccionar un vehículo.";
-    if (!tallerId) return "Debe seleccionar un taller.";
+    if (!formData.descripcion.trim()) return "La descripción es obligatoria.";
+    if (!formData.vehiculoId) return "Debe seleccionar un vehículo.";
+    if (!formData.tallerId) return "Debe seleccionar un taller.";
 
     if (
-      precioManoObra === "" ||
-      isNaN(precioManoObra) ||
-      Number(precioManoObra) < 0
+      formData.precioManoObra === "" ||
+      isNaN(formData.precioManoObra) ||
+      Number(formData.precioManoObra) < 0
     )
       return "Ingrese un precio válido para mano de obra.";
 
     if (
-      precioRepuestos === "" ||
-      isNaN(precioRepuestos) ||
-      Number(precioRepuestos) < 0
+      formData.precioRepuestos === "" ||
+      isNaN(formData.precioRepuestos) ||
+      Number(formData.precioRepuestos) < 0
     )
       return "Ingrese un precio válido para repuestos.";
 
@@ -144,77 +150,72 @@ export default function ModalNuevaReparacion({
     const errMsg = validar();
     if (errMsg) {
       setError(errMsg);
+      toast.error(errMsg);
       return;
     }
 
     setSubmitting(true);
     try {
-      const total = Number(precioManoObra) + Number(precioRepuestos);
+      const total = Number(formData.precioManoObra) + Number(formData.precioRepuestos);
 
       if (reparacion) {
         // Actualizar reparación existente
         const ref = doc(db, "reparaciones", reparacion.id);
         const datosActualizados = {
-          fecha: new Date(fechaReparacion),
-          descripcionReparacion: descripcion,
-          vehiculoId,
-          tallerId,
+          fecha: new Date(formData.fechaReparacion),
+          descripcionReparacion: formData.descripcion,
+          vehiculoId: formData.vehiculoId,
+          tallerId: formData.tallerId,
           patenteVehiculo,
-          precioManoObra: Number(precioManoObra),
-          precioRepuestos: Number(precioRepuestos),
+          precioManoObra: Number(formData.precioManoObra),
+          precioRepuestos: Number(formData.precioRepuestos),
           precioTotal: total,
-          telefono,
-          observaciones,
+          telefono: formData.telefono,
+          observaciones: formData.observaciones,
           modificadoEn: new Date(),
         };
         await updateDoc(ref, datosActualizados);
-
-        // Llamar a onSuccess con el objeto actualizado incluyendo id
+        toast.success("Reparación actualizada correctamente");
         onSuccess({ id: reparacion.id, ...datosActualizados });
       } else {
         // Crear nueva reparación
         const datosNuevos = {
-          fecha: new Date(fechaReparacion),
-          descripcionReparacion: descripcion,
-          vehiculoId,
-          tallerId,
-          precioManoObra: Number(precioManoObra),
-          precioRepuestos: Number(precioRepuestos),
+          fecha: new Date(formData.fechaReparacion),
+          descripcionReparacion: formData.descripcion,
+          vehiculoId: formData.vehiculoId,
+          tallerId: formData.tallerId,
+          precioManoObra: Number(formData.precioManoObra),
+          precioRepuestos: Number(formData.precioRepuestos),
           precioTotal: total,
-          telefono,
+          telefono: formData.telefono,
           patenteVehiculo,
-          observaciones,
+          observaciones: formData.observaciones,
           creadoEn: new Date(),
           saldo: total,
           estadoPago: "Pendiente",
         };
 
-        const docRef = await addDoc(
-          collection(db, "reparaciones"),
-          datosNuevos
-        );
-
-        // Actualizar etiqueta del vehículo a "Reparación"
-        const vehRef = doc(db, "vehiculos", vehiculoId);
+        const docRef = await addDoc(collection(db, "reparaciones"), datosNuevos);
+        
+        // Actualizar etiqueta del vehículo
+        const vehRef = doc(db, "vehiculos", formData.vehiculoId);
         await updateDoc(vehRef, { etiqueta: "Reparación" });
 
-        // Llamar a onSuccess con objeto que incluye el nuevo id
+        toast.success("Reparación creada correctamente");
         onSuccess({ id: docRef.id, ...datosNuevos });
       }
 
       onClose();
     } catch (error) {
+      console.error("Error:", error);
       setError("Error al guardar la reparación.");
+      toast.error("Error al guardar la reparación");
     } finally {
       setSubmitting(false);
     }
   };
 
   if (!visible) return null;
-
-  const refrescarReparaciones = async () => {
-    await fetchData();
-  };
 
   return (
     <AnimatePresence>
@@ -224,194 +225,243 @@ export default function ModalNuevaReparacion({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          onClick={(e) => e.target === e.currentTarget && onClose()}
         >
           <motion.div
-            className="bg-slate-900 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-auto p-6 relative"
+            className="bg-slate-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-auto p-6 relative border border-slate-700"
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 50, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
-            <h2 className="text-2xl font-semibold mb-4 text-white">
-              {reparacion ? "Editar Reparación" : "Nueva Reparación"}
-            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+              aria-label="Cerrar modal"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-indigo-900/50 rounded-lg">
+                <Wrench className="text-indigo-400 w-5 h-5" />
+              </div>
+              <h2 className="text-2xl font-bold text-white">
+                {reparacion ? "Editar Reparación" : "Nueva Reparación"}
+              </h2>
+            </div>
 
             {error && (
-              <p className="mb-4 text-red-500 font-medium select-none">
-                {error}
-              </p>
+              <div className="mb-4 p-3 bg-red-900/20 rounded-md flex items-start gap-2 text-red-400 border border-red-800/50">
+                <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
             )}
 
             {loading ? (
               <Spinner text="Cargando datos..." />
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5 text-white">
-                {/* Descripción */}
-                <div>
-                  <label
-                    htmlFor="descripcion"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Descripción
-                  </label>
-                  <input
-                    id="descripcion"
-                    type="text"
-                    value={descripcion}
-                    onChange={(e) => setDescripcion(e.target.value)}
-                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                    placeholder="Descripción de la reparación"
-                    required
-                    autoFocus
-                  />
-                </div>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Descripción */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium mb-1 text-slate-300 flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4" />
+                      Descripción de la reparación
+                    </label>
+                    <input
+                      name="descripcion"
+                      type="text"
+                      value={formData.descripcion}
+                      onChange={handleChange}
+                      className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                      placeholder="Ej: Cambio de aceite y filtro"
+                      required
+                      autoFocus
+                    />
+                  </div>
 
-                {/* Fecha de Reparación */}
-                <div>
-                  <label
-                    htmlFor="fechaReparacion"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Fecha de Reparación
-                  </label>
-                  <input
-                    id="fechaReparacion"
-                    type="date"
-                    value={fechaReparacion}
-                    onChange={(e) => setFechaReparacion(e.target.value)}
-                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                    required
-                  />
-                </div>
+                  {/* Fecha de Reparación */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-slate-300 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Fecha de Reparación
+                    </label>
+                    <input
+                      name="fechaReparacion"
+                      type="date"
+                      value={formData.fechaReparacion}
+                      onChange={handleChange}
+                      className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                      required
+                    />
+                  </div>
 
-                {/* Vehículo */}
-                <div>
-                  <label
-                    htmlFor="vehiculo"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Vehículo
-                  </label>
-                  <select
-                    id="vehiculo"
-                    value={vehiculoId}
-                    onChange={(e) => setVehiculoId(e.target.value)}
-                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                    required
-                  >
-                    <option value="">Seleccione un vehículo</option>
-                    {vehiculos.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.patente} - {v.modelo}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Teléfono */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-slate-300">
+                      Teléfono de contacto
+                    </label>
+                    <input
+                      name="telefono"
+                      type="tel"
+                      value={formData.telefono}
+                      onChange={handleChange}
+                      className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                      placeholder="Ej: 11 1234-5678"
+                    />
+                  </div>
 
-                {/* Taller */}
-                <div>
-                  <label
-                    htmlFor="taller"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Taller
-                  </label>
-                  <select
-                    id="taller"
-                    value={tallerId}
-                    onChange={(e) => setTallerId(e.target.value)}
-                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                    required
-                  >
-                    <option value="">Seleccione un taller</option>
-                    {talleres.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Vehículo */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-slate-300 flex items-center gap-2">
+                      <Car className="w-4 h-4" />
+                      Vehículo
+                    </label>
+                    <select
+                      name="vehiculoId"
+                      value={formData.vehiculoId}
+                      onChange={handleChange}
+                      className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition appearance-none"
+                      required
+                    >
+                      <option value="">Seleccione un vehículo</option>
+                      {vehiculos.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.patente} - {v.marca} {v.modelo} {v.anio}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                {/* Precio Mano de Obra */}
-                <div>
-                  <label
-                    htmlFor="precioManoObra"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Precio Mano de Obra
-                  </label>
-                  <input
-                    id="precioManoObra"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={precioManoObra}
-                    onChange={(e) => setPrecioManoObra(e.target.value)}
-                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                    placeholder="Ingrese el precio de mano de obra"
-                    required
-                  />
-                </div>
+                  {/* Taller */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-slate-300 flex items-center gap-2">
+                      <Wrench className="w-4 h-4" />
+                      Taller
+                    </label>
+                    <select
+                      name="tallerId"
+                      value={formData.tallerId}
+                      onChange={handleChange}
+                      className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition appearance-none"
+                      required
+                    >
+                      <option value="">Seleccione un taller</option>
+                      {talleres.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                {/* Precio Repuestos */}
-                <div>
-                  <label
-                    htmlFor="precioRepuestos"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Precio Repuestos
-                  </label>
-                  <input
-                    id="precioRepuestos"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={precioRepuestos}
-                    onChange={(e) => setPrecioRepuestos(e.target.value)}
-                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                    placeholder="Ingrese el precio de repuestos"
-                    required
-                  />
-                </div>
+                  {/* Precio Mano de Obra */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-slate-300 flex items-center gap-2">
+                      <DollarSign className="w-4 h-4" />
+                      Mano de obra
+                    </label>
+                    <NumericFormat
+                      name="precioManoObra"
+                      value={formData.precioManoObra}
+                      onValueChange={(values) => handleNumericChange("precioManoObra", values.floatValue || "")}
+                      thousandSeparator="."
+                      decimalSeparator=","
+                      decimalScale={2}
+                      fixedDecimalScale
+                      prefix="$ "
+                      className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                      placeholder="$ 0,00"
+                      required
+                    />
+                  </div>
 
-                {/* Observaciones */}
-                <div>
-                  <label
-                    htmlFor="observaciones"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Observaciones
-                  </label>
-                  <textarea
-                    id="observaciones"
-                    rows={3}
-                    value={observaciones}
-                    onChange={(e) => setObservaciones(e.target.value)}
-                    className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition resize-none"
-                    placeholder="Información adicional (opcional)"
-                  />
+                  {/* Precio Repuestos */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-slate-300 flex items-center gap-2">
+                      <DollarSign className="w-4 h-4" />
+                      Repuestos
+                    </label>
+                    <NumericFormat
+                      name="precioRepuestos"
+                      value={formData.precioRepuestos}
+                      onValueChange={(values) => handleNumericChange("precioRepuestos", values.floatValue || "")}
+                      thousandSeparator="."
+                      decimalSeparator=","
+                      decimalScale={2}
+                      fixedDecimalScale
+                      prefix="$ "
+                      className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                      placeholder="$ 0,00"
+                      required
+                    />
+                  </div>
+
+                  {/* Total */}
+                  <div className="md:col-span-2 bg-slate-800/50 p-3 rounded-md border border-slate-700">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-slate-300">Total estimado:</span>
+                      <span className="text-xl font-bold text-white">
+                        ${" "}
+                        {(
+                          Number(formData.precioManoObra || 0) + 
+                          Number(formData.precioRepuestos || 0)
+                        ).toLocaleString("es-AR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Observaciones */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium mb-1 text-slate-300">
+                      Observaciones
+                    </label>
+                    <textarea
+                      name="observaciones"
+                      rows={3}
+                      value={formData.observaciones}
+                      onChange={handleChange}
+                      className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none"
+                      placeholder="Detalles adicionales sobre la reparación..."
+                    />
+                  </div>
                 </div>
 
                 {/* Botones */}
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
                   <button
                     type="button"
                     onClick={onClose}
                     disabled={submitting}
-                    className="px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 rounded-md bg-slate-700 hover:bg-slate-600 transition text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
+                    <X className="w-4 h-4" />
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold"
+                    className="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 transition text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    {submitting
-                      ? "Guardando..."
-                      : reparacion
-                      ? "Guardar"
-                      : "Crear"}
+                    {submitting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {reparacion ? "Guardando..." : "Creando..."}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        {reparacion ? "Guardar cambios" : "Crear reparación"}
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

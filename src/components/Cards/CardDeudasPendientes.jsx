@@ -37,9 +37,18 @@ export default function CardDeudasPendientes() {
 
             // Calcular monto pendiente y días de vencimiento
             const montoPendiente =
-              data.deudas?.reduce((sum, d) => {
-                return d.pagado ? sum : sum + (d.monto || 0);
-              }, 0) || 0;
+  data.deudas?.reduce((sum, cuota) => {
+    if (cuota.pagado) return sum; // Si está totalmente pagada, no suma nada
+
+    const totalPagado = (cuota.pagos || []).reduce((pagSum, pago) => {
+      return pagSum + (pago.monto || 0);
+    }, 0);
+
+    const saldoCuota = (cuota.monto || 0) - totalPagado;
+
+    // Sumar solo si saldo > 0
+    return sum + (saldoCuota > 0 ? saldoCuota : 0);
+  }, 0) || 0;
 
             // Obtener fecha de vencimiento más próxima de los no pagados
             const fechaVencimientoProxima = data.deudas?.reduce((min, d) => {
@@ -295,60 +304,45 @@ export default function CardDeudasPendientes() {
                                 Pagos pendientes
                               </h5>
                               <ul className="space-y-1 sm:space-y-2">
-                                {deudasPendientes.map((d, i) => {
-                                  const isPagoVencido =
-                                    d.fechaVencimiento &&
-                                    new Date(d.fechaVencimiento) < new Date();
+                             {deudasPendientes.map((d, i) => {
+  const fechaVencimiento = d.fechaVencimiento
+  ? typeof d.fechaVencimiento.toDate === "function"
+    ? d.fechaVencimiento.toDate()
+    : new Date(d.fechaVencimiento)
+  : null;
 
-                                  return (
-                                    <li
-                                      key={i}
-                                      className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-slate-700/30 p-1.5 sm:p-2 rounded gap-1 sm:gap-2"
-                                    >
-                                      <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-                                        <span
-                                          className={`text-xs sm:text-sm ${
-                                            isPagoVencido
-                                              ? "text-red-400"
-                                              : "text-gray-300"
-                                          } truncate`}
-                                        >
-                                          {d.metodo || "Método no especificado"}
-                                        </span>
-                                        {d.fechaVencimiento && (
-                                          <span className="text-2xs sm:text-xs flex items-center gap-0.5 sm:gap-1 text-gray-400">
-                                            <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                                            {new Date(
-                                              d.fechaVencimiento
-                                            ).toLocaleDateString("es-AR")}
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-2">
-                                        <span
-                                          className={`text-xs sm:text-sm font-semibold ${
-                                            isPagoVencido
-                                              ? "text-red-400"
-                                              : "text-lime-400"
-                                          } whitespace-nowrap`}
-                                        >
-                                          <NumericFormat
-                                            value={d.monto}
-                                            displayType="text"
-                                            thousandSeparator="."
-                                            decimalSeparator=","
-                                            prefix="$"
-                                          />
-                                        </span>
-                                        {isPagoVencido && (
-                                          <span className="text-2xs sm:text-xs bg-red-900/50 text-red-300 px-1 py-0.5 sm:px-1.5 sm:py-0.5 rounded">
-                                            Vencido
-                                          </span>
-                                        )}
-                                      </div>
-                                    </li>
-                                  );
-                                })}
+  return (
+    <li key={i} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-slate-700/30 p-1.5 sm:p-2 rounded gap-1 sm:gap-2">
+      <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+        <span className={`text-xs sm:text-sm ${isVencida ? "text-red-400" : "text-gray-300"} truncate`}>
+          {d.metodo || "Método no especificado"}
+        </span>
+        {fechaVencimiento && (
+          <span className="text-2xs sm:text-xs flex items-center gap-0.5 sm:gap-1 text-gray-400">
+            <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+            {fechaVencimiento.toLocaleDateString("es-AR")}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-2">
+        <span className={`text-xs sm:text-sm font-semibold ${isVencida ? "text-red-400" : "text-lime-400"} whitespace-nowrap`}>
+          <NumericFormat
+            value={d.monto}
+            displayType="text"
+            thousandSeparator="."
+            decimalSeparator=","
+            prefix="$"
+          />
+        </span>
+        {isVencida && (
+          <span className="text-2xs sm:text-xs bg-red-900/50 text-red-300 px-1 py-0.5 sm:px-1.5 sm:py-0.5 rounded">
+            Vencido
+          </span>
+        )}
+      </div>
+    </li>
+  );
+})}
                               </ul>
 
                               {deuda.notas && (
