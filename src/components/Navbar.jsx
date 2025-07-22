@@ -85,7 +85,7 @@ function MovimientosDropdown() {
               Movimientos Vehiculos
             </Link>
             <Link
-              to="/lista-deudas"
+              to="/Listadeudas"
               className="block px-4 py-2 text-indigo-200 hover:bg-indigo-600 hover:text-white"
               onClick={() => setOpen(false)}
               role="menuitem"

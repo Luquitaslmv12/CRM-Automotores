@@ -13,7 +13,7 @@ import NuevoPresupuesto from "./pages/Presupuestos";
 import ProveedorDetalle from "./pages/ProveedorDetalle";
 import Proveedores from "./pages/Proveedores";
 import AdminReparacionesProveedor from "./pages/AdminReparacionesProveedor";
-import Caja from "./pages/Caja";
+import Caja from "./pages/caja";
 import ForgotPassword from "./pages/ForgotPassword";
 import Compras from "./pages/Compras";
 import CajaDiaria from "./pages/CajaDiaria";

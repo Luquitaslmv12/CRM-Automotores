@@ -779,9 +779,9 @@ export default function ListaDeudas() {
   const deudasPagadas = deudasFiltradas.filter((deuda) => calcularTotalPagado(deuda) >= (deuda.montoTotal || 0));
 
   return (
-    <div className="p-4 md:p-6 bg-slate-800 rounded-xl shadow-lg">
+    <div className="min-h-screen pt-20 px-4 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-slate-100 w-full max-w-4xl">
       <Toaster />
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 ">
         <h2 className="text-2xl font-bold flex items-center gap-2 text-white">
           <User className="text-yellow-400" />
           Gestión de Deudores

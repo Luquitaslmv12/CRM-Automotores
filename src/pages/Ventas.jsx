@@ -758,9 +758,7 @@ const handleSubmit = async (e) => {
 
         <Listaventas />
       </div>
-      <div className="max-w-screen-xl mx-auto mt-8">
-        <ListaDeudas />
-      </div>
+      
     </>
   );
 }
