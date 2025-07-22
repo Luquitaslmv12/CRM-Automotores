@@ -34,7 +34,7 @@ import BuscadorVehiculo from "../components/BuscadorVehiculo";
 import ResumenCliente from "../components/ResumenCliente";
 import ResumenVehiculo from "../components/ResumenVehiculo";
 import ResumenVehiculoPartePago from "../components/ResumenVehiculoPartePago";
-import { FileText, Plus, Trash, DollarSign } from "lucide-react";
+import { FileText, Plus, Trash, DollarSign, FileChartColumnIncreasing, } from "lucide-react";
 import { NumericFormat } from "react-number-format";
 import ModalVehiculoPartePago from "../components/ModalVehiculoPartePago";
 import ListaPresupuestos from "../components/ListaPresupuestos";
@@ -180,15 +180,18 @@ export default function NuevoPresupuesto(props) {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-      <h1 className="text-4xl font-bold mb-6 text-center">Nuevo Presupuesto</h1>
+    <div className="p-6 pt-20 min-h-screen bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
+      <h1 className="text-4xl font-bold mb-6 text-center flex justify-center items-center gap-2">
+          <FileChartColumnIncreasing  className="w-10 h-10 text-lime-500 animate-bounce" />
+          Presupuestos
+        </h1>
 
       <motion.form
         onSubmit={handleSubmit}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-2xl mx-auto space-y-6"
+        className="bg-slate-800/80 backdrop-blur-md p-8 rounded-3xl w-full shadow-[0_0_60px_10px_rgba(230,234,8,0.563)] p-6  w-full max-w-2xl mx-auto space-y-6 border-3 border-yellow-500"
       >
         <div className="flex items-center gap-3">
           <FileText size={28} className="text-blue-400" />

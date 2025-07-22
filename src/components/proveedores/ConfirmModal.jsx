@@ -29,7 +29,7 @@ export default function ConfirmModal({
         className="fixed inset-0 flex items-center justify-center p-4"
         style={{ zIndex: 10000 }}
       >
-        <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900 dark:text-white">
+        <div className="w-full max-w-md rounded-xlp-6 shadow-xl bg-gray-900 text-white">
           <h3 className="text-lg font-medium mb-4">{title}</h3>
           <p className="mb-6">{message}</p>
           <div className="flex justify-end gap-3">

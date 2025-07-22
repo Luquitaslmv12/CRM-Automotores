@@ -106,7 +106,7 @@ export default function ProveedorModal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-xl bg-white p-6 text-left align-middle shadow-xl transition-all dark:bg-gray-900 dark:text-white">
+              <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-xl  p-6 text-left align-middle shadow-xl transition-all bg-gray-900 text-white">
                 <Dialog.Title
                   as="h3"
                   className="text-lg font-medium leading-6 mb-4"
@@ -120,7 +120,7 @@ export default function ProveedorModal({
                     <input
                       type="text"
                       {...register("nombre", { required: true })}
-                      className="mt-1 w-full rounded border px-3 py-2 dark:bg-gray-800"
+                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
                     />
                     {errors.nombre && (
                       <p className="text-red-500 text-sm">Campo requerido</p>
@@ -145,7 +145,7 @@ export default function ProveedorModal({
                           message: "El teléfono debe tener al menos 7 dígitos",
                         },
                       })}
-                      className="mt-1 w-full rounded border px-3 py-2 dark:bg-gray-800"
+                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
                     />
                     {errors.telefono && (
                       <p className="text-red-500 text-sm">
@@ -159,7 +159,7 @@ export default function ProveedorModal({
                     <input
                       type="email"
                       {...register("email")}
-                      className="mt-1 w-full rounded border px-3 py-2 dark:bg-gray-800"
+                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
                     />
                   </div>
 
@@ -170,7 +170,7 @@ export default function ProveedorModal({
                     <input
                       type="text"
                       {...register("direccion")}
-                      className="mt-1 w-full rounded border px-3 py-2 dark:bg-gray-800"
+                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
                     />
                   </div>
 
@@ -178,7 +178,7 @@ export default function ProveedorModal({
                     <label className="block text-sm font-medium">Tipo</label>
                     <select
                       {...register("tipo")}
-                      className="mt-1 w-full rounded border px-3 py-2 dark:bg-gray-800"
+                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
                     >
                       <option value="General">General</option>
                       <option value="Taller">Taller</option>
@@ -192,7 +192,7 @@ export default function ProveedorModal({
                     </label>
                     <textarea
                       {...register("observaciones")}
-                      className="mt-1 w-full rounded border px-3 py-2 dark:bg-gray-800"
+                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
                     />
                   </div>
 
