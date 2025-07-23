@@ -212,13 +212,15 @@ export default function Reparaciones() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto text-white min-h-screen">
+    <div className="p-20 max-w-6xl mx-auto text-slate-200 min-h-screen">
+      <div className="rounded-xl shadow-2xl border border-indigo-500 overflow-hidden p-5">
       {/* Encabezado */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-            Gestión de Reparaciones
-          </h1>
+          <h1 className="text-4xl font-bold mb-6 text-center flex justify-center items-center gap-2">
+        <Wrench className="w-10 h-10 text-slate-500 animate-bounce" />
+        Gestión de Reparaciones
+      </h1>
           <p className="text-sm text-slate-400 mt-1">
             Administra y registra todas las reparaciones de vehículos
           </p>
@@ -793,6 +795,7 @@ export default function Reparaciones() {
         tallerId={reparacionParaPago?.tallerId}
         vehiculoId={reparacionParaPago?.vehiculoId}
       />
+    </div>
     </div>
   );
 }

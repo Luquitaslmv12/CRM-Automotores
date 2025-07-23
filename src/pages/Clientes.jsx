@@ -407,7 +407,7 @@ export default function Clientes() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         ref={formRef}
-        className="bg-gradient-to-br from-slate-700/80 to-slate-800/90 backdrop-blur-sm p-8 rounded-3xl shadow-[0_0_60px_10px_rgba(8,170,234,0.541)] w-full max-w-4xl mx-auto mb-10 border-3 border-blue-500"
+        className="bg-gradient-to-br from-slate-900 via-indigo-900/80 to-slate-900 backdrop-blur-lg p-8 rounded-3xl shadow-[0_0_60px_10px_rgba(8,170,234,0.541)] w-full max-w-4xl mx-auto mb-10 border-3 border-blue-500"
       >
         <div className="flex items-center gap-2 mb-6">
           <UserPlus className="text-green-400" />

@@ -805,7 +805,8 @@ export default function ListaDeudas() {
   };
 
   return (
-    <div className="min-h-screen pt-20 px-4 bg-gray-900 text-gray-200 w-full max-w-6xl mx-auto">
+    <div className="min-h-screen pt-20 px-4 text-gray-200 w-full max-w-6xl mx-auto">
+      <div className=" bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800  px-4 p-5 rounded-xl shadow-2xl border border-indigo-500 overflow-hidden">
       <Toaster position="top-right" />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
@@ -1102,6 +1103,7 @@ export default function ListaDeudas() {
           />
         )}
       </AnimatePresence>
+    </div>
     </div>
   );
 }
@@ -1630,6 +1632,7 @@ function DeudaItem({ deuda, onRegistrarPago, formatFecha }) {
                 )}
               </div>
             </div>
+            
           </motion.div>
         )}
       </AnimatePresence>

@@ -135,14 +135,6 @@ export default function ModalNuevaReparacion({
     )
       return "Ingrese un precio válido para mano de obra.";
 
-    if (
-      formData.precioRepuestos === "" ||
-      isNaN(formData.precioRepuestos) ||
-      Number(formData.precioRepuestos) < 0
-    )
-      return "Ingrese un precio válido para repuestos.";
-
-    return "";
   };
 
   const handleSubmit = async (e) => {

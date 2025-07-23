@@ -87,20 +87,20 @@ export default function Dashboard() {
         </motion.header>
 
         {/* Navegación por Tabs */}
-        <nav className="flex space-x-1 mb-8 p-1 bg-slate-800/50 rounded-lg max-w-3xl border border-slate-700/50">
+        <nav className="flex space-x-1 mb-8 p-1 bg-gradient-to-br from-slate-900 via-indigo-900/80 to-slate-900 backdrop-blur-lg rounded-lg max-w-3xl border-2 border-indigo-500/50">
           {tabsData.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`px-6 py-3 text-sm font-medium relative rounded-md transition-colors ${
-                activeTab === tab.id ? "text-white" : "text-slate-400"
+                activeTab === tab.id ? "text-sky-400" : "text-slate-100"
               }`}
             >
               {tab.label}
               {activeTab === tab.id && (
                 <motion.div
                   layoutId="activeTabIndicator"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-400"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-400"
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
               )}

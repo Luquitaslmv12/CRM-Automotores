@@ -127,6 +127,29 @@ const ExportToWordButton = ({ presupuesto }) => {
                     ],
                     spacing: { after: 300, before: 200 },
                   }),
+
+new Paragraph({
+  children: [
+    new TextRun({ text: "Métodos de Pago:", bold: true }),
+  ],
+  spacing: { before: 300, after: 100 },
+}),
+...(p.pagos && p.pagos.length > 0
+  ? p.pagos.map((pago) =>
+      new Paragraph(
+        `- ${pago.metodo || "Sin método"}: ${toCurrency(pago.monto)}`
+      )
+    )
+  : [new Paragraph("—")]),
+
+  new Paragraph({
+  children: [
+    new TextRun({ text: "Observaciones:", bold: true }),
+  ],
+  spacing: { before: 300, after: 100 },
+}),
+new Paragraph(p.observaciones || "—"),  
+
                 ]
               : []),
 

@@ -387,7 +387,7 @@ export default function Vehiculos() {
         }}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-indigo-900/10 backdrop-blur-md p-8 rounded-3xl  w-full  shadow-[0_0_60px_10px_rgba(218,204,8,0.514)] max-w-4xl mx-auto mb-10 border-3 border-yellow-600"
+        className="bg-gradient-to-br from-slate-900 via-indigo-900/80 to-slate-900 backdrop-blur-lg p-8 rounded-3xl  w-full  shadow-[0_0_60px_10px_rgba(218,204,8,0.514)] max-w-4xl mx-auto mb-10 border-3 border-yellow-600"
       >
         <div className="flex items-center gap-2 mb-6">
           <PlusCircle className="text-green-400" />
@@ -460,7 +460,7 @@ export default function Vehiculos() {
                     ? setValue(e.target.value.toUpperCase())
                     : setValue(e.target.value)
                 }
-                className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-indigo-700 focus:outline-none placeholder-transparent text-white transition duration-300"
+                className="peer p-3 pt-5 w-full rounded-xl bg-slate-700 border border-indigo-700 focus:outline-none placeholder-transparent text-white transition duration-300"
                 autoComplete="off"
                 min={type === "number" ? 0 : undefined}
                 step={type === "number" ? "any" : undefined}
@@ -471,7 +471,7 @@ export default function Vehiculos() {
 
               <label
                 htmlFor={id}
-                className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-500 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+                className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
               >
                 {label}
                 {["marca", "modelo", "patente", "año"].includes(id) ? " *" : ""}

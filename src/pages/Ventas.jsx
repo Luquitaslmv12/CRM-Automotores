@@ -428,7 +428,7 @@ const handleSubmit = async (e) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="bg-slate-800/80 backdrop-blur-md p-8 rounded-3xl w-full shadow-[0_0_60px_10px_rgba(8,234,19,0.521)] max-w-4xl mx-auto mb-10 border-3 border-lime-700"
+          className="bg-gradient-to-br from-slate-900 via-indigo-900/80 to-slate-900 backdrop-blur-lg p-8 rounded-3xl w-full shadow-[0_0_60px_10px_rgba(8,234,19,0.521)] max-w-4xl mx-auto mb-10 border-3 border-lime-700"
         >
           <div className="flex items-center gap-3 mb-2">
             <ShoppingCart size={28} className="text-green-400" />

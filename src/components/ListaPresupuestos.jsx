@@ -5,18 +5,14 @@ import {
   getDocs,
   deleteDoc,
   doc,
-  addDoc,
   updateDoc, Timestamp,
+  onSnapshot,
 } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "react-hot-toast";
 import {
-  Trash,
   FileText,
   LoaderCircle,
-  PlusCircle,
-  XCircle,
-  Download,
   KeyRound,
   IdCard,
   Car,
@@ -24,7 +20,6 @@ import {
   GaugeCircle,
   Calendar,
   User,
-  UserCircle,
   ShoppingCart,
   FilePlus,
   DollarSign,
@@ -33,7 +28,6 @@ import {
 } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import { jsPDF } from "jspdf";
 import ExportToWordButton from "../components/presupuestos/ExportToWordButton";
 import TooltipWrapper from "./Tooltip/TooltipWrapper";
 import { useAuth } from '../contexts/AuthContext';
@@ -62,15 +56,6 @@ export default function ListaPresupuestos(props) {
   // Modal detalle
   const [detalleId, setDetalleId] = useState(null);
 
-  // Modal nuevo presupuesto
-  const [modalNuevo, setModalNuevo] = useState(false);
-  const [formData, setFormData] = useState({
-    clienteId: "",
-    vehiculoId: "",
-    monto: "",
-    vigencia: "",
-    fecha: dayjs().toDate(),
-  });
 
   // Filtros y paginación
   const [filtroNombre, setFiltroNombre] = useState("");
@@ -80,26 +65,27 @@ export default function ListaPresupuestos(props) {
   const [paginaActual, setPaginaActual] = useState(1);
   const ITEMS_POR_PAGINA = 5;
 
-  useEffect(() => {
-    cargarTodo();
-  }, []);
-
-  const cargarTodo = async () => {
+useEffect(() => {
+  const unsubscribe = collection(db, "presupuestos");
+  
+  const stop = onSnapshot(unsubscribe, async (snapshot) => {
     try {
-      const [snapPres, snapCli, snapVeh] = await Promise.all([
-        getDocs(collection(db, "presupuestos")),
+      const presupuestosData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Obtener clientes y vehículos una sola vez
+      const [snapCli, snapVeh] = await Promise.all([
         getDocs(collection(db, "clientes")),
         getDocs(collection(db, "vehiculos")),
       ]);
 
-      const listaPresupuestos = snapPres.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
       const listaClientes = snapCli.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+
       const listaVehiculos = snapVeh.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -108,7 +94,7 @@ export default function ListaPresupuestos(props) {
       setClientes(listaClientes);
       setVehiculos(listaVehiculos);
 
-      const enriquecidos = listaPresupuestos.map((p) => {
+      const enriquecidos = presupuestosData.map((p) => {
         const cliente = listaClientes.find((c) => c.id === p.clienteId);
         const vehiculo = listaVehiculos.find((v) => v.id === p.vehiculoId);
         const parte = p.parteDePago;
@@ -145,11 +131,16 @@ export default function ListaPresupuestos(props) {
 
       setPresupuestos(enriquecidos);
       setLoading(false);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       toast.error("Error al cargar los datos");
     }
-  };
+  });
+
+  return () => stop();
+}, []);
+
+
 
   const eliminarPresupuesto = async (id) => {
     try {
@@ -200,109 +191,7 @@ export default function ListaPresupuestos(props) {
 
   const presupuestoDetalle = presupuestos.find((p) => p.id === detalleId);
 
-  const exportarPDF = () => {
-    if (!presupuestoDetalle) return;
-
-    const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text("Detalle de Presupuesto", 20, 20);
-
-    doc.setFontSize(14);
-    doc.text(`Cliente: ${presupuestoDetalle.clienteNombre}`, 20, 40);
-    doc.text(`Vehículo: ${presupuestoDetalle.vehiculoInfo}`, 20, 50);
-    doc.text(
-      `Monto estimado: $${Number(presupuestoDetalle.monto).toLocaleString(
-        "es-UY",
-        { minimumFractionDigits: 2 }
-      )}`,
-      20,
-      60
-    );
-    doc.text(`Vigencia: ${presupuestoDetalle.vigencia} días`, 20, 70);
-    doc.text(
-      `Fecha: ${dayjs(presupuestoDetalle.fechaObj)
-        .locale("es")
-        .format("DD/MM/YYYY")}`,
-      20,
-      80
-    );
-
-    doc.save(`Presupuesto_${presupuestoDetalle.id}.pdf`);
-  };
-
-  const abrirModalNuevo = () => {
-    setFormData({
-      clienteId: clientes.length > 0 ? clientes[0].id : "",
-      vehiculoId: vehiculos.length > 0 ? vehiculos[0].id : "",
-      monto: "",
-      vigencia: "",
-      fecha: dayjs().toDate(),
-    });
-    setModalNuevo(true);
-  };
-
-  /*  const cerrarModalNuevo = () => {
-    setModalNuevo(false);
-  }; */
-
-  const manejarCambio = (e) => {
-    const { name, value } = e.target;
-    setFormData((f) => ({ ...f, [name]: value }));
-  };
-
-  /* const manejarSubmitNuevo = async (e) => {
-    e.preventDefault();
-
-    if (
-      !formData.clienteId ||
-      !formData.vehiculoId ||
-      !formData.monto ||
-      !formData.vigencia
-    ) {
-      toast.error("Completa todos los campos");
-      return;
-    }
-
-    try {
-      const nuevaData = {
-        clienteId: formData.clienteId,
-        vehiculoId: formData.vehiculoId,
-        monto: parseFloat(formData.monto),
-        vigencia: parseInt(formData.vigencia),
-        fecha: formData.fecha,
-      };
-
-      const docRef = await addDoc(collection(db, "presupuestos"), nuevaData);
-
-      const cliente = clientes.find((c) => c.id === nuevaData.clienteId);
-      const vehiculo = vehiculos.find((v) => v.id === nuevaData.vehiculoId);
- */
-  /* setPresupuestos((prev) => [
-        ...prev,
-        {
-          id: docRef.id,
-          ...nuevaData,
-          clienteNombre: cliente
-            ? `${cliente.nombre} ${cliente.apellido}`
-            : "Cliente no encontrado",
-          dniCliente: cliente?.dni || "",
-          vehiculoInfo: vehiculo
-            ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
-            : "Vehículo no encontrado",
-          patenteVehiculo: vehiculo?.patente || "",
-          fechaObj: nuevaData.fecha.toDate
-            ? nuevaData.fecha.toDate()
-            : nuevaData.fecha,
-        },
-      ]);
-
-      toast.success("Presupuesto creado");
-      cerrarModalNuevo();
-    } catch (error) {
-      console.error(error);
-      toast.error("Error al crear presupuesto");
-    }
-  }; */
+  
 
   // Filtrado con búsqueda por múltiples campos y filtro de fecha
   const presupuestosFiltrados = useMemo(() => {
@@ -364,14 +253,6 @@ export default function ListaPresupuestos(props) {
           <FileText size={28} className="text-yellow-400" />
           <h2 className="text-2xl font-semibold">Listado</h2>
         </div>
-        {/* <button
-          onClick={abrirModalNuevo}
-          className="flex items-center gap-1 text-green-400 hover:text-green-600"
-          title="Crear nuevo presupuesto"
-        >
-          <PlusCircle size={24} />
-          Nuevo
-        </button> */}
       </div>
 
       {/* Filtros */}
@@ -382,7 +263,7 @@ export default function ListaPresupuestos(props) {
           value={filtroNombre}
           onChange={(e) => {
             setFiltroNombre(e.target.value);
-            setPaginaActual(1); // reiniciar página al buscar
+            setPaginaActual(1); 
           }}
           className="p-2 rounded bg-slate-800 text-white"
         />
@@ -545,6 +426,18 @@ export default function ListaPresupuestos(props) {
                           <span className="text-slate-300">Año:</span>
                           <span className="font-semibold"> {p.año || "-"}</span>
                         </div>
+                        {p.pagos && p.pagos.length > 0 && (
+  <div className="text-sm mt-1">
+    <strong>Pagos:</strong>
+    <ul className="list-disc list-inside">
+      {p.pagos.map((p, index) => (
+        <li key={index}>
+          {p.metodo}: ${Number(p.monto).toLocaleString("es-UY", { minimumFractionDigits: 2 })}
+        </li>
+      ))}
+    </ul>
+  </div>
+)}
                       </div>
                     </div>
                   )}
@@ -744,178 +637,6 @@ export default function ListaPresupuestos(props) {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Detalle presupuesto */}
-      {/*  <AnimatePresence>
-        {detalleId && presupuestoDetalle && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
-          >
-            <div className="bg-slate-900 p-6 rounded max-w-md w-full relative text-white">
-              <button
-                onClick={cerrarDetalle}
-                className="absolute top-2 right-2 text-red-400 hover:text-red-600"
-                title="Cerrar"
-              >
-                <XCircle size={24} />
-              </button>
-              <h3 className="text-2xl font-semibold mb-4">
-                Detalle de Presupuesto
-              </h3>
-              <p>
-                <strong>Cliente:</strong> {presupuestoDetalle.clienteNombre}
-              </p>
-              <p>
-                <strong>DNI:</strong> {presupuestoDetalle.dniCliente}
-              </p>
-              <p>
-                <strong>Vehículo:</strong> {presupuestoDetalle.vehiculoInfo}
-              </p>
-              <p>
-                <strong>Monto estimado:</strong> $
-                {Number(presupuestoDetalle.monto).toLocaleString("es-UY", {
-                  minimumFractionDigits: 2,
-                })}
-              </p>
-              <p>
-                <strong>Vigencia:</strong> {presupuestoDetalle.vigencia} días
-              </p>
-              <p>
-                <strong>Fecha:</strong>{" "}
-                {dayjs(presupuestoDetalle.fechaObj)
-                  .locale("es")
-                  .format("DD/MM/YYYY")}
-              </p>
-
-              <button
-                onClick={exportarPDF}
-                className="mt-6 flex items-center gap-1 bg-yellow-400 text-black px-4 py-2 rounded hover:bg-yellow-500"
-                title="Exportar a PDF"
-              >
-                <Download size={18} />
-                Exportar PDF
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence> */}
-
-      {/* Modal nuevo presupuesto */}
-      {/*  <AnimatePresence>
-        {modalNuevo && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
-          >
-            <motion.form
-              onSubmit={manejarSubmitNuevo}
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              className="bg-slate-900 p-6 rounded max-w-md w-full space-y-4 text-white"
-            >
-              <h3 className="text-2xl font-semibold">Nuevo Presupuesto</h3>
-
-              <label>
-                Cliente:
-                <select
-                  name="clienteId"
-                  value={formData.clienteId}
-                  onChange={manejarCambio}
-                  className="w-full mt-1 p-2 bg-slate-800 rounded"
-                >
-                  {clientes.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre} {c.apellido} (DNI: {c.dni})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                Vehículo:
-                <select
-                  name="vehiculoId"
-                  value={formData.vehiculoId}
-                  onChange={manejarCambio}
-                  className="w-full mt-1 p-2 bg-slate-800 rounded"
-                >
-                  {vehiculos.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.marca} {v.modelo} (Patente: {v.patente})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                Monto estimado:
-                <input
-                  type="number"
-                  name="monto"
-                  min="0"
-                  step="0.01"
-                  value={formData.monto}
-                  onChange={manejarCambio}
-                  className="w-full mt-1 p-2 bg-slate-800 rounded"
-                  required
-                />
-              </label>
-
-              <label>
-                Vigencia (días):
-                <input
-                  type="number"
-                  name="vigencia"
-                  min="1"
-                  value={formData.vigencia}
-                  onChange={manejarCambio}
-                  className="w-full mt-1 p-2 bg-slate-800 rounded"
-                  required
-                />
-              </label>
-
-              <label>
-                Fecha:
-                <input
-                  type="date"
-                  name="fecha"
-                  value={dayjs(formData.fecha).format("YYYY-MM-DD")}
-                  onChange={(e) =>
-                    setFormData((f) => ({
-                      ...f,
-                      fecha: new Date(e.target.value),
-                    }))
-                  }
-                  className="w-full mt-1 p-2 bg-slate-800 rounded"
-                  required
-                />
-              </label>
-
-              <div className="flex justify-between">
-                <button
-                  type="button"
-                  onClick={cerrarModalNuevo}
-                  className="bg-red-600 px-4 py-2 rounded hover:bg-red-700"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
-                >
-                  Guardar
-                </button>
-              </div>
-            </motion.form>
-          </motion.div>
-        )}
-      </AnimatePresence> */}
     </div>
   );
 }
