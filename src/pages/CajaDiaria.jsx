@@ -487,10 +487,10 @@ Movimientos: ${movimientosFiltrados.length}`;
   };
 
   return (
-    <div className="min-h-screen pt-20 px-4 bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-slate-100">
+    <div className="min-h-screen pt-20 px-4 bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-slate-100">
       <Toaster position="bottom-right" />
       <div
-        className="max-w-6xl mx-auto bg-slate-800 rounded-xl shadow-2xl border border-indigo-700 overflow-hidden"
+        className="max-w-6xl mx-auto  bg-gradient-to-br from-slate-700 via-slate-800 to-slate-600 rounded-xl shadow-2xl border border-indigo-700 overflow-hidden"
         onKeyDown={handleKeyPress}
         tabIndex={0}
       >
