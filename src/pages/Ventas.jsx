@@ -29,9 +29,7 @@ import {
 import { NumericFormat } from "react-number-format";
 import Listaventas from "../components/ListaVentas";
 import ModalVehiculoPartePago from "../components/ModalVehiculoPartePago";
-import exportarBoletoDOCX from "../components/boletos/exportarBoletoDOCX";
 import Spinner from "../components/Spinner/Spinner";
-import ListaDeudas from "./ListaDeudas";
 
 export default function NuevaVenta() {
   const [usuarios, setUsuarios] = useState([]);
@@ -48,7 +46,17 @@ export default function NuevaVenta() {
 
   const [monto, setMonto] = useState("");
   const [pagosMultiples, setPagosMultiples] = useState(false);
-  const [pagos, setPagos] = useState([{ metodo: "", monto: "", incluirEnCaja: true, fechaVencimiento: null }]);
+  const [pagos, setPagos] = useState([{ 
+    metodo: "", 
+    monto: "", 
+    incluirEnCaja: true, 
+    fechaVencimiento: null,
+    // Nuevos campos para cheques
+    chequeEmisor: "",
+    chequeNumero: "",
+    chequeFechaEmision: "",
+    chequeFechaVencimiento: ""
+  }]);
   const [errores, setErrores] = useState({});
 
   const [fechaVenta, setFechaVenta] = useState(() => {
@@ -145,32 +153,52 @@ export default function NuevaVenta() {
     });
   };
 
-  const registrarEnCajaDiaria = async (descripcion, monto, tipo, fecha, vehiculoInfo) => {
-  try {
-    await addDoc(collection(db, "caja_diaria"), {
-      descripcion,
-      monto: parseFloat(monto),
-      tipo,
-      fecha: Timestamp.fromDate(new Date(`${fecha}T00:00:00-03:00`)), 
-      createdAt: Timestamp.now(),
-      creadoPor: user?.email || "Desconocido",
-      relacionadoCon: "venta",
-      // Agregamos información del vehículo
-      vehiculo: {
-        patente: vehiculoInfo?.patente || "No especificado",
-        marca: vehiculoInfo?.marca || "No especificado",
-        modelo: vehiculoInfo?.modelo || "No especificado"
-      },
-      cliente: clienteSeleccionado ? {
-        id: clienteSeleccionado.id,
-        nombre: `${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}`
-      } : null
-    });
-  } catch (error) {
-    console.error("Error registrando en caja diaria:", error);
-    throw error;
+  const registrarEnCajaDiaria = async (descripcion, monto, tipo, fecha, vehiculoInfo, formaDePago, detallesCheque) => {
+
+      if (typeof monto !== 'number' || isNaN(monto) || monto <= 0) {
+    toast.error("Monto inválido");
   }
-};
+  
+  if (!['ingreso', 'egreso'].includes(tipo)) {
+    toast.error("Tipo de movimiento inválido");
+  }
+    try {
+      const registro = {
+        descripcion,
+        monto: parseFloat(monto),
+        tipo,
+        fecha: Timestamp.now(),
+        createdAt: Timestamp.now(),
+        creadoPor: user?.email || "Desconocido",
+        relacionadoCon: "venta",
+        formaDePago, // Nuevo campo para guardar el método de pago
+        vehiculo: {
+          patente: vehiculoInfo?.patente || "No especificado",
+          marca: vehiculoInfo?.marca || "No especificado",
+          modelo: vehiculoInfo?.modelo || "No especificado"
+        },
+        cliente: clienteSeleccionado ? {
+          id: clienteSeleccionado.id,
+          nombre: `${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}`
+        } : null
+      };
+
+      // Si es un cheque, agregamos los detalles
+      if (formaDePago === "Cheque") {
+        registro.detallesCheque = detallesCheque;
+      }
+console.log (detallesCheque);
+
+      await addDoc(collection(db, "caja_diaria"), registro);
+    } catch (error) {
+      console.error("Error registrando en caja diaria:", error);
+      throw error;
+    }
+  };
+
+
+  
+
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -243,14 +271,23 @@ const handleSubmit = async (e) => {
 
 
 
-          if (pagosParaCaja.length > 0) {
+           if (pagosParaCaja.length > 0) {
     for (const pago of pagosParaCaja) {
+      const detallesCheque = pago.metodo === "Cheque" ? {
+        emisor: pago.chequeEmisor,
+        numero: pago.chequeNumero,
+        fechaEmision: pago.chequeFechaEmision,
+        fechaVencimiento: pago.chequeFechaVencimiento
+      } : null;
+
       await registrarEnCajaDiaria(
-        `Venta vehículo (${pago.metodo})`,
+        `Venta vehículo (${vehiculoSeleccionado.marca}-${vehiculoSeleccionado.modelo}-${vehiculoSeleccionado.patente})`,
         pago.monto,
         "ingreso",
-        fechaVenta, // Usamos directamente la fecha del input
-        resumenVehiculo
+        fechaVenta,
+        resumenVehiculo,
+        pago.metodo, // formaDePago
+        detallesCheque // detallesCheque (solo si es cheque)
       );
     }
   }
@@ -303,6 +340,14 @@ const handleSubmit = async (e) => {
             patente: vehiculoPartePago.patente?.trim().toUpperCase() || "No especificado",
             año: parseInt(vehiculoPartePago.año) || null,
             color: vehiculoPartePago.color || "",
+        motor: vehiculoPartePago.motor || "",
+        chasis: vehiculoPartePago.chasis || "",
+        kilometraje: vehiculoPartePago.kilometraje || "",
+        combustible: vehiculoPartePago.combustible || "",
+        transmision: vehiculoPartePago.transmision || "",
+        observaciones: vehiculoPartePago.observaciones || "",
+        fechaIngreso: vehiculoPartePago.fechaIngreso || new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" })),
+        documentos: vehiculoPartePago.documentos || "",
             etiqueta: "Usado",
             tomadoPor: user?.email || "",
             tomadoEn: new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" })),
@@ -323,6 +368,13 @@ const handleSubmit = async (e) => {
             patente: vehiculoPartePago.patente?.trim().toUpperCase() || "No especificado",
             año: parseInt(vehiculoPartePago.año) || null,
             color: vehiculoPartePago.color || "",
+             motor: vehiculoPartePago.motor || "",
+        chasis: vehiculoPartePago.chasis || "",
+        kilometraje: vehiculoPartePago.kilometraje || "",
+        combustible: vehiculoPartePago.combustible || "",
+        transmision: vehiculoPartePago.transmision || "",
+        observaciones: vehiculoPartePago.observaciones || "",
+        documentos: vehiculoPartePago.documentos || "",
             etiqueta: "Usado",
             tomadoPor: user?.displayName || user?.email || "",
             tomadoEn: new Date(new Date().toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" })),
@@ -397,10 +449,10 @@ const handleSubmit = async (e) => {
   };
 
   const handlePagoChange = (index, campo, valor) => {
-    const nuevosPagos = [...pagos];
-    nuevosPagos[index][campo] = valor;
-    setPagos(nuevosPagos);
-  };
+  const nuevosPagos = [...pagos];
+  nuevosPagos[index][campo] = valor || ""; // Asegurar valor no nulo
+  setPagos(nuevosPagos);
+}
 
   const agregarPago = () => {
     setPagos([...pagos, { 
@@ -428,7 +480,7 @@ const handleSubmit = async (e) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="bg-gradient-to-br from-slate-900 via-indigo-900/80 to-slate-900 backdrop-blur-lg p-8 rounded-3xl w-full shadow-[0_0_60px_10px_rgba(8,234,19,0.521)] max-w-4xl mx-auto mb-10 border-3 border-lime-700"
+          className="bg-gradient-to-br from-slate-900 via-indigo-900/80 to-slate-900 backdrop-blur-lg p-8 rounded-3xl w-full shadow-[0_0_60px_10px_rgba(8,234,19,0.521)] max-w-4xl mx-auto mb-10 border-3 border-green-600"
         >
           <div className="flex items-center gap-3 mb-2">
             <ShoppingCart size={28} className="text-green-400" />
@@ -485,15 +537,21 @@ const handleSubmit = async (e) => {
               />
             </div>
           </section>
-
-          <label className="flex items-center gap-2 p-6 text-white">
+          
+          <div className="space-y-4 p-6 bg-slate-700/50 rounded-lg border border-slate-600">
+            <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2  text-white">
             <input
+            className="h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500"
               type="checkbox"
               checked={parteDePago}
               onChange={() => setParteDePago(!parteDePago)}
             />
             Cliente entrega vehículo en parte de pago
           </label>
+          </div>
+          </div>
+          
 
           <div className="pt-2 pb-2">
             <div className="relative">
@@ -513,7 +571,7 @@ const handleSubmit = async (e) => {
                 fixedDecimalScale
                 allowNegative={false}
                 placeholder="Monto del vehiculo a vender"
-                className={`w-full pl-10 p-3 rounded bg-slate-700 text-white ${
+                className={`w-full pl-10 p-3 rounded bg-slate-700/50 text-green-400 font-semibold ${
                   errores.monto
                     ? "border-2 border-red-500"
                     : "border border-slate-600"
@@ -640,8 +698,58 @@ const handleSubmit = async (e) => {
                         </div>
                       </div>
                     )}
-                  </div>
-                ))}
+                    {pago.metodo === "Cheque" && (
+        <div className="col-span-12 mt-3 space-y-2 bg-blue-900/10 p-3 rounded border border-blue-800/30">
+          <h4 className="text-sm font-medium text-blue-300 mb-1">Detalles del Cheque</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div>
+              <label className="text-xs text-blue-300">Emisor</label>
+              <input
+                type="text"
+                value={pago.chequeEmisor || ""}
+                onChange={(e) => handlePagoChange(index, "chequeEmisor", e.target.value)}
+                className="w-full p-2 rounded bg-slate-700 border border-slate-600 text-white text-sm"
+                required={pago.metodo === "Cheque"}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-blue-300">N° Cheque</label>
+              <input
+                type="text"
+                value={pago.chequeNumero || ""}
+                onChange={(e) => handlePagoChange(index, "chequeNumero", e.target.value)}
+                className="w-full p-2 rounded bg-slate-700 border border-slate-600 text-white text-sm"
+                required={pago.metodo === "Cheque"}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-blue-300">Fecha Emisión</label>
+              <input
+                type="date"
+                value={pago.chequeFechaEmision || ""}
+                onChange={(e) => handlePagoChange(index, "chequeFechaEmision", e.target.value)}
+                className="w-full p-2 rounded bg-slate-700 border border-slate-600 text-white text-sm"
+                required={pago.metodo === "Cheque"}
+                max={fechaVenta}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-blue-300">Fecha Vencimiento</label>
+              <input
+                type="date"
+                value={pago.chequeFechaVencimiento || ""}
+                onChange={(e) => handlePagoChange(index, "chequeFechaVencimiento", e.target.value)}
+                className="w-full p-2 rounded bg-slate-700 border border-slate-600 text-white text-sm"
+                required={pago.metodo === "Cheque"}
+                min={pago.chequeFechaEmision || fechaVenta}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  ))}
+                
                 
                 <div className="bg-slate-800/50 p-3 rounded-lg text-sm text-slate-300">
                   <div className="flex justify-between items-center mb-1">
@@ -699,13 +807,14 @@ const handleSubmit = async (e) => {
         </div>
       </div>
       <div className="bg-slate-800/50 p-3 rounded">
-        <div className="text-sm text-slate-400">Total a registrar</div>
-        <div className="text-xl font-bold text-white">
-          {diferencia > 0 ? 
-            diferencia.toLocaleString('es-AR', {style: 'currency', currency: 'ARS'}) :
-            "0,00"}
-        </div>
-      </div>
+  <div className="text-sm text-slate-400">Total a registrar</div>
+  <div className="text-xl font-bold text-white">
+    {convertirPagosAFloat(pagos)
+      .filter(p => p.incluirEnCaja)
+      .reduce((sum, p) => sum + p.monto, 0)
+      .toLocaleString('es-AR', {style: 'currency', currency: 'ARS'})}
+  </div>
+</div>
     </div>
     {diferencia < 0 && (
       <div className="mt-3 p-2 bg-red-900/20 rounded text-sm text-red-300">

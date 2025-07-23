@@ -220,7 +220,7 @@ export default function CardEvolucionVentas() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow-lg flex flex-col gap-4 border-l-4 border-blue-500 hover:shadow-blue-500/10 transition-all min-h-80"
+      className="bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow-lg flex flex-col gap-4 border-l-4 border-blue-500 hover:shadow-blue-500/10 transition-all min-h-80"
     >
       {/* Encabezado */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

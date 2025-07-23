@@ -37,7 +37,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Toaster, toast } from "react-hot-toast";
 import { NumericFormat } from "react-number-format";
-
+import ModalResumenSaldo from "../components/caja/ModalResumenSaldo";
 
 
 
@@ -58,6 +58,9 @@ export default function CajaDiaria() {
   const [showCopied, setShowCopied] = useState(false);
   const [busquedaRapida, setBusquedaRapida] = useState("");
   const descripcionRef = useRef(null);
+  const [formaDePago, setFormaDePago] = useState("efectivo");
+
+  const [mostrarResumenPagos, setMostrarResumenPagos] = useState(false);
 
       const formatPesos = (value) => {
     const number = typeof value === 'string' ? parseFloat(value) || 0 : value;
@@ -242,6 +245,7 @@ export default function CajaDiaria() {
         descripcion: descripcion.trim(),
         monto: parseFloat(monto),
         tipo,
+         formaDePago,
         fecha: Timestamp.fromDate(dayjs(fecha).hour(12).toDate()),
         createdAt: Timestamp.now(),
       });
@@ -308,6 +312,7 @@ export default function CajaDiaria() {
     try {
       await updateDoc(doc(db, "caja_diaria", id), {
         ...nuevo,
+        formaDePago: nuevo.formaDePago,
         descripcion: nuevo.descripcion.trim(),
         updatedAt: Timestamp.now(),
       });
@@ -344,6 +349,7 @@ export default function CajaDiaria() {
         Fecha: dayjs(m.fecha?.toDate?.() || m.fecha).format("YYYY-MM-DD HH:mm"),
         Descripción: m.descripcion,
         Tipo: m.tipo === "ingreso" ? "Ingreso" : "Egreso",
+        'Forma de Pago': m.formaDePago,
         Monto: m.tipo === "ingreso" ? m.monto : -m.monto,
         'Monto Absoluto': m.monto,
         'Fecha Creación': m.createdAt ? dayjs(m.createdAt.toDate()).format("YYYY-MM-DD HH:mm") : '-',
@@ -490,7 +496,7 @@ Movimientos: ${movimientosFiltrados.length}`;
     <div className="min-h-screen pt-20 px-4 bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-slate-100">
       <Toaster position="bottom-right" />
       <div
-        className="max-w-6xl mx-auto  bg-gradient-to-br from-slate-700 via-slate-800 to-slate-600 rounded-xl shadow-2xl border border-indigo-700 overflow-hidden"
+        className="max-w-7xl mx-auto  bg-gradient-to-br from-slate-700 via-slate-800 to-slate-600 rounded-xl shadow-2xl border border-indigo-700 overflow-hidden"
         onKeyDown={handleKeyPress}
         tabIndex={0}
       >
@@ -539,7 +545,7 @@ Movimientos: ${movimientosFiltrados.length}`;
           onClick={() => cambiarFecha(-1)}
           disabled={verTodo || verMesCompleto}
           title="Día anterior"
-          className="p-2 bg-slate-700 hover:bg-slate-600 rounded-md text-slate-200 disabled:opacity-30 transition"
+          className="p-2 bg-slate-500 hover:bg-slate-600 cursor-pointer rounded-md text-slate-200 disabled:opacity-30 transition"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -556,7 +562,7 @@ Movimientos: ${movimientosFiltrados.length}`;
           onClick={() => cambiarFecha(1)}
           disabled={verTodo || verMesCompleto}
           title="Día siguiente"
-          className="p-2 bg-slate-700 hover:bg-slate-600 rounded-md text-slate-200 disabled:opacity-30 transition"
+          className="p-2 bg-slate-500 hover:bg-slate-600 cursor-pointer rounded-md text-slate-200 disabled:opacity-30 transition"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -609,7 +615,7 @@ Movimientos: ${movimientosFiltrados.length}`;
 
           {/* Formulario de movimiento */}
           {!verMesCompleto && (
-            <div className="bg-slate-700 p-4 rounded-lg mb-4 border border-indigo-600">
+            <div className="bg-gradient-to-br from-slate-900 via-indigo-900/80 to-slate-900 backdrop-blur-lg p-4 rounded-lg mb-4 border border-indigo-600">
               <h3 className="text-lg font-medium text-indigo-300 mb-3 flex items-center gap-2">
                 <PlusCircle className="w-5 h-5 text-green-500" />
                 Nuevo Movimiento
@@ -654,6 +660,23 @@ Movimientos: ${movimientosFiltrados.length}`;
 
       </div>
     </div>
+
+    <div>
+  <label className="block text-sm font-medium text-slate-300 mb-1">
+    Forma:
+  </label>
+  <select
+    value={formaDePago}
+    onChange={(e) => setFormaDePago(e.target.value)}
+    className="w-full bg-slate-800 text-slate-100 border border-indigo-600 p-2 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+  >
+    <option value="efectivo">Efectivo</option>
+    <option value="transferencia">Transferencia</option>
+    <option value="tarjeta">Tarjeta</option>
+    <option value="cheque">Cheque</option>
+    <option value="otro">Otro</option>
+  </select>
+</div>
                 
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-1">
@@ -894,6 +917,7 @@ Movimientos: ${movimientosFiltrados.length}`;
                               <p className="font-medium text-slate-200">{movimiento.descripcion}</p>
                               <p className="text-sm text-slate-400">
                                 {dayjs(movimiento.fecha?.toDate?.() || movimiento.fecha).format("HH:mm")}
+                                <p className="capitalize">• {movimiento.formaDePago}</p>
                               </p>
                             </div>
                             <div className={`font-medium ${
@@ -928,7 +952,7 @@ Movimientos: ${movimientosFiltrados.length}`;
                 <thead className="bg-slate-700">
                   <tr>
                     <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-indigo-300 uppercase tracking-wider cursor-pointer hover:bg-slate-600"
+                      className="px-2 py-3 text-left text-xs font-medium text-indigo-300 uppercase tracking-wider cursor-pointer hover:bg-slate-600"
                       onClick={() => ordenarPor("fecha")}
                     >
                       <div className="flex items-center gap-1">
@@ -953,6 +977,9 @@ Movimientos: ${movimientosFiltrados.length}`;
                         )}
                       </div>
                     </th>
+                    <th className="px-2 py-3 text-left text-xs font-medium text-indigo-300 uppercase tracking-wider">
+                        Forma
+                      </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-indigo-300 uppercase tracking-wider">
                       Tipo
                     </th>
@@ -983,25 +1010,58 @@ Movimientos: ${movimientosFiltrados.length}`;
                           {dayjs(m.fecha?.toDate?.() || m.fecha).format("HH:mm")}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">
-                        {editando === m.id ? (
-                          <input
-                            value={m.descripcion}
-                            onChange={(e) =>
-                              setMovimientos((prev) =>
-                                prev.map((x) =>
-                                  x.id === m.id ? { ...x, descripcion: e.target.value } : x
-                                )
-                              )
-                            }
-                            className="bg-slate-700 text-slate-200 border border-indigo-600 p-1 rounded w-full focus:ring-2 focus:ring-indigo-500"
-                            onKeyPress={handleKeyPress}
-                            autoFocus
-                          />
-                        ) : (
-                          m.descripcion
-                        )}
-                      </td>
+                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">
+  {editando === m.id ? (
+    <input
+      value={m.descripcion}
+      onChange={(e) =>
+        setMovimientos((prev) =>
+          prev.map((x) =>
+            x.id === m.id ? { ...x, descripcion: e.target.value } : x
+          )
+        )
+      }
+      className="bg-slate-700 text-slate-200 border border-indigo-600 p-1 rounded w-full focus:ring-2 focus:ring-indigo-500"
+      onKeyPress={handleKeyPress}
+      autoFocus
+    />
+  ) : (
+    <div>
+      {m.descripcion}
+      {m.formaDePago === "Cheque" && m.detallesCheque && (
+        <div className="text-xs text-indigo-300 mt-1">
+          <p>Cheque #{m.detallesCheque.numero} - {m.detallesCheque.emisor}</p>
+          <p>Emisión: {dayjs(m.detallesCheque.fechaEmision).format("DD/MM/YYYY")} - 
+             Vencimiento: {dayjs(m.detallesCheque.fechaVencimiento).format("DD/MM/YYYY")}</p>
+        </div>
+      )}
+    </div>
+  )}
+</td>
+
+                      <td className="px-2 py-4 whitespace-nowrap text-md text-slate-300">
+  {editando === m.id ? (
+    <select
+      value={m.formaDePago}
+      onChange={(e) =>
+        setMovimientos((prev) =>
+          prev.map((x) =>
+            x.id === m.id ? { ...x, formaDePago: e.target.value } : x
+          )
+        )
+      }
+      className="bg-slate-700 text-slate-200 border border-indigo-600 p-1 rounded focus:ring-2 focus:ring-indigo-500"
+    >
+      <option value="efectivo">Efectivo</option>
+      <option value="transferencia">Transferencia</option>
+      <option value="tarjeta">Tarjeta</option>
+      <option value="cheque">Cheque</option>
+      <option value="otro">Otro</option>
+    </select>
+  ) : (
+    <span className="capitalize">{m.formaDePago}</span>
+  )}
+</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
                         {editando === m.id ? (
                           <select
@@ -1115,9 +1175,7 @@ Movimientos: ${movimientosFiltrados.length}`;
               <p className="text-2xl font-bold text-green-200">
                 {verMesCompleto ? formatPesos(resumenMensual.ingresos) : formatPesos(totalIngresos)}
               </p>
-              {!verTodo && !verMesCompleto && (
-                <p className="text-xs text-green-400 mt-1">vs ayer: +2.5%</p>
-              )}
+              
             </div>
             
             {/* Tarjeta de Egresos */}
@@ -1131,9 +1189,7 @@ Movimientos: ${movimientosFiltrados.length}`;
               <p className="text-2xl font-bold text-red-200">
                 {verMesCompleto ? formatPesos(resumenMensual.egresos) : formatPesos(totalEgresos)}
               </p>
-              {!verTodo && !verMesCompleto && (
-                <p className="text-xs text-red-400 mt-1">vs ayer: -1.3%</p>
-              )}
+             
             </div>
             
             {/* Tarjeta de Saldo */}
@@ -1172,12 +1228,29 @@ Movimientos: ${movimientosFiltrados.length}`;
           </div>
 
           {!verMesCompleto && !verTodo && (
-            <div className="mt-4 bg-slate-700/50 p-3 rounded-lg border border-indigo-600/50">
-              <p className="text-sm font-medium text-slate-300">
-                Saldo Acumulado: <span className="font-bold">{formatPesos(saldoAcumulado)}</span>
-              </p>
-            </div>
-          )}
+  <div className="mt-4 flex flex-col sm:flex-row gap-4">
+    <div className="bg-slate-700/50 p-3 rounded-lg border border-indigo-600/50 flex-1">
+      <p className="text-sm font-medium text-slate-300">
+        Saldo Acumulado: <span className="font-bold">{formatPesos(saldoAcumulado)}</span>
+      </p>
+    </div>
+    
+    <button
+      onClick={() => setMostrarResumenPagos(true)}
+      className="bg-indigo-700 hover:bg-indigo-600 text-white px-4 py-2 rounded-md font-medium flex items-center justify-center gap-2"
+    >
+      <DollarSign className="w-5 h-5" />
+      Ver por Forma de Pago
+    </button>
+  </div>
+)}
+
+{mostrarResumenPagos && (
+  <ModalResumenSaldo 
+    movimientos={movimientosFiltrados} 
+    onClose={() => setMostrarResumenPagos(false)} 
+  />
+)}
         </div>
       </div>
     </div>

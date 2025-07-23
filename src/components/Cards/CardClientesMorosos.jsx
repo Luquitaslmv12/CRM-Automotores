@@ -92,7 +92,7 @@ export default function CardClientesMorosos() {
   };
 
   return (
-    <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow-lg border-l-4 border-red-500 min-h-80">
+    <div className="relative bg-gradient-to-br from-slate-700 to-slate-900 backdrop-blur-sm p-6 rounded-xl shadow-lg border-l-4 border-red-500 min-h-80">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
         <div className="flex items-center gap-3">
           <Users className="text-red-400 w-8 h-8" />

@@ -15,7 +15,7 @@ const ModalRegistrarPago = ({
   saldoActual 
 }) => {
   const [monto, setMonto] = useState("");
-  const [metodo, setMetodo] = useState("Efectivo");
+  const [formaDePago, setFormaDePago] = useState("N/A");
   const [comentario, setComentario] = useState("");
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
@@ -86,28 +86,18 @@ const ModalRegistrarPago = ({
       vehiculo = vehiculoSnap.exists() ? vehiculoSnap.data() : null;
     }
 
-    const descripcion = `Pago a proveedor ${nombreProveedor} por vehículo ${vehiculo?.marca || ""} ${vehiculo?.modelo || ""}, patente ${vehiculo?.patente || "N/A"}`;
+    const descripcion = `Pago a proveedor ${nombreProveedor} - ${vehiculo?.marca || ""} ${vehiculo?.modelo || ""}, ${vehiculo?.patente || "N/A"}`;
 
     const nuevoSaldo = reparacion.saldo - montoNum;
     const estadoPago = nuevoSaldo <= 0 ? "Saldado" : "Pendiente";
 
-    // ✅ 1. Guardar el pago
-    await addDoc(collection(db, "pagos"), {
-      reparacionId,
-      monto: montoNum,
-      metodo,
-      comentario,
-      fecha: Timestamp.now(),
-      tallerId,
-      vehiculoId,
-      descripcion,
-    });
+
 
     // ✅ 2. Registrar en caja_diaria
     await addDoc(collection(db, "caja_diaria"), {
       reparacionId,
       monto: montoNum,
-      metodo,
+      formaDePago,
       comentario,
       fecha: Timestamp.now(),
       tallerId,
@@ -233,18 +223,18 @@ const ModalRegistrarPago = ({
             </label>
             <div className="relative">
               <select
-                value={metodo}
-                onChange={(e) => setMetodo(e.target.value)}
+                value={formaDePago}
+                onChange={(e) => setFormaDePago(e.target.value)}
                 className="w-full border border-gray-300 dark:border-slate-600 rounded-md px-3 py-2 pl-8 appearance-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
               >
-                {Object.keys(metodoPagoIconos).map((metodo) => (
-                  <option key={metodo} value={metodo}>
-                    {metodo}
+                {Object.keys(metodoPagoIconos).map((formaDePago) => (
+                  <option key={formaDePago} value={formaDePago}>
+                    {formaDePago}
                   </option>
                 ))}
               </select>
               <div className="absolute left-3 top-2.5 text-gray-400 dark:text-gray-300">
-                {metodoPagoIconos[metodo]}
+                {metodoPagoIconos[formaDePago]}
               </div>
               <div className="absolute right-3 top-2.5 pointer-events-none">
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
