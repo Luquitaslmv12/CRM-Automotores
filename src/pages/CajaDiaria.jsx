@@ -1240,7 +1240,7 @@ Movimientos: ${movimientosFiltrados.length}`;
       className="bg-indigo-700 hover:bg-indigo-600 text-white px-4 py-2 rounded-md font-medium flex items-center justify-center gap-2"
     >
       <DollarSign className="w-5 h-5" />
-      Ver por Forma de Pago
+      Ver Saldo Diario
     </button>
   </div>
 )}
