@@ -10,9 +10,14 @@ import {
   Wallet,
   PlusCircle,
   MinusCircle,
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import CajaDiaria from "./CajaDiaria";
+
+
 
 export default function Caja() {
   const [pagos, setPagos] = useState([]);
@@ -192,290 +197,423 @@ console.log("Egresos total:", totalEgresos);
 
 console.log("Saldo:", saldo);
 
+
+
+// Componente de tarjeta animada
+const AnimatedCard = ({ children, delay = 0, className = "" }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: delay * 0.1, duration: 0.3 }}
+    className={className}
+  >
+    {children}
+  </motion.div>
+);
+
+// Componente de acordeón para transacciones
+const TransactionAccordion = ({ title, items, icon, color, emptyMessage }) => {
+  const [isOpen, setIsOpen] = useState(true);
+
   return (
-    
-     
-  <div className="min-h-screen pt-20 px-4 bg-gradient-to-br from-indigo-800 via-indigo-900 to-slate-800 text-white">
-    <motion.div
-      className="bg-gradient-to-br from-slate-700/80 to-slate-800/90 backdrop-blur-sm p-8 rounded-3xl shadow-[0_0_60px_10px_rgba(8,170,234,0.4)] w-full max-w-6xl mx-auto border-2 border-blue-500"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3 text-sky-400">
-            <Wallet className="w-10 h-10 text-sky-500 animate-bounce" />
-            Resumen Movimiento Vehiculos
-          </h1>
-          <p className="text-gray-300 mt-2">
-            Resumen financiero del mes seleccionado
-          </p>
+    <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between p-4 ${color.text} ${color.bg} bg-opacity-10`}
+      >
+        <div className="flex items-center gap-3">
+          {icon}
+          <h3 className="font-semibold text-lg">{title}</h3>
+          <span className="text-xs px-2 py-1 rounded-full bg-white/20">
+            {items.length} registros
+          </span>
         </div>
-
-      <div className="flex items-center gap-3 bg-white/60 text-gray-800 rounded-lg shadow-md border-3 border-indigo-700 p-2">
-  <CalendarIcon
-    className="w-5 h-5 text-lime-700 cursor-pointer"
-    onClick={() => inputMesRef.current?.showPicker?.()} // ← Esto abre el selector si el navegador lo soporta
-  />
-  <input
-    ref={inputMesRef}
-    type="month"
-    value={mesSeleccionado}
-    onChange={(e) => setMesSeleccionado(e.target.value)}
-    className="border-none bg-transparent focus:outline-none focus:ring-0 font-medium cursor-pointer"
-  />
-</div>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
-        </div>
-      ) : (
-          <>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-indigo-300 mb-2">
-                Resumen de{" "}
-                {mesMostrado.charAt(0).toUpperCase() + mesMostrado.slice(1)}
-              </h2>
-
-              <motion.div
-                className="grid grid-cols-1 md:grid-cols-3 gap-4"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <motion.div
-                  className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 shadow-sm border border-green-100"
-                  whileHover={{ y: -2 }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">Ingresos</p>
-                      <p className="text-2xl font-bold text-green-800 mt-1">
-                        {totalIngresos.toLocaleString("es-AR", {
-                          style: "currency",
-                          currency: "ARS",
-                        })}
-                      </p>
-                    </div>
-                    <div className="bg-green-100 p-3 rounded-lg">
-                      <TrendingUp className="text-green-600 w-6 h-6" />
-                    </div>
-                  </div>
-                  <div className="mt-3 text-xs text-green-700">
-                    {ingresos.length}{" "}
-                    {ingresos.length === 1 ? "transacción" : "transacciones"}
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-5 shadow-sm border border-red-100"
-                  whileHover={{ y: -2 }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">Egresos</p>
-                      <p className="text-2xl font-bold text-red-800 mt-1">
-                        {totalEgresos.toLocaleString("es-AR", {
-                          style: "currency",
-                          currency: "ARS",
-                        })}
-                      </p>
-                    </div>
-                    <div className="bg-red-100 p-3 rounded-lg">
-                      <TrendingDown className="text-red-600 w-6 h-6" />
-                    </div>
-                  </div>
-                  <div className="mt-3 text-xs text-red-700">
-                    {egresos.length}{" "}
-                    {egresos.length === 1 ? "transacción" : "transacciones"}
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className={`bg-gradient-to-br rounded-xl p-5 shadow-sm border ${
-                    saldo >= 0
-                      ? "from-blue-50 to-blue-100 border-blue-100"
-                      : "from-orange-50 to-orange-100 border-orange-100"
-                  }`}
-                  whileHover={{ y: -2 }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">Saldo neto</p>
-                      <p
-                        className={`text-2xl font-bold mt-1 ${
-                          saldo >= 0 ? "text-blue-800" : "text-orange-800"
-                        }`}
-                      >
-                        {saldo.toLocaleString("es-AR", {
-                          style: "currency",
-                          currency: "ARS",
-                        })}
-                      </p>
-                    </div>
-                    <div
-                      className={`p-3 rounded-lg ${
-                        saldo >= 0 ? "bg-blue-100" : "bg-orange-100"
-                      }`}
-                    >
-                      <Wallet
-                        className={`w-6 h-6 ${
-                          saldo >= 0 ? "text-blue-600" : "text-orange-600"
-                        }`}
-                      />
-                    </div>
-                  </div>
-                  <div
-                    className={`mt-3 text-xs ${
-                      saldo >= 0 ? "text-blue-700" : "text-orange-700"
-                    }`}
-                  >
-                    {saldo >= 0 ? "Positivo" : "Negativo"} este mes
-                  </div>
-                </motion.div>
-              </motion.div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <motion.div
-                className="bg-white/70 rounded-xl shadow-sm border p-5"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <PlusCircle className="text-green-500 w-5 h-5" />
-                    Ingresos
-                  </h2>
-                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                    {ingresos.length} registros
-                  </span>
-                </div>
-
-                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                  <AnimatePresence>
-                    {ingresos.length > 0 ? (
-                      ingresos.map((v) => (
-                        <motion.div
-                          key={v.id}
-                          className="bg-green-50 rounded-lg p-3 border border-green-100"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium text-gray-800">
-                                {v.vehiculoResumen?.marca || "Vehículo"}{" "}
-                                {v.vehiculoResumen?.modelo || "no especificado"}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {dayjs(v.fecha?.toDate?.() || v.fecha).format(
-                                  "DD/MM/YYYY"
-                                )}
-                              </p>
-                            </div>
-                            <p className="font-bold text-green-700">
-                              {Number(v.monto).toLocaleString("es-AR", {
-                                style: "currency",
-                                currency: "ARS",
-                              })}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-gray-400">
-                        No hay ingresos registrados este mes
-                      </div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-
-              <motion.div
-                className="bg-white/70 rounded-xl shadow-sm border p-5"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <MinusCircle className="text-red-500 w-5 h-5" />
-                    Egresos
-                  </h2>
-                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
-                    {egresos.length} registros
-                  </span>
-                </div>
-
-                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                  <AnimatePresence>
-                    {egresos.length > 0 ? (
-                      egresos.map((v) => (
-                        <motion.div
-                          key={v.id}
-                          className={`${
-                            v.tipo === "pago"
-                              ? "bg-yellow-100 border-yellow-200"
-                              : "bg-red-50 border-red-100"
-                          } rounded-lg p-3 border`}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div>
-                           <p className="text-gray-800">
-  {v.tipo === "pago" ? (
-    <>
-      <span className="font-semibold text-red-700">Pago a proveedor:</span>{" "}
-      <span className="font-medium text-blue-700">{v.nombreProveedor || "Sin nombre"}-</span>{" "}
-       <span className="font-medium text-blue-700">POR: "{v.descripcionReparacion || "Sin nombre"}"</span>{" "}
-      <span className="font-semibold text-green-700">{v.resumenVehiculo || "No especificado"}</span>{" "}
-      {v.dominio && (
-        <span className="text-gray-500">- Dominio: {v.dominio}</span>
-      )}
-    </>
-  ) : (
-    <>
-      <span className="font-semibold">{v.marca || "Producto"}</span>{" "}
-      <span>{v.modelo || ""}</span>
-    </>
-  )}
-</p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {dayjs(v.fecha?.toDate?.() || v.fecha).format(
-                                  "DD/MM/YYYY"
-                                )}
-                              </p>
-                            </div>
-                            <p className="font-bold text-red-700">
-                              {Number(v.monto || v.precioCompra).toLocaleString("es-AR", {
-                                style: "currency",
-                                currency: "ARS",
-                              })}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-gray-400">
-                        No hay egresos registrados este mes
-                      </div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-            </div>
-          </>
+        {isOpen ? (
+          <ChevronUp className="w-5 h-5" />
+        ) : (
+          <ChevronDown className="w-5 h-5" />
         )}
-      </motion.div>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-3 p-4 max-h-80 overflow-y-auto custom-scrollbar">
+              {items.length > 0 ? (
+                items.map((item, index) => (
+                  <TransactionItem
+                    key={item.id}
+                    item={item}
+                    color={color}
+                    index={index}
+                  />
+                ))
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-6 text-white/50"
+                >
+                  {emptyMessage}
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// Componente de ítem de transacción
+const TransactionItem = ({ item, color, index }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className={`rounded-lg p-3 border ${color.border} ${color.bg} bg-opacity-10 backdrop-blur-sm`}
+    >
+      <div className="flex justify-between items-start gap-3">
+        <div className="flex-1">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-left w-full"
+          >
+            <p className="font-medium text-white">
+              {item.tipo === "pago" ? (
+                <>
+                  Pago a {item.nombreProveedor || "Proveedor"}
+                </>
+              ) : (
+                <>
+                  {item.marca || "Producto"} {item.modelo || ""}
+                </>
+              )}
+            </p>
+            <p className="text-xs text-white/70 mt-1">
+              {dayjs(item.fecha?.toDate?.() || item.fecha).format("DD/MM/YYYY")}
+            </p>
+          </button>
+
+          <AnimatePresence>
+            {expanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden mt-2"
+              >
+                <div className="text-xs space-y-1 text-white/80">
+                  {item.tipo === "pago" && (
+                    <>
+                      <p>
+                        <span className="font-semibold">Vehículo:</span>{" "}
+                        {item.resumenVehiculo || "No especificado"}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Reparación:</span>{" "}
+                        {item.descripcionReparacion || "No especificada"}
+                      </p>
+                    </>
+                  )}
+                  {item.tipo === "compra" && (
+                    <p>
+                      <span className="font-semibold">Detalle:</span>{" "}
+                      {item.descripcion || "Sin detalles"}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        <p className={`font-bold ${color.text} flex items-center gap-1`}>
+          {item.tipo === "pago" ? "-" : "+"}
+          {Number(item.monto || item.precioCompra).toLocaleString("es-AR", {
+            style: "currency",
+            currency: "ARS",
+          })}
+          <ArrowRight className="w-4 h-4" />
+        </p>
+      </div>
+    </motion.div>
+  );
+};
+
+  const theme = {
+    ingresos: {
+      text: "text-emerald-400",
+      bg: "bg-emerald-400",
+      border: "border-emerald-400/30",
+    },
+    egresos: {
+      text: "text-rose-400",
+      bg: "bg-rose-400",
+      border: "border-rose-400/30",
+    },
+    saldo: {
+      positive: {
+        text: "text-blue-400",
+        bg: "bg-blue-400",
+        border: "border-blue-400/30",
+      },
+      negative: {
+        text: "text-amber-400",
+        bg: "bg-amber-400",
+        border: "border-amber-400/30",
+      },
+    },
+  };
+
+  return (
+    <div className="min-h-screen pt-20 px-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6"
+        >
+          <div>
+            <motion.h1 
+              className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              Gestión Financiera
+            </motion.h1>
+            <motion.p 
+              className="text-gray-400 mt-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              Resumen completo de ingresos y egresos
+            </motion.p>
+          </div>
+
+          <motion.div
+            className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl shadow-sm border border-white/10 p-2"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <CalendarIcon className="w-5 h-5 text-cyan-400" />
+            <input
+              ref={inputMesRef}
+              type="month"
+              value={mesSeleccionado}
+              onChange={(e) => setMesSeleccionado(e.target.value)}
+              className="border-none bg-transparent focus:outline-none focus:ring-0 font-medium cursor-pointer text-white"
+            />
+          </motion.div>
+        </motion.div>
+
+        {/* Resumen del mes */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="mb-10"
+        >
+          <h2 className="text-xl font-semibold text-gray-300 mb-4">
+            Resumen de {dayjs(mesSeleccionado).locale("es").format("MMMM YYYY")}
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Tarjeta de Ingresos - Versión sutil */}
+<AnimatedCard delay={0}>
+  <div className="bg-white/5 backdrop-blur-sm rounded-xl p-5 border border-white/10 h-full hover:border-emerald-400/30 transition-all duration-300">
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm text-gray-300 font-medium">Ingresos</p>
+        <p className="text-2xl font-bold text-white mt-1">
+          {totalIngresos.toLocaleString("es-AR", {
+            style: "currency",
+            currency: "ARS",
+          })}
+        </p>
+        <p className="text-xs text-gray-400 mt-2">
+          {ingresos.length} {ingresos.length === 1 ? 'transacción' : 'transacciones'}
+        </p>
+      </div>
+      <div className="p-3 rounded-lg bg-emerald-400/20 backdrop-blur-sm">
+        <TrendingUp className="text-emerald-300 w-6 h-6" />
+      </div>
+    </div>
+    <motion.div
+      initial={{ width: 0 }}
+      animate={{ 
+        width: `${Math.min(100, (totalIngresos / Math.max(totalIngresos + totalEgresos, 1)) * 100)}%`,
+        backgroundColor: '#34d399' // Verde más suave
+      }}
+      transition={{ delay: 0.5, duration: 1, ease: "easeOut" }}
+      className="h-1 rounded-full mt-4 bg-emerald-400/70"
+    />
+  </div>
+</AnimatedCard>
+
+{/* Tarjeta de Egresos - Versión sutil */}
+<AnimatedCard delay={1}>
+  <div className="bg-white/5 backdrop-blur-sm rounded-xl p-5 border border-white/10 h-full hover:border-rose-400/30 transition-all duration-300">
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm text-gray-300 font-medium">Egresos</p>
+        <p className="text-2xl font-bold text-white mt-1">
+          {totalEgresos.toLocaleString("es-AR", {
+            style: "currency",
+            currency: "ARS",
+          })}
+        </p>
+        <p className="text-xs text-gray-400 mt-2">
+          {egresos.length} {egresos.length === 1 ? 'transacción' : 'transacciones'}
+        </p>
+      </div>
+      <div className="p-3 rounded-lg bg-rose-400/20 backdrop-blur-sm">
+        <TrendingDown className="text-rose-300 w-6 h-6" />
+      </div>
+    </div>
+    <motion.div
+      initial={{ width: 0 }}
+      animate={{ 
+        width: `${Math.min(100, (totalEgresos / Math.max(totalIngresos + totalEgresos, 1)) * 100)}%`,
+        backgroundColor: '#f87171b5' // Rojo más suave
+      }}
+      transition={{ delay: 0.6, duration: 1, ease: "easeOut" }}
+      className="h-1 rounded-full mt-4 bg-rose-400/70"
+    />
+  </div>
+</AnimatedCard>
+
+            {/* Tarjeta de Saldo */}
+            <AnimatedCard delay={2}>
+              <div className={`bg-gradient-to-br from-gray-800 to-gray-700 rounded-xl p-5 border ${
+                saldo >= 0 ? "border-emerald-400/30" : "border-amber-400/30"
+              } h-full`}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400 font-medium">Saldo neto</p>
+                    <p className={`text-2xl font-bold mt-1 ${
+                      saldo >= 0 ? "text-emerald-400" : "text-amber-400"
+                    }`}>
+                      {saldo.toLocaleString("es-AR", {
+                        style: "currency",
+                        currency: "ARS",
+                      })}
+                    </p>
+                    <p className={`text-xs mt-2 ${
+                      saldo >= 0 ? "text-emerald-400/80" : "text-amber-400/80"
+                    }`}>
+                      {saldo >= 0 ? "Balance positivo" : "Balance negativo"}
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded-lg ${
+                    saldo >= 0 ? "bg-emerald-400/10" : "bg-amber-400/10"
+                  }`}>
+                    <Wallet className={`w-6 h-6 ${
+                      saldo >= 0 ? "text-emerald-400" : "text-amber-400"
+                    }`} />
+                  </div>
+                </div>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(100, Math.abs(saldo) / Math.max(totalIngresos, totalEgresos) * 100)}%` }}
+                  transition={{ delay: 0.7, duration: 1 }}
+                  className={`h-1 rounded-full mt-4 ${
+                    saldo >= 0 ? "bg-emerald-400" : "bg-amber-400"
+                  }`}
+                />
+              </div>
+            </AnimatedCard>
+          </div>
+        </motion.div>
+
+        {/* Detalle de transacciones */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+            >
+              <Loader2 className="w-12 h-12 text-cyan-400" />
+            </motion.div>
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10"
+          >
+            {/* Ingresos */}
+            <TransactionAccordion
+              title="Ingresos"
+              items={ingresos}
+              icon={<PlusCircle className="w-5 h-5 text-emerald-400" />}
+              color={theme.ingresos}
+              emptyMessage="No hay ingresos registrados este mes"
+            />
+
+            {/* Egresos */}
+            <TransactionAccordion
+              title="Egresos"
+              items={egresos}
+              icon={<MinusCircle className="w-5 h-5 text-rose-400" />}
+              color={theme.egresos}
+              emptyMessage="No hay egresos registrados este mes"
+            />
+          </motion.div>
+        )}
+
+        {/* Gráfico de distribución (placeholder animado) */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 mb-10"
+        >
+          <h3 className="text-lg font-semibold text-gray-300 mb-4 flex items-center gap-2">
+            <TrendingUp className="text-cyan-400 w-5 h-5" />
+            Distribución mensual
+          </h3>
+          <div className="h-64 flex items-end justify-center gap-1">
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: `${(totalIngresos / Math.max(totalIngresos + totalEgresos, 1)) * 100}%` }}
+              transition={{ delay: 0.9, duration: 1 }}
+              className="bg-emerald-400 w-10 rounded-t-sm"
+            />
+            <motion.div
+              initial={{ height: 0 }}
+              animate={{ height: `${(totalEgresos / Math.max(totalIngresos + totalEgresos, 1)) * 100}%` }}
+              transition={{ delay: 1, duration: 1 }}
+              className="bg-rose-400 w-10 rounded-t-sm"
+            />
+          </div>
+          <div className="flex justify-center gap-6 mt-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-emerald-400 rounded-full" />
+              <span className="text-sm text-gray-400">Ingresos</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-rose-400 rounded-full" />
+              <span className="text-sm text-gray-400">Egresos</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
+
+  
+    

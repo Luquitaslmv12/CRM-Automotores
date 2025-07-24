@@ -1,113 +1,18 @@
-/* import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { db } from '../firebase';
-import { useAuth } from '../contexts/AuthContext';
-
-export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
-
-  const { usuario } = useAuth();
-
-  useEffect(() => {
-    if (usuario) {
-      navigate('/dashboard');
-    }
-  }, [usuario, navigate]);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    const auth = getAuth();
-
-    try {
-      const userCred = await signInWithEmailAndPassword(auth, email, password);
-      const uid = userCred.user.uid;
-
-      // Traer rol info de Firestore
-      const docRef = doc(db, 'usuarios', uid);
-      const docSnap = await getDoc(docRef);
-
-      if (!docSnap.exists()) {
-        setError('No se encontró información del usuario en la base de datos.');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Email o contraseña incorrectos');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-800 min-h-screen px-4">
-      <form
-        onSubmit={handleLogin}
-        className="bg-slate-800 p-6 rounded-2xl shadow-xl max-w-md mx-auto mb-8 space-y-4"
-        noValidate
-      >
-        <h2 className="text-3xl font-extrabold text-indigo-300 mb-8 text-center">Iniciar sesión</h2>
-
-        <input
-          type="email"
-          placeholder="Correo electrónico"
-          className="w-full p-3 rounded bg-slate-400 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Contraseña"
-          className="w-full p-3 rounded bg-slate-400 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-          required
-        />
-
-        {error && (
-          <p className="text-red-600 mb-4 text-center font-semibold">{error}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-3 rounded-xl text-white font-semibold text-lg transition
-            ${loading ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
-        >
-          {loading ? 'Cargando...' : 'Iniciar sesión'}
-        </button>
-      </form>
-    </div>
-  );
-}
- */
-
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Loader2, ChevronRight, LogIn, User, KeyRound, Sparkles} from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
-import { Navigate } from "react-router-dom";
 
 const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const [isHovered, setIsHovered] = useState(false);
   const { usuario } = useAuth();
 
   useEffect(() => {
@@ -119,121 +24,246 @@ const Login = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
-  } = useForm();
+    formState: { errors, isValid },
+  } = useForm({ mode: "onChange" });
 
   const onSubmit = async ({ email, password }) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      toast.success("Inicio de sesión exitoso");
-      navigate("/dashboard"); // <- redirige justo después del login
+      toast.success("Bienvenido de vuelta!", {
+        icon: "👋",
+        style: {
+          borderRadius: "12px",
+          background: "#1d293a96",
+          color: "#fff",
+        },
+      });
     } catch (err) {
       console.error(err);
-      toast.error("Credenciales inválidas");
+      toast.error("Credenciales incorrectas", {
+        style: {
+          borderRadius: "12px",
+          background: "#1d293a96",
+          color: "#fff",
+        },
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <>
-      <Toaster position="top-center" reverseOrder={false} />
+
+
+
+return (
+  <>
+    <Toaster
+      position="top-center"
+      reverseOrder={false}
+      toastOptions={{
+        duration: 3000,
+        style: {
+          borderRadius: "12px",
+          background: "#0f172a",
+          color: "#fff",
+          border: "1px solid #1e293b"
+        },
+      }}
+    />
+   <div className="min-h-screen bg-gradient-to-br from-[#0a0e17] via-[#1a1f2e] to-[#2d3748] flex items-center justify-center px-4">
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="flex justify-center items-center min-h-screen bg-gray-900 px-4"
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="w-full max-w-md"
       >
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="bg-gray-800 p-8 rounded-2xl shadow-lg w-full max-w-sm space-y-6 border border-gray-700"
-        >
-          <h2 className="text-3xl font-bold text-center text-white">
-            Iniciar Sesión
-          </h2>
+        <div className="bg-slate-800/70 backdrop-blur-lg rounded-2xl overflow-hidden border border-slate-700/30 shadow-2xl shadow-slate-950/50">
+          {/* Decoración superior */}
+          <div className="h-2 bg-gradient-to-r from-blue-500 to-violet-600"></div>
+          
+          <div className="p-8">
+            <div className="text-center mb-10">
+              <div className="flex justify-center mb-4">
+                <div className="p-3 rounded-full bg-gradient-to-br from-blue-600 to-violet-600 shadow-lg">
+                  <LogIn className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <motion.h1 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2"
+              >
+                Iniciar Sesión <Sparkles className="h-5 w-5 text-yellow-400" />
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.7 }}
+                transition={{ delay: 0.2 }}
+                className="text-slate-400"
+              >
+                Accede a tu cuenta para continuar
+              </motion.p>
+            </div>
 
-          {/* Email Field */}
-          <div className="relative">
-            <Mail className="absolute top-3 left-3 text-gray-400" size={20} />
-            <input
-              type="email"
-              placeholder="Correo electrónico"
-              {...register("email", {
-                required: "El correo es obligatorio",
-                pattern: {
-                  value: /^[^@]+@[^@]+\.[a-zA-Z]{2,}$/,
-                  message: "Correo no válido",
-                },
-              })}
-              className="pl-10 pr-4 py-2 w-full bg-gray-700 text-white border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            {errors.email && (
-              <p className="text-red-400 text-sm mt-1 ml-1">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Email Field */}
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <label className="block text-sm font-medium text-slate-300 mb-1 ml-1 flex items-center gap-1">
+                  <User className="h-4 w-4" /> Correo electrónico
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-slate-500" />
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="tu@email.com"
+                    {...register("email", {
+                      required: "El correo es obligatorio",
+                      pattern: {
+                        value: /^[^@]+@[^@]+\.[a-zA-Z]{2,}$/,
+                        message: "Correo no válido",
+                      },
+                    })}
+                    className="block w-full pl-10 pr-3 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+                {errors.email && (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-red-400 text-xs mt-1 ml-1"
+                  >
+                    {errors.email.message}
+                  </motion.p>
+                )}
+              </motion.div>
 
-          {/* Password Field */}
-          <div className="relative">
-            <Lock className="absolute top-3 left-3 text-gray-400" size={20} />
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Contraseña"
-              {...register("password", {
-                required: "La contraseña es obligatoria",
-                minLength: {
-                  value: 6,
-                  message: "Mínimo 6 caracteres",
-                },
-              })}
-              className="pl-10 pr-10 py-2 w-full bg-gray-700 text-white border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute top-2.5 right-3 text-gray-400 hover:text-white transition"
-              aria-label={
-                showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
-              }
+              {/* Password Field */}
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-slate-300 ml-1 flex items-center gap-1">
+                    <KeyRound className="h-4 w-4" /> Contraseña
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/forgotpassword")}
+                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-slate-500" />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    {...register("password", {
+                      required: "La contraseña es obligatoria",
+                      minLength: {
+                        value: 6,
+                        message: "Mínimo 6 caracteres",
+                      },
+                    })}
+                    className="block w-full pl-10 pr-10 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all duration-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white transition-colors"
+                    aria-label={
+                      showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                    }
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-red-400 text-xs mt-1 ml-1"
+                  >
+                    {errors.password.message}
+                  </motion.p>
+                )}
+              </motion.div>
+
+              {/* Submit Button */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <button
+                  type="submit"
+                  disabled={loading || !isValid}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                  className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-xl font-medium text-white bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-300 ${
+                    loading || !isValid ? "opacity-70 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin h-5 w-5" />
+                      <span>Procesando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Iniciar sesión</span>
+                      <motion.div
+                        animate={{
+                          x: isHovered ? 5 : 0,
+                        }}
+                        transition={{ type: "spring", stiffness: 500 }}
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </motion.div>
+                    </>
+                  )}
+                </button>
+              </motion.div>
+            </form>
+
+           {/*  <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="mt-6 text-center"
             >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-            {errors.password && (
-              <p className="text-red-400 text-sm mt-1 ml-1">
-                {errors.password.message}
+              <p className="text-sm text-slate-400">
+                ¿No tienes una cuenta?{" "}
+                <button
+                  onClick={() => navigate("/register")}
+                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                >
+                  Regístrate ahora
+                </button>
               </p>
-            )}
+            </motion.div> */}
           </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full flex justify-center items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-xl transition duration-200 ${
-              loading ? "opacity-70 cursor-not-allowed" : ""
-            }`}
-          >
-            {loading ? (
-              <Loader2 className="animate-spin" size={20} />
-            ) : (
-              "Iniciar sesión"
-            )}
-          </button>
-
-          {/* Forgot password link */}
-          <button
-            type="button"
-            onClick={() => navigate("/forgotpassword")}
-            className="w-full text-center text-sm text-gray-400 hover:text-white transition"
-          >
-            ¿Olvidaste tu contraseña?
-          </button>
-        </form>
+        </div>
       </motion.div>
-    </>
-  );
+    </div>
+  </>
+);
 };
 
 export default Login;

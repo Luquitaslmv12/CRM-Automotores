@@ -1,12 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged, updateProfile } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useIdleLogout } from '../hooks/useIdleLogout';
 
-
-
 const AuthContext = createContext();
+
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
@@ -15,6 +14,38 @@ export function AuthProvider({ children }) {
 
   useIdleLogout(usuario);
 
+  // Función para actualizar el usuario
+  const updateUser = async (updates) => {
+    try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      
+      if (currentUser) {
+        // Actualizar en Firestore
+        const userRef = doc(db, 'usuarios', currentUser.uid);
+        await updateDoc(userRef, updates);
+        
+        // Actualizar en Auth si hay photoURL
+        if (updates.photoURL) {
+          await updateProfile(currentUser, {
+            photoURL: updates.photoURL
+          });
+        }
+        
+        // Actualizar estado local
+        setUsuario(prev => ({
+          ...prev,
+          ...updates
+        }));
+        
+        return true;
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw error;
+    }
+    return false;
+  };
 
   useEffect(() => {
     const auth = getAuth();
@@ -25,15 +56,25 @@ export function AuthProvider({ children }) {
         // Traer info extra de Firestore
         const docRef = doc(db, 'usuarios', user.uid);
         const docSnap = await getDoc(docRef);
+        
         if (docSnap.exists()) {
           setUsuario({
             uid: user.uid,
             email: user.email,
+            displayName: user.displayName || '',
+            photoURL: user.photoURL || null,
             rol: docSnap.data().rol,
             nombre: docSnap.data().nombre || '',
+            telefono: docSnap.data().telefono || '',
+            ...docSnap.data() // Incluir cualquier otro campo adicional
           });
         } else {
-          setUsuario(null);
+          setUsuario({
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || '',
+            photoURL: user.photoURL || null
+          });
         }
       } else {
         setUsuario(null);
@@ -45,7 +86,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ usuario, loading }}>
+    <AuthContext.Provider value={{ usuario, loading, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
