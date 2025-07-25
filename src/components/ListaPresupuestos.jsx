@@ -245,7 +245,7 @@ useEffect(() => {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto text-white">
+    <div className="pt-6 p-2 max-w-4xl mx-auto text-white">
       <Toaster position="top-right" />
 
       <div className="flex items-center gap-2 mb-4 justify-between">

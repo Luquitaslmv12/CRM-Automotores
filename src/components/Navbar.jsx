@@ -505,6 +505,50 @@ export default function Navbar() {
                   )}
                 </div>
 
+                {/* Dropdown Movimientos móvil */}
+<div>
+  <button
+    onClick={() => setMovimientosAbierto((v) => !v)}
+    className="w-full text-left px-3 py-2 rounded-md font-medium text-indigo-200 hover:bg-indigo-500 hover:text-white flex justify-between items-center"
+  >
+    Movimientos <ChevronDown className="ml-1 w-4 h-4" />
+  </button>
+  {movimientosAbierto && (
+    <div className="pl-4 space-y-1">
+      <Link
+        to="/cajadiaria"
+        className={linkClase("/cajadiaria")}
+        onClick={() => {
+          handleLinkClick();
+          setMovimientosAbierto(false);
+        }}
+      >
+        Caja Diaria
+      </Link>
+      <Link
+        to="/caja"
+        className={linkClase("/caja")}
+        onClick={() => {
+          handleLinkClick();
+          setMovimientosAbierto(false);
+        }}
+      >
+        Movimientos Vehículos
+      </Link>
+      <Link
+        to="/Listadeudas"
+        className={linkClase("/Listadeudas")}
+        onClick={() => {
+          handleLinkClick();
+          setMovimientosAbierto(false);
+        }}
+      >
+        Lista de Deudas
+      </Link>
+    </div>
+  )}
+</div>
+
                 <Link
                   to="/proveedores"
                   className={linkClase("/proveedores")}
