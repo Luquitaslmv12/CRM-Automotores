@@ -86,7 +86,7 @@ export default function ModalVehiculoPartePago({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
@@ -318,7 +318,7 @@ export default function ModalVehiculoPartePago({
                 <input
                   name="kilometraje"
                   type="number"
-                  placeholder="Kilómetros recorridos"
+                  placeholder="Kilómetros"
                   value={vehiculoState.kilometraje}
                   onChange={handleChange}
                   className="w-full p-3 text-sm rounded-lg border border-gray-300 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"

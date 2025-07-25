@@ -34,21 +34,40 @@ import {
   Hammer,
   ScanLine,
   GaugeCircle,
+  Eye,
 } from "lucide-react";
 import ModalReparacion from "../components/reparaciones/ModalReparacion";
 import TooltipWrapper from "../components/Tooltip/TooltipWrapper";
 import ExportarVehiculos from "../components/vehiculos/ExportarVehiculos";
+import { NumericFormat } from "react-number-format";
+import { DetallesVehiculoModal } from "../components/vehiculos/DetallesVehiculoModal";
 
 export default function Vehiculos() {
-  const [marca, setMarca] = useState("");
+  const tabs = [
+  { id: "basicos", label: "Datos Básicos" },
+  { id: "tecnicos", label: "Datos Técnicos" },
+  { id: "adicionales", label: "Adicionales" }
+];
+ const [modalDetallesAbierto, setModalDetallesAbierto] = useState(false);
+ const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
+   const [activeTab, setActiveTab] = useState("basicos");
+    const [marca, setMarca] = useState("");
   const [modelo, setModelo] = useState("");
+  const [tipo, setTipo] = useState("");
   const [patente, setPatente] = useState("");
   const [año, setAño] = useState("");
+  const [color, setColor] = useState("");
+  const [precioVenta, setPrecioVenta] = useState("");
   const [motor, setMotor] = useState("");
   const [chasis, setChasis] = useState("");
+  const [kilometraje, setKilometraje] = useState("");
+  const [combustible, setCombustible] = useState("Nafta");
+  const [transmision, setTransmision] = useState("Manual");
+  const [fechaIngreso, setFechaIngreso] = useState(new Date().toISOString().split('T')[0]);
+  const [documentacion, setDocumentacion] = useState("Completos");
+  const [observaciones, setObservaciones] = useState("");
+  const [usuarioRecibido, setUsuarioRecibido] = useState("");
   const [estado, setEstado] = useState("");
-  const [tipo, setTipo] = useState("");
-  const [precioVenta, setPrecioVenta] = useState("");
   const [etiqueta, setEtiqueta] = useState("");
   const [vehiculos, setVehiculos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -61,6 +80,11 @@ export default function Vehiculos() {
   const [pagina, setPagina] = useState(1);
   const itemsPorPagina = 10;
   const [talleres, setTalleres] = useState([]);
+
+    const abrirModalDetalles = (vehiculo) => {
+    setVehiculoSeleccionado(vehiculo);
+    setModalDetallesAbierto(true);
+  };
 
   const estadoFinal = ["Usado", "Nuevo", ""].includes(etiqueta) ? "Disponible" : "No Disponible";
 
@@ -158,7 +182,9 @@ export default function Vehiculos() {
     setModelo("");
     setPatente("");
     setAño("");
-    setMotor(""), setChasis(""), setEstado("");
+    setMotor(""),
+    setChasis(""),
+    setEstado("");
     setTipo("");
     setPrecioVenta("");
     setClienteId("");
@@ -166,6 +192,13 @@ export default function Vehiculos() {
     setModoEdicion(false);
     setIdEditar(null);
     setQueryCliente("");
+    setColor("");
+    setKilometraje("");
+    setCombustible("");
+    setTransmision("");
+    setFechaIngreso("");
+    setDocumentacion("");
+    setObservaciones("");
   };
 
   const mostrarToast = (mensaje, tipo = "ok") => {
@@ -208,6 +241,13 @@ export default function Vehiculos() {
       clienteId: clienteId || null,
       modificadoPor: user?.email || "Desconocido",
       modificadoEn: new Date(),
+      kilometraje,
+      combustible,
+      transmision,
+      fechaIngreso,
+      documentacion,
+      observaciones,
+      color,
     });
         mostrarToast("Vehículo actualizado");
       } else {
@@ -225,6 +265,13 @@ export default function Vehiculos() {
           clienteId: clienteId || null,
           creadoPor: user?.email || "Desconocido",
           creadoEn: new Date(),
+          kilometraje,
+      combustible,
+      transmision,
+      fechaIngreso,
+      documentacion,
+      observaciones,
+      color,
         });
         mostrarToast("Vehículo agregado");
       }
@@ -268,6 +315,13 @@ export default function Vehiculos() {
     setEtiqueta(vehiculo.etiqueta || "");
     setIdEditar(vehiculo.id);
     setModoEdicion(true);
+    setKilometraje(vehiculo.kilometraje || "")
+    setCombustible(vehiculo.combustible || "")
+    setTransmision(vehiculo.transmision || "")
+    setFechaIngreso(vehiculo.fechaIngreso || "")
+    setDocumentacion(vehiculo.documentacion || "")
+    setObservaciones(vehiculo.observaciones || "")
+    setColor(vehiculo.color || "")
 
     if (formRef.current) {
       formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -379,171 +433,276 @@ export default function Vehiculos() {
       </AnimatePresence>
 
       {/* Formulario */}
-      <motion.form
-        ref={formRef}
-        onSubmit={(e) => {
-          e.preventDefault();
-          guardarVehiculo();
-        }}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-slate-900 via-indigo-900/80 to-slate-900 backdrop-blur-lg p-8 rounded-3xl  w-full  shadow-[0_0_60px_10px_rgba(218,204,8,0.514)] max-w-4xl mx-auto mb-10 border-3 border-yellow-600"
+    <motion.form
+      onSubmit={(e) => {
+        e.preventDefault();
+        guardarVehiculo();
+      }}
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-gradient-to-br from-slate-900 via-indigo-900/80 to-slate-900 backdrop-blur-lg p-8 rounded-3xl w-full shadow-[0_0_60px_10px_rgba(218,204,8,0.514)] max-w-4xl mx-auto mb-10 border-3 border-yellow-600"
+    >
+      <div className="flex items-center gap-2 mb-6">
+        <PlusCircle className="text-green-400" />
+        <h2 className="text-2xl font-bold text-white tracking-wide">
+          {modoEdicion ? "Editar Vehículo" : "Agregar Vehículo"}
+        </h2>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-slate-700 mb-6">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 font-medium text-sm transition-colors duration-200 ${
+              activeTab === tab.id
+                ? "text-yellow-400 border-b-2 border-yellow-400"
+                : "text-slate-400 hover:text-slate-300"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Contenido de los tabs */}
+      <div className="h-full">
+        {/* Datos Básicos */}
+        {activeTab === "basicos" && (
+          <motion.div
+  initial={{ opacity: 0, x: -10 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ duration: 0.3 }}
+  className="grid grid-cols-1 md:grid-cols-2 gap-6"
+>
+  <div className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
+    <select
+      value={etiqueta}
+      onChange={(e) => setEtiqueta(e.target.value)}
+      className="peer p-3 pt-5 w-full rounded-xl bg-slate-700 border border-indigo-700 focus:outline-none text-white transition duration-300"
+      required
+    >
+      <option value="">Seleccionar etiqueta</option>
+      <option value="Usado">Usado</option>
+      <option value="Nuevo">Nuevo (0KM)</option>
+      <option value="Vendido">Vendido</option>
+      <option value="Reparación">Reparación</option>
+    </select>
+  </div>
+
+
+  {[
+    { id: "marca", label: "Marca*", value: marca, setValue: setMarca, placeholder: "Ej: Ford, Toyota" },
+    { id: "modelo", label: "Modelo*", value: modelo, setValue: setModelo, placeholder: "Ej: Focus, Corolla" },
+    { id: "tipo", label: "Tipo*", value: tipo, setValue: setTipo, placeholder: "Ej: Sedán, SUV, Pickup" },
+    { id: "patente", label: "Patente*", value: patente, setValue: setPatente, placeholder: "Ej: AB123CD" },
+    { id: "año", label: "Año*", value: año, setValue: setAño, type: "number" },
+    { id: "color", label: "Color", value: color, setValue: setColor, placeholder: "Color principal" },
+  ].map(({ id, label, value, setValue, type = "text", placeholder = "" }) => (
+    <div
+      key={id}
+      className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70"
+    >
+      <input
+        id={id}
+        type={type}
+        placeholder={placeholder || " "}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="peer p-3 pt-5 w-full rounded-xl bg-slate-700 border border-indigo-700 focus:outline-none placeholder-transparent text-white transition duration-300"
+        autoComplete="off"
+        min={type === "number" ? 0 : undefined}
+        required={label.includes("*")}
+      />
+      <label
+        htmlFor={id}
+        className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
       >
-        <div className="flex items-center gap-2 mb-6">
-          <PlusCircle className="text-green-400" />
-          <h2 className="text-2xl font-bold text-white tracking-wide">
-            {modoEdicion ? "Editar Vehículo" : "Agregar Vehículo"}
-          </h2>
-        </div>
+        {label}
+      </label>
+    </div>
+  ))}
 
-        {/* Información básica */}
-        <h3 className="text-slate-200 text-sm font-semibold mb-2 mt-6">
-          Información básica
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ">
-          
-          {[
-            { id: "marca", label: "Marca", value: marca, setValue: setMarca },
-            {
-              id: "modelo",
-              label: "Modelo",
-              value: modelo,
-              setValue: setModelo,
-            },
-            {
-              id: "patente",
-              label: "Patente",
-              value: patente,
-              setValue: setPatente,
-            },
-            {
-              id: "año",
-              label: "Año",
-              value: año,
-              setValue: setAño,
-              type: "number",
-            },
-            {
-              id: "motor",
-              label: "N° Motor",
-              value: motor,
-              setValue: setMotor,
-            },
-            {
-              id: "chasis",
-              label: "N° Chasis",
-              value: chasis,
-              setValue: setChasis,
-            },
-           
-            { id: "tipo", label: "Tipo", value: tipo, setValue: setTipo },
-            {
-              id: "precioVenta",
-              label: "Precio de Venta",
-              value: precioVenta,
-              setValue: setPrecioVenta,
-              type: "number",
-            },
-          ].map(({ id, label, value, setValue, type = "text" }) => (
-            <div
-              key={id}
-              className="relative rounded-xl transition-shadow duration-300
-          shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70 "
-            >
-              <input
-                id={id}
-                type={type}
-                placeholder=" "
-                value={value}
-                onChange={(e) =>
-                  ["marca", "modelo", "patente", "motor", "chasis"].includes(id)
-                    ? setValue(e.target.value.toUpperCase())
-                    : setValue(e.target.value)
-                }
-                className="peer p-3 pt-5 w-full rounded-xl bg-slate-700 border border-indigo-700 focus:outline-none placeholder-transparent text-white transition duration-300"
-                autoComplete="off"
-                min={type === "number" ? 0 : undefined}
-                step={type === "number" ? "any" : undefined}
-                required={["marca", "modelo", "patente", "año"].includes(id)}
-              />
+  {/* Campo de precio con NumericFormat */}
+  <div className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
+    <NumericFormat
+      id="precioVenta"
+      value={precioVenta}
+      onValueChange={(values) => {
+        setPrecioVenta(values.floatValue || 0);
+      }}
+      thousandSeparator="."
+      decimalSeparator=","
+      decimalScale={2}
+      fixedDecimalScale
+      allowNegative={false}
+      prefix="$ "
+      placeholder="$ "
+      className="peer p-3 pt-5 w-full rounded-xl bg-slate-700 border border-indigo-700 focus:outline-none placeholder-transparent text-white transition duration-300"
+      autoComplete="off"
+    />
+    <label
+      htmlFor="precioVenta"
+      className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+    >
+      Monto (precio sugerido)
+    </label>
+  </div>
+</motion.div>
+        )}
 
-              
-
-              <label
-                htmlFor={id}
-                className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+        {/* Datos Técnicos */}
+        {activeTab === "tecnicos" && (
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          >
+            <h3 className="text-slate-200 text-lg font-semibold mb-2 md:col-span-2">Datos Técnicos</h3>
+            
+            {[
+              { id: "motor", label: "Número de motor*", value: motor, setValue: setMotor, placeholder: "Número completo del motor" },
+              { id: "chasis", label: "Número de chasis*", value: chasis, setValue: setChasis, placeholder: "Número completo del chasis" },
+              { id: "kilometraje", label: "Kilometraje", value: kilometraje, setValue: setKilometraje, type: "number", placeholder: "Kilómetros recorridos" },
+            ].map(({ id, label, value, setValue, type = "text", placeholder = "" }) => (
+              <div
+                key={id}
+                className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70"
               >
-                {label}
-                {["marca", "modelo", "patente", "año"].includes(id) ? " *" : ""}
+                <input
+                  id={id}
+                  type={type}
+                  placeholder={placeholder || " "}
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  className="peer p-3 pt-5 w-full rounded-xl bg-slate-700 border border-indigo-700 focus:outline-none placeholder-transparent text-white transition duration-300"
+                  autoComplete="off"
+                  min={type === "number" ? 0 : undefined}
+                  required={label.includes("*")}
+                />
+                <label
+                  htmlFor={id}
+                  className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+                >
+                  {label}
+                </label>
+              </div>
+            ))}
+
+            <div className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
+              <select
+                value={combustible}
+                onChange={(e) => setCombustible(e.target.value)}
+                className="peer p-3 pt-5 w-full rounded-xl bg-slate-700 border border-indigo-700 focus:outline-none text-white transition duration-300"
+              >
+                <option value="Nafta">Nafta</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Nafta-GNC">Nafta-GNC</option>
+                <option value="Híbrido">Híbrido</option>
+                <option value="Eléctrico">Eléctrico</option>
+              </select>
+              <label className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300">
+                Tipo de combustible
               </label>
             </div>
-          ))}
-        
-          {/* Selector etiqueta */}
-          <select
-            className={`w-full p-3 rounded-xl bg-slate-800  text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/70 transition duration-300
-    ${
-      etiqueta === ""
-        ? "border-indigo-500 border-1"
-        : etiqueta === "Nuevo"
-        ? "border-green-500 border-4"
-        : etiqueta === "Usado"
-        ? "border-yellow-500 border-4"
-        : etiqueta === "Reparación"
-        ? "border-red-500 border-4"
-        : etiqueta === "Vendido"
-        ? "border-slate-500 border-4"
-        : ""
-    }
-  `}
-            value={etiqueta}
-            onChange={(e) => setEtiqueta(e.target.value)}
+
+            <div className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
+              <select
+                value={transmision}
+                onChange={(e) => setTransmision(e.target.value)}
+                className="peer p-3 pt-5 w-full rounded-xl bg-slate-700 border border-indigo-700 focus:outline-none text-white transition duration-300"
+              >
+                <option value="Manual">Manual</option>
+                <option value="Automática">Automática</option>
+                <option value="CVT">CVT</option>
+              </select>
+              <label className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300">
+                Transmisión
+              </label>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Adicionales */}
+        {activeTab === "adicionales" && (
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 gap-6"
           >
-            <option value="">Seleccionar etiqueta</option>
-            <option value="Nuevo">Nuevo (0KM)</option>
-            <option value="Usado">Usado</option>
-            <option value="Vendido">Vendido</option>
-            <option value="Reparación">Reparación</option>
-          </select>
+            <h3 className="text-slate-200 text-lg font-semibold mb-2">Información Adicional</h3>
+            
+            <div className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
+              <input
+                type="date"
+                value={fechaIngreso}
+                onChange={(e) => setFechaIngreso(e.target.value)}
+                className="peer p-3 pt-5 w-full rounded-xl bg-slate-700 border border-indigo-700 focus:outline-none text-white transition duration-300"
+              />
+              <label className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300">
+                Fecha de ingreso
+              </label>
+            </div>
 
-          {/* Buscador Cliente */}
-          <div className="md:col-span-3">
-            <BuscadorCliente
-              value={clienteId}
-              onChange={setClienteId}
-              placeholder="Asignar cliente/Cliente Asignado"
-            />
-          </div>
-        </div>
+            <div className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
+              <select
+                value={documentacion}
+                onChange={(e) => setDocumentacion(e.target.value)}
+                className="peer p-3 pt-5 w-full rounded-xl bg-slate-700 border border-indigo-700 focus:outline-none text-white transition duration-300"
+              >
+                <option value="Completos">Completos</option>
+                <option value="Incompletos">Incompletos</option>
+                <option value="En trámite">En trámite</option>
+              </select>
+              <label className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300">
+                Documentación
+              </label>
+            </div>
 
-        {/* Botones */}
-        <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
+              <textarea
+                value={observaciones}
+                onChange={(e) => setObservaciones(e.target.value)}
+                placeholder=" "
+                className="peer p-3 pt-5 w-full rounded-xl bg-slate-700 border border-indigo-700 focus:outline-none placeholder-transparent text-white transition duration-300 min-h-[100px]"
+              />
+              <label className="absolute left-3 top-1 text-slate-400 text-sm transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300">
+                Observaciones
+              </label>
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Botones */}
+      <div className="flex flex-col md:flex-row gap-4 mt-8">
+        <button
+          type="submit"
+          className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-xl transition-all duration-200 shadow-md flex-1 ${
+            modoEdicion
+              ? "bg-green-600 hover:bg-green-700"
+              : "bg-indigo-600 hover:bg-indigo-700"
+          } hover:scale-[1.02]`}
+        >
+          <PlusCircle size={18} />
+          {modoEdicion ? "Actualizar" : "Agregar Vehículo"}
+        </button>
+
+        {modoEdicion && (
           <button
-            type="submit"
-            className={`flex items-center justify-center gap-2 text-white px-4 py-3 rounded-xl transition-all duration-200 shadow-md flex-1
-        ${
-          modoEdicion
-            ? "bg-green-600 hover:bg-green-700"
-            : "bg-indigo-600 hover:bg-indigo-700"
-        }
-        hover:scale-[1.02]
-      `}
+            type="button"
+            onClick={cancelarEdicion}
+            className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-xl shadow-md transition-all duration-200 flex-1 hover:scale-[1.02]"
           >
-            <PlusCircle size={18} />
-            {modoEdicion ? "Actualizar" : "Agregar Vehículo"}
+            Cancelar
           </button>
-
-          {modoEdicion && (
-            <button
-              type="button"
-              onClick={cancelarEdicion}
-              className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-xl shadow-md transition-all duration-200 flex-1 hover:scale-[1.02]"
-            >
-              Cancelar
-            </button>
-          )}
-        </div>
-      </motion.form>
+        )}
+      </div>
+    </motion.form>
 
       {/* Filtros y exportar */}
       <div className="max-w-3xl mx-auto flex flex-col md:flex-row items-stretch md:items-center gap-4 mb-6">
@@ -837,6 +996,12 @@ export default function Vehiculos() {
                     <KeyRound />
                   </button>
                 </TooltipWrapper>
+                <button
+            onClick={() => abrirModalDetalles(vehiculo)}
+            className="text-blue-400 hover:text-blue-600"
+          >
+            <Eye />
+          </button>
               </div>
             </motion.div>
           ))
@@ -881,6 +1046,17 @@ export default function Vehiculos() {
           onClose={() => setMostrarExportacion(false)}
         />
       )}
+
+      
+      {/* Modal de detalles */}
+      <DetallesVehiculoModal
+        vehiculo={vehiculoSeleccionado}
+        isOpen={modalDetallesAbierto}
+        onClose={() => setModalDetallesAbierto(false)}
+        talleres={talleres}
+        preciosPorVehiculo={preciosPorVehiculo}
+      />  
     </div>
+    
   );
 }

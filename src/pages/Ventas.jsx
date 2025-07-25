@@ -153,48 +153,43 @@ export default function NuevaVenta() {
     });
   };
 
-  const registrarEnCajaDiaria = async (descripcion, monto, tipo, fecha, vehiculoInfo, formaDePago, detallesCheque) => {
-
-      if (typeof monto !== 'number' || isNaN(monto) || monto <= 0) {
-    toast.error("Monto inválido");
+const registrarEnCajaDiaria = async (descripcion, monto, tipo, fecha, vehiculoInfo, formaDePago, detallesCheque) => {
+  if (typeof monto !== 'number' || isNaN(monto) || monto <= 0) {
+    toast.error("El monto debe ser mayor a cero.");
+    return;
   }
-  
+
   if (!['ingreso', 'egreso'].includes(tipo)) {
     toast.error("Tipo de movimiento inválido");
+    return;
   }
-    try {
-      const registro = {
-        descripcion,
-        monto: parseFloat(monto),
-        tipo,
-        fecha: Timestamp.now(),
-        createdAt: Timestamp.now(),
-        creadoPor: user?.email || "Desconocido",
-        relacionadoCon: "venta",
-        formaDePago, // Nuevo campo para guardar el método de pago
-        vehiculo: {
-          patente: vehiculoInfo?.patente || "No especificado",
-          marca: vehiculoInfo?.marca || "No especificado",
-          modelo: vehiculoInfo?.modelo || "No especificado"
-        },
-        cliente: clienteSeleccionado ? {
-          id: clienteSeleccionado.id,
-          nombre: `${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}`
-        } : null
-      };
 
-      // Si es un cheque, agregamos los detalles
-      if (formaDePago === "Cheque") {
-        registro.detallesCheque = detallesCheque;
-      }
-console.log (detallesCheque);
-
-      await addDoc(collection(db, "caja_diaria"), registro);
-    } catch (error) {
-      console.error("Error registrando en caja diaria:", error);
-      throw error;
-    }
+  const registro = {
+    descripcion,
+    monto, // SIEMPRE positivo
+    tipo,
+    fecha: Timestamp.now(),
+    createdAt: Timestamp.now(),
+    creadoPor: user?.email || "Desconocido",
+    relacionadoCon: "venta",
+    formaDePago: formaDePago || "No especificado",
+    vehiculo: {
+      patente: vehiculoInfo?.patente || "No especificado",
+      marca: vehiculoInfo?.marca || "No especificado",
+      modelo: vehiculoInfo?.modelo || "No especificado"
+    },
+    cliente: clienteSeleccionado ? {
+      id: clienteSeleccionado.id,
+      nombre: `${clienteSeleccionado.nombre} ${clienteSeleccionado.apellido}`
+    } : null
   };
+
+  if (formaDePago === "Cheque") {
+    registro.detallesCheque = detallesCheque;
+  }
+
+  await addDoc(collection(db, "caja_diaria"), registro);
+};
 
 
   
@@ -602,7 +597,7 @@ const handleSubmit = async (e) => {
                 <button
                   type="button"
                   onClick={agregarPago}
-                  className="flex items-center gap-1 text-sm text-green-400 hover:text-green-300"
+                  className="flex items-center gap-1 text-sm text-green-400 hover:text-green-300 cursor-pointer"
                 >
                   <Plus size={16} /> Agregar pago
                 </button>

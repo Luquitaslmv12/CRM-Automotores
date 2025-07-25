@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { db } from "../firebase";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc, onSnapshot  } from "firebase/firestore";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
 import {
@@ -46,77 +46,99 @@ export default function ListaVentas() {
   const [paginaActual, setPaginaActual] = useState(1);
   const ITEMS_POR_PAGINA = 5;
 
-  useEffect(() => {
-    cargarDatos();
-  }, []);
-
-  const cargarDatos = async () => {
+useEffect(() => {
+  const cargarClientesYVehiculos = async () => {
     try {
-      setLoading(true);
-      const [ventasSnap, clientesSnap, vehiculosSnap, vehiculosPartePagoSnap] =
-        await Promise.all([
-          getDocs(collection(db, "ventas")),
-          getDocs(collection(db, "clientes")),
-          getDocs(collection(db, "vehiculos")),
-          getDocs(collection(db, "vehiculosPartePago")),
-        ]);
+      const [clientesSnap, vehiculosSnap] = await Promise.all([
+        getDocs(collection(db, "clientes")),
+        getDocs(collection(db, "vehiculos")),
+      ]);
 
-      const listaClientes = clientesSnap.docs.map((doc) => ({
+      const listaClientes = clientesSnap.docs.map(doc => ({
         id: doc.id,
-        ...doc.data(),
+        ...doc.data()
       }));
-      const listaVehiculos = vehiculosSnap.docs.map((doc) => ({
+      const listaVehiculos = vehiculosSnap.docs.map(doc => ({
         id: doc.id,
-        ...doc.data(),
+        ...doc.data()
       }));
-      
-      const mapaVehiculosPartePago = {};
-      vehiculosPartePagoSnap.docs.forEach((doc) => {
-        mapaVehiculosPartePago[doc.id] = doc.data();
-      });
-
-      const listaVentas = ventasSnap.docs
-        .map((doc) => {
-          const data = doc.data();
-          const cliente = listaClientes.find((c) => c.id === data.clienteId);
-          const vehiculo = listaVehiculos.find((v) => v.id === data.vehiculoId);
-          const vehiculoPartePago =
-            data.vehiculoPartePagoId && mapaVehiculosPartePago[data.vehiculoPartePagoId]
-              ? mapaVehiculosPartePago[data.vehiculoPartePagoId]
-              : null;
-
-          return {
-            id: doc.id,
-            ...data,
-            clienteNombre: cliente?.nombre || "Cliente no encontrado",
-            clienteApellido: cliente?.apellido || "",
-            dniCliente: cliente?.dni || "",
-            clienteDireccion: cliente?.direccion || "",
-            localidadCliente: cliente?.localidad || "",
-            telefonoCliente: cliente?.telefono || "",
-            emailCliente: cliente?.email || "",
-            vehiculoResumen: vehiculo || null,
-            vehiculoInfo: vehiculo
-              ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
-              : "Vehículo no encontrado",
-            patenteVehiculo: vehiculo?.patente || "",
-            vehiculoPartePago,
-            fechaObj: data.fecha?.toDate ? data.fecha.toDate() : new Date(),
-          };
-        })
-        .sort((a, b) => b.fechaObj - a.fechaObj);
 
       setClientes(listaClientes);
       setVehiculos(listaVehiculos);
-      setVentas(listaVentas);
     } catch (error) {
-      console.error(error);
-      toast.error("Error al cargar los datos");
-    } finally {
-      setLoading(false);
+      console.error("Error cargando clientes/vehículos:", error);
+      toast.error("Error cargando datos base");
     }
   };
 
+  cargarClientesYVehiculos();
+}, []); // ← solo se ejecuta una vez
+
+useEffect(() => {
+  if (clientes.length === 0 || vehiculos.length === 0) return;
+
+  const unsubscribeVentas = onSnapshot(
+    collection(db, "ventas"),
+    async (snapshot) => {
+      try {
+        setLoading(true);
+
+        const vehiculosPartePagoSnap = await getDocs(
+          collection(db, "vehiculosPartePago")
+        );
+
+        const mapaVehiculosPartePago = {};
+        vehiculosPartePagoSnap.docs.forEach((doc) => {
+          mapaVehiculosPartePago[doc.id] = doc.data();
+        });
+
+        const listaVentas = snapshot.docs
+          .map((doc) => {
+            const data = doc.data();
+            const cliente = clientes.find((c) => c.id === data.clienteId);
+            const vehiculo = vehiculos.find((v) => v.id === data.vehiculoId);
+            const vehiculoPartePago =
+              data.vehiculoPartePagoId && mapaVehiculosPartePago[data.vehiculoPartePagoId]
+                ? mapaVehiculosPartePago[data.vehiculoPartePagoId]
+                : null;
+
+            return {
+              id: doc.id,
+              ...data,
+              clienteNombre: cliente?.nombre || "Cliente no encontrado",
+              clienteApellido: cliente?.apellido || "",
+              dniCliente: cliente?.dni || "",
+              clienteDireccion: cliente?.direccion || "",
+              localidadCliente: cliente?.localidad || "",
+              telefonoCliente: cliente?.telefono || "",
+              emailCliente: cliente?.email || "",
+              vehiculoResumen: vehiculo || null,
+              vehiculoInfo: vehiculo
+                ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.patente})`
+                : "Vehículo no encontrado",
+              patenteVehiculo: vehiculo?.patente || "",
+              vehiculoPartePago,
+              fechaObj: data.fecha?.toDate ? data.fecha.toDate() : new Date(),
+            };
+          })
+          .sort((a, b) => b.fechaObj - a.fechaObj);
+
+        setVentas(listaVentas);
+      } catch (error) {
+        console.error("Error procesando ventas:", error);
+        toast.error("Error actualizando ventas");
+      } finally {
+        setLoading(false);
+      }
+    }
+  );
+
+  return () => {
+    unsubscribeVentas();
+  };
+}, [clientes, vehiculos]); 
+
+  
   const eliminarVenta = async (id) => {
     try {
       await deleteDoc(doc(db, "ventas", id));

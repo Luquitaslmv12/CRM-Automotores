@@ -168,10 +168,11 @@ monto: (cuota.monto || 0) + montoIntereses,
         clienteId: selectedDeuda.clienteId,
         creadoPor: "Sistema",
         createdAt: Timestamp.now(),
-        descripcion: `Pago cuota deuda - ${selectedDeuda.clienteNombre} (${metodoPago})`,
+        descripcion: `Pago cuota deuda - ${selectedDeuda.clienteNombre}-(${selectedDeuda.vehiculoInfo?.patente}) `,
         esPagoDeDeuda: true,
         fecha: Timestamp.now(),
         metodoPago,
+        formaDePago: metodoPago || "no definido",
         monto: totalPago,
         observaciones,
         relacionadoCon: `deuda:${selectedDeuda.id}`,
@@ -234,13 +235,31 @@ monto: (cuota.monto || 0) + montoIntereses,
     return cumpleTexto && cumpleEstado && cumpleFechaDesde && cumpleFechaHasta && cumpleMontoMinimo && cumpleMontoMaximo;
   });
 
-  const deudasPendientes = deudasFiltradas.filter((deuda) => calcularTotalPagado(deuda) === 0);
-  const deudasParciales = deudasFiltradas.filter((deuda) => {
-    const totalPagado = calcularTotalPagado(deuda);
-    const montoTotal = deuda.montoTotal || 0;
-    return totalPagado > 0 && totalPagado < montoTotal;
-  });
-  const deudasPagadas = deudasFiltradas.filter((deuda) => calcularTotalPagado(deuda) >= (deuda.montoTotal || 0));
+  const calcularMontoTotalConInteres = (deuda) => {
+  if (!deuda.deudas) return 0;
+  return deuda.deudas.reduce((sum, cuota) => sum + (cuota.monto || 0), 0);
+};
+
+
+
+  const deudasPendientes = deudasFiltradas.filter(
+  (deuda) => calcularTotalPagado(deuda) === 0
+);
+
+const deudasParciales = deudasFiltradas.filter((deuda) => {
+  const totalPagado = calcularTotalPagado(deuda);
+  const totalConInteres = calcularMontoTotalConInteres(deuda);
+  return totalPagado > 0 && totalPagado < totalConInteres;
+});
+
+const deudasPagadas = deudasFiltradas.filter((deuda) => {
+  const totalPagado = calcularTotalPagado(deuda);
+  const totalConInteres = calcularMontoTotalConInteres(deuda);
+  // Tolerancia por redondeo (0.01)
+  return Math.abs(totalPagado - totalConInteres) < 0.01;
+});
+
+  
 
   const resetFilters = () => {
     setFiltro({
@@ -571,6 +590,11 @@ function DeudaItem({ deuda, onRegistrarPago, formatFecha }) {
     }, 0);
   };
 
+  const calcularMontoTotalConInteres = (deuda) => {
+  if (!deuda.deudas) return 0;
+  return deuda.deudas.reduce((sum, cuota) => sum + (cuota.monto || 0), 0);
+};
+
   const calcularSaldoPendiente = (deuda) => {
     if (!deuda.deudas) return 0;
     const saldo = deuda.deudas.reduce((total, cuota) => {
@@ -589,7 +613,11 @@ function DeudaItem({ deuda, onRegistrarPago, formatFecha }) {
 
   const totalPagado = calcularTotalPagado(deuda);
   const saldoPendiente = calcularSaldoPendiente(deuda);
-  const porcentajePagado = Math.round((totalPagado / deuda.montoTotal) * 100);
+  const montoTotalConInteres = calcularMontoTotalConInteres(deuda);
+const porcentajePagado = Math.min(
+  Math.round((totalPagado / montoTotalConInteres) * 100),
+  100
+);
   const estadoDeuda = saldoPendiente === 0 ? 'pagada' : totalPagado > 0 ? 'parcial' : 'pendiente';
 
   // Obtener la próxima cuota a vencer
@@ -739,7 +767,7 @@ function DeudaItem({ deuda, onRegistrarPago, formatFecha }) {
                       fixedDecimalScale
                     /> / 
                     <NumericFormat 
-                      value={deuda.montoTotal} 
+                      value={deuda.montoTotalConInteres} 
                       displayType={'text'} 
                       thousandSeparator="." 
                       decimalSeparator="," 
@@ -763,7 +791,7 @@ function DeudaItem({ deuda, onRegistrarPago, formatFecha }) {
               {/* Resumen financiero */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div className="bg-gray-700 p-3 rounded-lg border border-gray-600">
-                  <div className="text-sm text-gray-400">Total deuda</div>
+                  <div className="text-sm text-gray-400">Total deuda original</div>
                   <div className="text-lg font-semibold text-white">
                     <NumericFormat 
                       value={deuda.montoTotal} 

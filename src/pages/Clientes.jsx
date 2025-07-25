@@ -58,6 +58,10 @@ export default function Clientes() {
   const formRef = useRef(null);
   const [pagina, setPagina] = useState(1);
   const itemsPorPagina = 10;
+  const [fechaNacimiento, setFechaNacimiento] = useState("");
+const [referencia, setReferencia] = useState("");
+const [profesion, setProfesion] = useState("");
+const [observaciones, setObservaciones] = useState("");
 
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [vehiculosDisponibles, setVehiculosDisponibles] = useState([]);
@@ -191,6 +195,10 @@ export default function Clientes() {
     setDni("");
     setDireccion("");
     setLocalidad("");
+    setFechaNacimiento("");
+    setReferencia("");
+    setProfesion("");
+    setObservaciones("");
   };
 
   const mostrarToast = (mensaje, tipo = "ok") => {
@@ -243,6 +251,10 @@ export default function Clientes() {
           dni,
           direccion,
           localidad,
+          fechaNacimiento,
+          referencia,
+          profesion,
+          observaciones,
         });
         mostrarToast("Cliente actualizado");
       } else {
@@ -256,6 +268,10 @@ export default function Clientes() {
           direccion,
           localidad,
           fechaRegistro: new Date(),
+          fechaNacimiento,
+          referencia,
+          profesion,
+          observaciones,
         });
         mostrarToast("Cliente agregado");
       }
@@ -291,6 +307,10 @@ export default function Clientes() {
     setDni("");
     setDireccion("");
     setLocalidad("");
+    setFechaNacimiento("");
+    setReferencia("");
+    setProfesion("");
+    setObservaciones("");
   };
 
   const editarCliente = (cliente) => {
@@ -304,6 +324,10 @@ export default function Clientes() {
     setDni(cliente.dni || "");
     setDireccion(cliente.direccion || "");
     setLocalidad(cliente.localidad || "");
+    setFechaNacimiento(cliente.fechaNacimiento || "");
+    setReferencia(cliente.referencia || "");
+    setProfesion(cliente.profesion || "");
+    setObservaciones(cliente.observaciones || "");
 
     if (formRef.current) {
       formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -326,6 +350,10 @@ export default function Clientes() {
       cliente.email,
       cliente.telefono,
       cliente.etiqueta || "",
+      cliente.fechaNacimiento || "",
+      cliente.referencia || "",
+      cliente.profesion || "",
+      cliente.observaciones || "",
     ]);
     const csvContent = [headers, ...rows].map((e) => e.join(",")).join("\n");
 
@@ -478,10 +506,8 @@ export default function Clientes() {
         </div>
 
         {/* Dirección */}
-        <h3 className="text-slate-200 text-sm font-semibold mb-4 mt-6">
-          Dirección
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+        <div className="mb-4 mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div
             className="relative md:col-span-2 rounded-xl transition-shadow duration-300
         shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70"
@@ -517,10 +543,8 @@ export default function Clientes() {
         </div>
 
         {/* Contacto */}
-        <h3 className="text-slate-200 text-sm font-semibold mb-4 mt-6">
-          Contacto
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+     
+        <div className="mb-4 mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Email */}
           <div
             className={`relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg
@@ -553,6 +577,7 @@ export default function Clientes() {
               </p>
             )}
           </div>
+          
 
           {/* Teléfono */}
           <div className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
@@ -575,9 +600,38 @@ export default function Clientes() {
             </label>
           </div>
 
-          {/* Etiqueta */}
+             {/* Fecha de nacimiento */}
+  <div className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
+    <input
+      id="fechaNacimiento"
+      type="date"
+      placeholder=" "
+      value={fechaNacimiento}
+      onChange={(e) => setFechaNacimiento(e.target.value)}
+      className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none placeholder-transparent text-white transition duration-300"
+    />
+    <label
+      htmlFor="fechaNacimiento"
+      className="absolute left-3 top-1 text-lime-400 text-sm transition-all
+            peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-200
+            peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+    >
+      Fecha de nacimiento
+    </label>
+  </div>
+          
+
+           </div>
+
+{/* Datos adicionales */}
+<h3 className="text-slate-200 text-sm font-semibold mb-4 mt-6">
+  Datos adicionales
+</h3>
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+ 
+{/* Etiqueta */}
           <select
-            className={`w-full p-3 rounded-xl bg-slate-800  text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/70 transition duration-300
+            className={`w-full p-3 rounded-xl bg-slate-800  text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/70 transition duration-300
     ${
       etiqueta === ""
         ? "border-indigo-500 "
@@ -595,13 +649,81 @@ export default function Clientes() {
             value={etiqueta}
             onChange={(e) => setEtiqueta(e.target.value)}
           >
-            <option value="">Seleccionar etiqueta</option>
+            <option value="">Seleccionar etiqueta 🏷️</option>
             <option value="VIP">VIP</option>
             <option value="Potencial">Potencial</option>
             <option value="Moroso">Moroso</option>
             <option value="Inactivo">Inactivo</option>
           </select>
-        </div>
+
+
+  {/* Cómo nos conoció */}
+  <div className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
+    <select
+      id="referencia"
+      value={referencia}
+      onChange={(e) => setReferencia(e.target.value)}
+      className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none text-white transition duration-300 appearance-none"
+    >
+      <option value="">¿Cómo nos conoció?</option>
+      <option value="Redes sociales">Redes sociales</option>
+      <option value="Recomendación">Recomendación</option>
+      <option value="Publicidad">Publicidad</option>
+      <option value="Búsqueda en línea">Búsqueda en línea</option>
+      <option value="Otro">Otro</option>
+    </select>
+    <label
+      htmlFor="referencia"
+      className="absolute left-3 top-1 text-lime-400 text-sm transition-all
+            peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-200
+            peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+    >
+      Referencia
+    </label>
+  </div>
+
+  {/* Profesión */}
+  <div className="relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
+    <input
+      id="profesion"
+      type="text"
+      placeholder=" "
+      value={profesion}
+      onChange={(e) => setProfesion(e.target.value)}
+      className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none placeholder-transparent text-white transition duration-300"
+    />
+    <label
+      htmlFor="profesion"
+      className="absolute left-3 top-1 text-lime-400 text-sm transition-all
+            peer-placeholder-shown:top-0 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-200
+            peer-focus:top-0 peer-focus:text-sm peer-focus:text-indigo-300"
+    >
+      Profesión/Ocupación
+    </label>
+  </div>
+</div>
+
+{/* Observaciones */}
+
+<div className="mb-4 mt-6 relative rounded-xl transition-shadow duration-300 shadow-sm hover:shadow-md focus-within:shadow-lg focus-within:ring-2 focus-within:ring-indigo-500/70">
+  <textarea
+    id="observaciones"
+    placeholder=" "
+    value={observaciones}
+    onChange={(e) => setObservaciones(e.target.value)}
+    className="peer p-3 pt-5 w-full rounded-xl bg-slate-800 border border-slate-700 focus:outline-none placeholder-transparent text-white transition duration-300 min-h-[100px]"
+    rows={3}
+  />
+  <label
+    htmlFor="observaciones"
+    className="absolute left-3 top-1 text-lime-400 text-sm transition-all
+      peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-200
+      peer-focus:top-1 peer-focus:text-sm peer-focus:text-indigo-300"
+  >
+    Observaciones (notas internas)
+  </label>
+</div>
+       
 
         {/* Botones */}
         <div className="flex flex-col md:flex-row gap-4 mt-6">
@@ -691,7 +813,7 @@ export default function Clientes() {
           onChange={(e) => setFiltroEtiqueta(e.target.value)}
         >
           <option value="">🔍 Etiqueta</option>
-          <option value="VIP">Nuevo (0KM)</option>
+          <option value="VIP">VIP</option>
           <option value="Potencial">Potencial</option>
           <option value="Moroso">Moroso</option>
           <option value="Inactivo">Inactivo</option>
