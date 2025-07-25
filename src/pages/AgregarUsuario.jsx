@@ -40,6 +40,7 @@ import {
   X,
   BadgeCheck,
   Calendar,
+  CheckCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -206,12 +207,12 @@ export default function Admin() {
 
   const tabVariants = {
     active: { 
-      backgroundColor: "rgba(99, 102, 241, 0.2)",
+      backgroundColor: "rgba(224, 160, 22, 0.781)",
       borderColor: "rgba(99, 102, 241, 0.5)",
     },
     inactive: { 
-      backgroundColor: "rgba(30, 41, 59, 0.3)",
-      borderColor: "rgba(30, 41, 59, 0.5)",
+      backgroundColor: "rgba(238, 240, 243, 0.473)",
+      borderColor: "rgba(54, 45, 58, 0.877)",
     },
     hover: {
       backgroundColor: "rgba(99, 102, 241, 0.1)",

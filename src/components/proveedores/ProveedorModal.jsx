@@ -1,11 +1,13 @@
-import { Dialog, Transition } from "@headlessui/react";
-import { Fragment, useEffect } from "react";
+import { Dialog, Transition, TransitionChild, DialogPanel } from "@headlessui/react";
+import { Fragment, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { doc, updateDoc, addDoc, collection } from "firebase/firestore";
 import { db } from "../../firebase";
 import toast from "react-hot-toast";
 import { getAuth } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Save, Loader2, Phone, Mail, MapPin, ClipboardList, User, ChevronDown } from "lucide-react";
 
 export default function ProveedorModal({
   abierto,
@@ -17,8 +19,10 @@ export default function ProveedorModal({
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm();
+
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (proveedorActual) {
@@ -29,10 +33,11 @@ export default function ProveedorModal({
   }, [proveedorActual, reset]);
 
   const onSubmit = async (data) => {
+    setIsLoading(true);
     try {
       const auth = getAuth();
       const usuario = auth.currentUser;
-      const ahora = Timestamp.now(); // <-- Timestamp de Firebase
+      const ahora = Timestamp.now();
 
       let proveedorGuardado;
 
@@ -50,7 +55,14 @@ export default function ProveedorModal({
           modificadoEn: ahora,
         };
 
-        toast.success("Proveedor actualizado");
+        toast.success("Proveedor actualizado correctamente", {
+          icon: "✅",
+          style: {
+            borderRadius: "10px",
+            background: "#1f2937",
+            color: "#fff",
+          },
+        });
       } else {
         const docRef = await addDoc(collection(db, "proveedores"), {
           ...data,
@@ -69,21 +81,37 @@ export default function ProveedorModal({
           modificadoEn: ahora,
         };
 
-        toast.success("Proveedor agregado");
+        toast.success("Proveedor creado exitosamente", {
+          icon: "🎉",
+          style: {
+            borderRadius: "10px",
+            background: "#1f2937",
+            color: "#fff",
+          },
+        });
       }
 
       onSave(proveedorGuardado);
       cerrar();
     } catch (error) {
       console.error(error);
-      toast.error("Error al guardar proveedor");
+      toast.error("Error al guardar el proveedor", {
+        icon: "❌",
+        style: {
+          borderRadius: "10px",
+          background: "#ef4444",
+          color: "#fff",
+        },
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <Transition appear show={abierto} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={cerrar}>
-        <Transition.Child
+        <TransitionChild
           as={Fragment}
           enter="ease-out duration-300"
           enterFrom="opacity-0"
@@ -92,12 +120,12 @@ export default function ProveedorModal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/90" />
-        </Transition.Child>
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
+        </TransitionChild>
 
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <Transition.Child
+            <TransitionChild
               as={Fragment}
               enter="ease-out duration-300"
               enterFrom="opacity-0 scale-95"
@@ -106,114 +134,220 @@ export default function ProveedorModal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-xl  p-6 text-left align-middle shadow-xl transition-all bg-gray-900 text-white">
-                <Dialog.Title
-                  as="h3"
-                  className="text-lg font-medium leading-6 mb-4"
-                >
-                  {proveedorActual ? "Editar Proveedor" : "Nuevo Proveedor"}
-                </Dialog.Title>
+              <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 text-white p-6 text-left align-middle shadow-xl transition-all border border-gray-700">
+                <div className="flex justify-between items-center mb-6">
+                  <Dialog.Title
+                    as="h3"
+                    className="text-2xl font-bold leading-6 text-white"
+                  >
+                    {proveedorActual ? "Editar Proveedor" : "Nuevo Proveedor"}
+                  </Dialog.Title>
+                  <button
+                    onClick={cerrar}
+                    className="p-1 rounded-full hover:bg-gray-700 transition-colors"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium">Nombre</label>
-                    <input
-                      type="text"
-                      {...register("nombre", { required: true })}
-                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
-                    />
-                    {errors.nombre && (
-                      <p className="text-red-500 text-sm">Campo requerido</p>
-                    )}
-                  </div>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <label className="block text-sm font-medium mb-2 text-gray-300">
+                      Nombre del Proveedor
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        {...register("nombre", { required: true })}
+                        className="pl-10 w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        placeholder="Ej: Distribuidora S.A."
+                      />
+                    </div>
+                    <AnimatePresence>
+                      {errors.nombre && (
+                        <motion.p 
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="mt-1 text-sm text-red-400"
+                        >
+                          Este campo es requerido
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
 
-                  <div>
-                    <label className="block text-sm font-medium">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <label className="block text-sm font-medium mb-2 text-gray-300">
                       Teléfono
                     </label>
-                    <input
-                      type="number"
-                      {...register("telefono", {
-                        required: "El teléfono es obligatorio",
-                        pattern: {
-                          value: /^[0-9+\-\s]*$/, // solo números, +, -, espacios
-                          message:
-                            "Teléfono inválido, solo números y símbolos + -",
-                        },
-                        minLength: {
-                          value: 7,
-                          message: "El teléfono debe tener al menos 7 dígitos",
-                        },
-                      })}
-                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
-                    />
-                    {errors.telefono && (
-                      <p className="text-red-500 text-sm">
-                        {errors.telefono.message}
-                      </p>
-                    )}
-                  </div>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Phone className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="tel"
+                        {...register("telefono", {
+                          required: "El teléfono es obligatorio",
+                          pattern: {
+                            value: /^[0-9+\-\s]*$/,
+                            message: "Solo números y símbolos + -",
+                          },
+                          minLength: {
+                            value: 7,
+                            message: "Mínimo 7 dígitos",
+                          },
+                        })}
+                        className="pl-10 w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        placeholder="Ej: +54 11 1234-5678"
+                      />
+                    </div>
+                    <AnimatePresence>
+                      {errors.telefono && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="mt-1 text-sm text-red-400"
+                        >
+                          {errors.telefono.message}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
 
-                  <div>
-                    <label className="block text-sm font-medium">Email</label>
-                    <input
-                      type="email"
-                      {...register("email")}
-                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
-                    />
-                  </div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <label className="block text-sm font-medium mb-2 text-gray-300">
+                      Email
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="email"
+                        {...register("email")}
+                        className="pl-10 w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        placeholder="Ej: contacto@proveedor.com"
+                      />
+                    </div>
+                  </motion.div>
 
-                  <div>
-                    <label className="block text-sm font-medium">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <label className="block text-sm font-medium mb-2 text-gray-300">
                       Dirección
                     </label>
-                    <input
-                      type="text"
-                      {...register("direccion")}
-                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
-                    />
-                  </div>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <MapPin className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        {...register("direccion")}
+                        className="pl-10 w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        placeholder="Ej: Av. Siempreviva 742"
+                      />
+                    </div>
+                  </motion.div>
 
-                  <div>
-                    <label className="block text-sm font-medium">Tipo</label>
-                    <select
-                      {...register("tipo")}
-                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
-                    >
-                      <option value="General">General</option>
-                      <option value="Taller">Taller</option>
-                      <option value="Repuestos">Repuestos</option>
-                    </select>
-                  </div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <label className="block text-sm font-medium mb-2 text-gray-300">
+                      Tipo de Proveedor
+                    </label>
+                    <div className="relative">
+                      <select
+                        {...register("tipo")}
+                        className="appearance-none w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent pr-10"
+                      >
+                        <option value="General">General</option>
+                        <option value="Taller">Taller</option>
+                        <option value="Repuestos">Repuestos</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                  </motion.div>
 
-                  <div>
-                    <label className="block text-sm font-medium">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <label className="block text-sm font-medium mb-2 text-gray-300">
                       Observaciones
                     </label>
-                    <textarea
-                      {...register("observaciones")}
-                      className="mt-1 w-full rounded border px-3 py-2 bg-gray-800"
-                    />
-                  </div>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 pt-3 flex items-start pointer-events-none">
+                        <ClipboardList className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <textarea
+                        {...register("observaciones")}
+                        rows={3}
+                        className="pl-10 w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        placeholder="Notas adicionales sobre el proveedor..."
+                      />
+                    </div>
+                  </motion.div>
 
-                  <div className="flex justify-end gap-3 mt-4">
+                  <motion.div
+                    className="flex justify-end gap-3 pt-2"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                  >
                     <button
                       type="button"
                       onClick={cerrar}
-                      className="px-4 py-2 rounded bg-gray-500 text-white hover:bg-gray-600"
+                      disabled={isLoading}
+                      className="px-5 py-2.5 rounded-lg border border-gray-700 bg-transparent text-white hover:bg-gray-700/50 transition-colors duration-200 flex items-center justify-center"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+                      disabled={isLoading}
+                      className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 transition-all duration-200 flex items-center justify-center disabled:opacity-70"
                     >
-                      Guardar
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Procesando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-5 w-5 mr-2" />
+                          {proveedorActual ? "Actualizar" : "Guardar"}
+                        </>
+                      )}
                     </button>
-                  </div>
+                  </motion.div>
                 </form>
-              </Dialog.Panel>
-            </Transition.Child>
+              </DialogPanel>
+            </TransitionChild>
           </div>
         </div>
       </Dialog>

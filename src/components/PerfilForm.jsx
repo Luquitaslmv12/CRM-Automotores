@@ -21,7 +21,7 @@ export default function PerfilForm({ usuario }) {
     try {
       await updateDoc(doc(db, 'usuarios', usuario.uid), {
         nombre: nombre.trim(),
-        telefono: telefono.trim()
+        telefono: telefono
       });
       toast.success('Perfil actualizado correctamente', {
         style: {

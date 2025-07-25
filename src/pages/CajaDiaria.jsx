@@ -52,6 +52,7 @@ export default function CajaDiaria() {
   const [cargando, setCargando] = useState(false);
   const [filtroDescripcion, setFiltroDescripcion] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("todos");
+  const [filtroForma, setFiltroForma] = useState("todos");
   const [showFiltros, setShowFiltros] = useState(false);
   const [saldoAcumulado, setSaldoAcumulado] = useState(0);
   const [orden, setOrden] = useState({ campo: "fecha", direccion: "desc" });
@@ -246,7 +247,7 @@ export default function CajaDiaria() {
         monto: parseFloat(monto),
         tipo,
          formaDePago,
-        fecha: Timestamp.fromDate(dayjs(fecha).hour(12).toDate()),
+        fecha: Timestamp.now(),
         createdAt: Timestamp.now(),
       });
       setDescripcion("");
@@ -423,11 +424,12 @@ Movimientos: ${movimientosFiltrados.length}`;
   const movimientosFiltrados = movimientos.filter((m) => {
     const desc = m.descripcion.toLowerCase().includes(filtroDescripcion.toLowerCase());
     const tipoOK = filtroTipo === "todos" || m.tipo === filtroTipo;
+    const formaOK = filtroForma === "todos" || m.formaDePago === filtroForma;
     const busquedaOK = busquedaRapida 
       ? m.descripcion.toLowerCase().includes(busquedaRapida.toLowerCase()) || 
         m.monto.toString().includes(busquedaRapida)
       : true;
-    return desc && tipoOK && busquedaOK;
+    return desc && tipoOK && formaOK && busquedaOK;
   });
 
   const totalIngresos = movimientosFiltrados
@@ -797,6 +799,24 @@ Movimientos: ${movimientosFiltrados.length}`;
                   <option value="egreso">Solo egresos</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Filtrar forma de Pago:
+                </label>
+                <select
+                  value={filtroForma}
+                  onChange={(e) => setFiltroForma(e.target.value)}
+                  className="w-full bg-slate-800 text-slate-100 border border-indigo-600 p-2 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="todos">Todos los movimientos</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+                  <option value="Tarjeta de Débito">Tarjeta de Débito</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
               
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">
@@ -938,11 +958,12 @@ Movimientos: ${movimientosFiltrados.length}`;
             /* Vista vacía (sin resultados) */
             <div className="text-center py-8 bg-slate-700 rounded-lg border border-indigo-600">
               <p className="text-slate-400">
-                {filtroDescripcion || filtroTipo !== "todos" || busquedaRapida 
+                {filtroDescripcion || filtroTipo !== "todos" || filtroForma !== "todos" || busquedaRapida 
                   ? "No hay movimientos que coincidan con los filtros aplicados" 
                   : verTodo 
                     ? "No hay movimientos registrados" 
                     : "No hay movimientos para esta fecha"}
+                
               </p>
             </div>
           ) : (
